@@ -62,7 +62,7 @@ These shortcuts are subject to change as I continue tweak it to have the most "f
 # Scripting
 WARNING: The API wil change drastically as I attempt to K.I.S.S. during alpha.
 
-Check out the `code_editor_examples` folder for now until I write full documentation.
+Check out the `script_examples` folder for now until I write full documentation.
 
 In general, when the position changes, your script is run, and provided a global variable `k` which
 is your access to all of katago's analysis of the current position. You inspect `k`, calculate
