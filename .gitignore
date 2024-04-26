@@ -1,0 +1,16 @@
+# Possible makefile outputs
+*.o
+*.ko
+*.obj
+*.elf
+*_ui.py
+
+# other products & artifacts
+katago-bin/katago
+__pycache__/
+*.py[cod]
+*$py.class
+
+# python virtual environment created by makefile
+venv/
+
