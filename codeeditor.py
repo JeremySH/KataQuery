@@ -14,6 +14,14 @@ from kataproxy import KataAnswer, GlobalKata
 
 
 # built in functions for the code editor to use
+
+class Bail(Exception):
+    "an excption to allow bailing out of a script"
+    pass
+
+def bail() -> None:
+    raise Bail
+
 def status(info: str, **kwargs):
     "change status line to provided text"
     GS.statusBarPrint.emit(str(info))
@@ -39,6 +47,9 @@ def mark(gopoint: tuple or str or dict, label="triangle", halign='center', valig
     global k
 
     pos = _getGoPoint(gopoint)
+
+    if type(pos) != tuple:
+        return # FIXME: exception might be more appropriate, though annoying.
 
     options = {'halign': halign, 'valign': valign, 'rgb': None, 'scale': scale}
 
@@ -91,6 +102,12 @@ def opponent(color: str) -> str:
         return "black"
     else:
         return "white"
+
+def dist(pos1, pos2) -> int:
+    "return the manhattan distance between 2 go points"
+    p1 = _getGoPoint(pos1)
+    p2 = _getGoPoint(pos2)
+    return abs(p1[0]-p2[0]) + abs(p1[1] - p2[1])
 
 def set_clipboard(stuff: str) -> None:
     app = QApplication.instance()
@@ -147,6 +164,8 @@ extrafuncs = {
     "_buttonX": _buttonX,
     "_checkX": _checkX,
     "_sliderX": _sliderX,
+    "bail": bail,
+    "dist": dist,
 }
 
 # the GUI functions have to be compiled
@@ -281,6 +300,10 @@ def persist(variable: str, val) -> None:
             try:
                 exec(self.preambleC, self.context_global, self.context_local)
                 exec(self.code, self.context_global, self.context_local)
+            except Bail as e:
+                # don't care
+                pass
+            
             except Exception as e:
                 traceback.print_exc()
                 tb_info = traceback.extract_tb(e.__traceback__)
