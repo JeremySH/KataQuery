@@ -14,3 +14,5 @@ __pycache__/
 # python virtual environment created by makefile
 venv/
 
+# PyCharm detritus
+.idea/
