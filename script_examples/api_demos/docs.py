@@ -1,7 +1,7 @@
 # print out the fields/methods
 # etc. for kata analysis information
 # so you can get an idea of what's
-# available
+# available (see terminal output)
 
 clearStatus()
 
