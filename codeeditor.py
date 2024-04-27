@@ -394,8 +394,8 @@ class CodeEditor(CodeEdit):
         settings = QSettings()
 
         self.slots = []
-        self.currentSlot = 1
-        self.activateSlot(1, force=True)
+        self.currentSlot = settings.value("codeeditor/current_slot", 1)
+        self.activateSlot(self.currentSlot, force=True)
 
     def saveCurrentSlot(self) -> None:
         settings = QSettings()
@@ -415,7 +415,10 @@ class CodeEditor(CodeEdit):
         key = f"codeeditor/slot{slotNum}_src"
         text = settings.value(key, "")
         self.document().setPlainText(text)
+        self.moveCursor(QtGui.QTextCursor.Start)
+
         self.currentSlot = slotNum
+        settings.setValue("codeeditor/current_slot", self.currentSlot)
 
     def slotSelected(self):
         self.saveCurrentSlot()
