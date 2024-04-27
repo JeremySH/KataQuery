@@ -43,8 +43,9 @@ class Window(QMainWindow, Ui_MainWindow):
         GS.statusBarPrint.connect(self.statusbar.showMessage)
         self.actionAbout_2.triggered.connect(self.about)
 
-        self.actionGame_Settings.triggered.connect(self.board.doGameSettings)
-        
+        self.actionGame_Settings.triggered.connect(self.board.doGameSettings)        
+        self.actionNeural_Nets.triggered.connect(self.doNeuralNetSettings)
+
         # have to build the submenu, meh
 
         localizeGroup = QActionGroup(self.menuLocalize)
@@ -99,6 +100,59 @@ class Window(QMainWindow, Ui_MainWindow):
             "<p>Implemented using Katago and PyQt5</p>",
 
         )
+    
+    def doNeuralNetSettings(self):
+        from NeuralNetSettingsDialog_ui import Ui_Dialog as nnDialogUI
+        settings = QtCore.QSettings()
+
+        dlg = QtWidgets.QDialog()
+        ui = nnDialogUI()
+        ui.setupUi(dlg)
+        #print(dir(ui))
+        #print(dir(dlg))
+        clickedB15 = lambda v, o=ui.groupBox_NBT: o.setChecked(not v)
+        clickedNBT = lambda v, o=ui.groupBox_B15: o.setChecked(not v)
+        
+        network = settings.value("nn/active_network", "B15")
+        if network == "B15":
+            ui.groupBox_B15.setChecked(True)
+            ui.groupBox_NBT.setChecked(False)
+            ui.B15_QuickVisits.setValue(settings.value("nn/B15/quick_visits", 2))
+            ui.B15_FullVisits.setValue(settings.value("nn/B15/full_visits", 100))
+            ui.B15_StepVisits.setValue(settings.value("nn/B15/step_visits", 500))
+        else:
+            ui.groupBox_B15.setChecked(False)
+            ui.groupBox_NBT.setChecked(True)
+            ui.NBT_QuickVisits.setValue(settings.value(f"nn/NBT/quick_visits", 2))
+            ui.NBT_FullVisits.setValue(settings.value(f"nn/NBT/full_visits", 50))
+            ui.NBT_StepVisits.setValue(settings.value(f"nn/NBT/step_visits", 100))
+
+        ui.groupBox_NBT.clicked.connect(clickedNBT)
+        ui.groupBox_B15.clicked.connect(clickedB15)
+        
+
+        accepted = dlg.exec_() != 0
+        d = {}
+        if accepted:
+            if ui.groupBox_B15.isChecked():
+                settings.setValue("nn/active_network", "B15")
+                d['network'] = "B15"
+                d['quick_visits'] = ui.B15_QuickVisits.value()
+                d['full_visits'] = ui.B15_FullVisits.value()
+                d['step_visits'] = ui.B15_StepVisits.value()
+            else:
+                settings.setValue("nn/active_network", "NBT")
+                d['network'] = "NBT"
+                d['quick_visits'] = ui.NBT_QuickVisits.value()
+                d['full_visits'] = ui.NBT_FullVisits.value()
+                d['step_visits'] = ui.NBT_StepVisits.value()
+
+
+            for key, val in d.items():
+                settings.setValue(f"nn/{d['network']}/{key}", val)
+
+            GS.SetNeuralNetSettings.emit(d)
+
 
     def showEvent(self, whatever):
         if not self.firstShow:return

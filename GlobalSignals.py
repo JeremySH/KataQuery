@@ -51,6 +51,8 @@ class _GS(QObject):
     # to rerun the script
     CodeGUI_Changed = pyqtSignal(dict) # gui state dict
 
+    SetNeuralNetSettings = pyqtSignal(dict) # state with network settings
+
     def __init__(self):
         super().__init__()
     

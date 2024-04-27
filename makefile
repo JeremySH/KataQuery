@@ -1,4 +1,4 @@
-all: katago-bin/katago venv mainwindow_ui.py GameSettingsDialog_ui.py
+all: katago-bin/katago venv mainwindow_ui.py GameSettingsDialog_ui.py NeuralNetSettingsDialog_ui.py
 
 katago: katago-bin/katago
 
@@ -26,6 +26,9 @@ mainwindow_ui.py: venv mainwindow.ui
 
 GameSettingsDialog_ui.py: venv GameSettingsDialog.ui
 	. venv/bin/activate && pyuic5 -o GameSettingsDialog_ui.py GameSettingsDialog.ui ; deactivate
+
+NeuralNetSettingsDialog_ui.py: venv NeuralNetSettingsDialog.ui
+	. venv/bin/activate && pyuic5 -o NeuralNetSettingsDialog_ui.py NeuralNetSettingsDialog.ui ; deactivate
 
 clean:
 	cd KataGo/cpp && make clean

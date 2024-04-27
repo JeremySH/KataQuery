@@ -5,13 +5,14 @@ import os
 
 _mypath = os.path.abspath(os.path.dirname(__file__)) 
 
-KATACMD =  _mypath + "/katago-bin/katago"
+BIN_PATH = os.path.join(_mypath, "katago-bin")
+KATACMD =  os.path.join(BIN_PATH, "katago")
 
-#KATAMODEL = _mypath + "/katago-bin/kata1-b18c384nbt-s9131461376-d4087399203.bin.gz"
-#KATAMODEL = _mypath + "/katago-bin/kata1-b20c256x2-s5303129600-d1228401921.bin.gz"
-KATAMODEL = _mypath + "/katago-bin/kata1-b15c192-s1672170752-d466197061.txt.gz"
+KATAMODEL_NBT = os.path.join(BIN_PATH, "kata1-b18c384nbt-s9131461376-d4087399203.bin.gz")
+KATAMODEL_B15 = os.path.join(BIN_PATH, "kata1-b15c192-s1672170752-d466197061.txt.gz")
+KATAMODEL = KATAMODEL_B15
 
-KATACONFIG = _mypath + "/katago-bin/analysis.cfg"
+KATACONFIG = os.path.join(BIN_PATH, "analysis.cfg")
 KATATHREADS = "2" # this is for mutli-position processing. Small helps lower latency b/c threads are working hard analyzing current position
 
 import traceback

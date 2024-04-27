@@ -230,7 +230,7 @@ class BoardController(QObject):
         if KP.GlobalKata() != None:
             self.kata = GlobalKata()
         else:
-            self.kata = KP.GlobalKataInit(KP.KATACMD, KP.KATAMODEL, KP.KATACONFIG)
+            self.kata = KP.GlobalKataInit(KP.KATACMD, KP.KATAMODEL_B15, KP.KATACONFIG)
 
         KP.KataSignals.answerFinished.connect(self.handleAnswerFinished)
         #GS.fullAnalysisReady.connect(self.handleFullAnalysis)
@@ -245,6 +245,10 @@ class BoardController(QObject):
 
         GS.boardSizeChanged.connect(self.boardResized)
         GS.komiChanged.connect(self.komiChanged)
+
+        GS.SetNeuralNetSettings.connect(self.nnSettingsChanged)
+
+        self.neural_net = "B15" #FIXME these should be in settings or maybe not in this class at all
 
         self.boardsize = (19,19)
         self.boardView = viewWidget
@@ -291,6 +295,7 @@ class BoardController(QObject):
         self.moreVisits = 0 # currently added visits via AnalyzeMore command
         self.incremental_updates = False # analyze in chunks for slower but more active board look
         self.restrictToDist = 0 # restrict analysis to this far away from stones (<=0 means no restriction)
+
 
     def setupGraphics(self) -> None:
         "setup all the base graphics and calculate metrics"
@@ -361,6 +366,23 @@ class BoardController(QObject):
         else:
             pass #cancel
 
+    def nnSettingsChanged(self, info: dict) -> None:
+        "restart KataGo if necessary"
+        print(info)
+        restart = False
+        if self.neural_net != info['network']:
+            restart = True
+        
+        self.neural_net = info['network']
+        self.quickVisits = info['quick_visits']
+        self.defaultVisits = info['full_visits']
+        self.moreVisitsIncrement = info['step_visits']
+
+        if restart:
+            if self.neural_net == "NBT":
+                self.kata.restart(KP.KATACMD, KP.KATAMODEL_NBT, KP.KATACONFIG)
+            else:
+                self.kata.restart(KP.KATACMD, KP.KATAMODEL_B15, KP.KATACONFIG)                
 
     def addGrid(self) -> None:
         "build the grid and hoshi"
@@ -935,6 +957,8 @@ class BoardController(QObject):
     def handleAnswerFinished(self, ans: dict) -> None:
         "KataGo has finished an analysis, process it. Called by katago via KataSignal"
         id = ans['id']
+        if id == "wait for startup": return # FIXME: total hack for when user changes networks
+
         #print(f"ANSWER FINISHED {id}")
         #id is name of asker_timeinnanos
         parsed = id.split("_")
