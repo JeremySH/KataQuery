@@ -27,6 +27,8 @@ class _GS(QObject):
     stdoutPrinted = pyqtSignal(str)
     stderrPrinted = pyqtSignal(str)
 
+    Code_SetSlotName = pyqtSignal(int, str) # int, text
+    Code_SlotActivated = pyqtSignal(int)
 
     # code gui buttons and stuff
     # setters from the code runner:

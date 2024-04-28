@@ -8,7 +8,7 @@ from GlobalSignals import GS
 from BoardController import BoardController
 
 from PyQt5 import QtGui, QtCore, QtWidgets
-from PyQt5.QtCore import Qt, QPoint, QObject, QStandardPaths
+from PyQt5.QtCore import Qt, QPoint, QObject, QStandardPaths, QSettings
 
 from PyQt5.QtWidgets import (
 
@@ -85,6 +85,10 @@ class Window(QMainWindow, Ui_MainWindow):
                 a.setShortcut(QtGui.QKeySequence(f"Ctrl+0"))
             else:
                 a.setShortcut(QtGui.QKeySequence(f"Ctrl+{i+1}"))
+            titleset = lambda v, s, o=a: o.setText(f"{v} {s}") if o.data() == v else None
+            selectset = lambda v, o=a: o.setChecked(True) if o.data() == v else None
+            GS.Code_SetSlotName.connect(titleset)
+            GS.Code_SlotActivated.connect(selectset)
 
     def _BounceMenu(self):
         self.board.setRestrictDist(self.sender().data())
@@ -161,7 +165,7 @@ class Window(QMainWindow, Ui_MainWindow):
         # try to keep the splitter tight around the goban
         #sizes = self.splitter.sizes() # BROKEN, always gives 0's, prob because they're not shown yet?
         splitHeight = self.splitter.size().height()
-
+        settings = QSettings()
         # first widget is goban, make it square
         extra_space = 10 # meh, have to guess the splitter pixels
         sizes = [splitHeight+extra_space, self.splitter.size().width()-splitHeight-extra_space]
@@ -170,9 +174,9 @@ class Window(QMainWindow, Ui_MainWindow):
         self.splitter.setSizes(sizes)
         #self.splitter.setStretchFactor(200,1)
         #self.actionLocalize.triggered.connect(self.bounceMenu)
+        self.codeEdit.nameAllSlots()
+        self.codeEdit.activateSlot(settings.value("codeeditor/current_slot", 1), force=True)
         self.board.boardChanged() # trigger analysis on empty board
-
-        pass # self.resizeGraphics(whatever)
 
 
 

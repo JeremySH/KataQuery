@@ -417,13 +417,13 @@ class CodeEditor(CodeEdit):
         settings = QSettings()
 
         self.slots = []
-        self.currentSlot = settings.value("codeeditor/current_slot", 1)
-        self.activateSlot(self.currentSlot, force=True)
+        self.currentSlot = None # let main window set me up, as it holds the actions
 
     def saveCurrentSlot(self) -> None:
         settings = QSettings()
         key = f"codeeditor/slot{self.currentSlot}_src"
         settings.setValue(key, self.document().toPlainText())
+        self.nameASlot(self.currentSlot)
 
     def activateSlot(self, slotNum: int, force:bool =False) -> None:
         """
@@ -442,6 +442,8 @@ class CodeEditor(CodeEdit):
 
         self.currentSlot = slotNum
         settings.setValue("codeeditor/current_slot", self.currentSlot)
+        self.nameAllSlots()
+        GS.Code_SlotActivated.emit(slotNum)
 
     def slotSelected(self):
         self.saveCurrentSlot()
@@ -449,6 +451,27 @@ class CodeEditor(CodeEdit):
         self.GUI_Saved = {}
         self._dirty = True
         self.runRequested()
+
+    def nameASlot(self, slotnum: int) -> None:
+        "auto-generate a name for the slot in the menu"
+        #print("NAMING SLOT ", slotnum)
+        settings = QSettings()
+        text = settings.value(f"codeeditor/slot{slotnum}_src", "")
+        if text != "":
+            for line in text.splitlines():
+                stripped = line.strip()
+                if len(stripped) > 0 and stripped[0] == "#":
+                    stripped = stripped.strip("#")
+                    name = stripped.strip()
+                    if len(name) > 30:
+                        name = name[:29] + "…"
+                    #print(f"SLOT {slotnum} name: '{name}'")
+                    GS.Code_SetSlotName.emit(slotnum, name)
+                    break
+
+    def nameAllSlots(self) -> None:
+        for s in range(1,11):
+            self.nameASlot(s)
 
     def appWillClose(self):
         self.saveCurrentSlot()
@@ -465,6 +488,7 @@ class CodeEditor(CodeEdit):
             if self._dirty:
                 self.codeRunner.setCode(self.document().toPlainText())
                 self._dirty = False
+                self.saveCurrentSlot()
             self.codeRunner.run(self.lastAnswer, extraGlobals = {"__GUI__": self.GUI_Saved}, explicit=True)
             self.updateGUIVars()
         else:
@@ -480,6 +504,7 @@ class CodeEditor(CodeEdit):
             if self._dirty:
                 self.codeRunner.setCode(self.document().toPlainText())
                 self._dirty = False
+                self.saveCurrentSlot()
             self.codeRunner.run(self.lastAnswer, extraGlobals = {"__GUI__": self.GUI_Saved}, explicit=False)
             self.updateGUIVars()
 
@@ -499,6 +524,7 @@ class CodeEditor(CodeEdit):
         if self._dirty:
             self.codeRunner.setCode(self.document().toPlainText())
             self._dirty = False
+            self.saveCurrentSlot()
         self.codeRunner.createContexts(signalData["payload"], extraGlobals={"__GUI__": self.GUI_Saved}, kind=kind)
         self.codeRunner.run()
         self.updateGUIVars()
