@@ -697,18 +697,18 @@ class CodeGUISwitchboard(QObject):
             o.setChecked(onOff)
             o.blockSignals(False)
 
-    def sliderInt2Float(self, val:int, minV, maxV):
+    def slider2Float(self, val:int, minV, maxV):
         return minV + ((maxV-minV)*val)/100000.0
     
-    def sliderFloat2Int(self, val:float, minV, maxV):
-        return int((val-minV)*(maxV-minV)*100000.0)
+    def float2Slider(self, val:float, minV, maxV):
+        return int(100000.0*(val-minV)/(maxV-minV))
 
     def sliderChangedRaw(self, name, value):
         # convert integer crap into ranged value floats
         if name in self.lookup:
             #print("Slider CHANGED: ", self.GUI_state[name])
             s = self.GUI_state[name]
-            val = self.sliderInt2Float(value, s['min_value'], s['max_value'])
+            val = self.slider2Float(value, s['min_value'], s['max_value'])
             self.GUI_state[name]['value'] = val
             #GS.CodeGUI_SliderChanged.emit(name, val)
             self.GUI_Changed()
@@ -720,7 +720,7 @@ class CodeGUISwitchboard(QObject):
             state = self.GUI_state[name]
             o = self.lookup[name]
             o.blockSignals(True)
-            o.setValue(self.sliderFloat2Int(value, state['min_value'], state['max_value']))
+            o.setValue(self.float2Slider(value, state['min_value'], state['max_value']))
             o.blockSignals(False)
 
     def sliderSetRange(self, name:str , min_val:float, max_val:float) -> None:
@@ -729,14 +729,14 @@ class CodeGUISwitchboard(QObject):
             s = self.GUI_state[name]
             minV = s['min_value']
             maxV = s['max_value']
-            val = self.sliderInt2Float(o.value(), minV, maxV)
+            val = self.slider2Float(o.value(), minV, maxV)
             if val > maxV:
                 # check for change and address it in gui
                 val = maxV
             if val < minV:
                 val = minV
             o.blockSignals(True)
-            o.setValue(self.sliderFloat2Int(val, minV, maxV))
+            o.setValue(self.float2Slider(val, minV, maxV))
             o.blockSignals(False)
             u = {'value': val, 'min_value': min_val, 'max_value': max_val}
 
