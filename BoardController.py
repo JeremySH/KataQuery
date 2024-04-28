@@ -14,7 +14,7 @@ from goutils import *
 
 from GameSettingsDialog import GameSettingsDialog
 
-from PyQt5.QtCore import QObject, Qt
+from PyQt5.QtCore import QObject, Qt, QSettings
 
 from PyQt5.QtWidgets import (
 
@@ -227,10 +227,29 @@ class BoardController(QObject):
     # 1: stoneInHand
     def __init__ (self, viewWidget):
         super().__init__()
-        if KP.GlobalKata() != None:
-            self.kata = GlobalKata()
+        # FIXME: kataproxy settings/management needs its own place
+        settings = QSettings()
+        network = settings.value("nn/active_network", "B15")
+        if network != "B15":
+            network = "NBT"
+
+        if network == "B15":
+            model = KP.KATAMODEL_B15
         else:
-            self.kata = KP.GlobalKataInit(KP.KATACMD, KP.KATAMODEL_B15, KP.KATACONFIG)
+            model = KP.KATAMODEL_NBT
+
+
+        self.quickVisits = settings.value(f"nn/{network}/quick_visits", 2)
+        self.defaultVisits = settings.value(f"nn/{network}/full_visits", 100)
+        self.moreVisitsIncrement= settings.value(f"nn/{network}/step_visits", 500)
+
+        if KP.GlobalKata() != None:
+            self.kata = KP.GlobalKata()
+            if self.kata.model != model:
+                self.kata.restart(KP.KATACMD, model, KP.KATACONFIG)
+        else:
+            self.kata = KP.GlobalKataInit(KP.KATACMD, model, KP.KATACONFIG)
+
 
         KP.KataSignals.answerFinished.connect(self.handleAnswerFinished)
         #GS.fullAnalysisReady.connect(self.handleFullAnalysis)
@@ -288,10 +307,6 @@ class BoardController(QObject):
         self.komi = 6.5
 
         # visits and analysis settings
-        self.defaultVisits = 100 # visits for default fullAnalysis
-        self.quickVisits = 2 # visits for quick analysis (cannot be less than 2)
-        self.moreVisitsIncrement = 1000 # increase visits by this much when Analyze More is used
-
         self.moreVisits = 0 # currently added visits via AnalyzeMore command
         self.incremental_updates = False # analyze in chunks for slower but more active board look
         self.restrictToDist = 0 # restrict analysis to this far away from stones (<=0 means no restriction)
@@ -368,7 +383,6 @@ class BoardController(QObject):
 
     def nnSettingsChanged(self, info: dict) -> None:
         "restart KataGo if necessary"
-        print(info)
         restart = False
         if self.neural_net != info['network']:
             restart = True

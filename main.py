@@ -166,7 +166,7 @@ class Window(QMainWindow, Ui_MainWindow):
         extra_space = 10 # meh, have to guess the splitter pixels
         sizes = [splitHeight+extra_space, self.splitter.size().width()-splitHeight-extra_space]
         #sizes = [2, 1]
-        print("SIZES: ", sizes, splitHeight)
+        #print("SIZES: ", sizes, splitHeight)
         self.splitter.setSizes(sizes)
         #self.splitter.setStretchFactor(200,1)
         #self.actionLocalize.triggered.connect(self.bounceMenu)
@@ -250,7 +250,7 @@ if __name__ == "__main__":
         #KataSignals.stderrPrinted.connect(GS.stderrPrinted)
         win.show()
         
-        print(f"DATA LOCATION: {QStandardPaths.writableLocation(QStandardPaths.AppDataLocation)}")
+        #print(f"DATA LOCATION: {QStandardPaths.writableLocation(QStandardPaths.AppDataLocation)}")
 
         return app.exec_()
 

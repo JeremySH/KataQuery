@@ -3,7 +3,7 @@
 
 import os
 
-_mypath = os.path.abspath(os.path.dirname(__file__)) 
+_mypath = os.path.abspath(os.path.dirname(__file__))
 
 BIN_PATH = os.path.join(_mypath, "katago-bin")
 KATACMD =  os.path.join(BIN_PATH, "katago")
@@ -30,7 +30,7 @@ from goutils import *
 
 class _KataSignals(QObject):
     askForAnalysis = pyqtSignal(dict)
-    #answerReady = pyqtSignal(str) # provides the id of the answer that is ready 
+    #answerReady = pyqtSignal(str) # provides the id of the answer that is ready
     answerFinished = pyqtSignal(dict) # the raw answer as a dictionary
     claimAnswer = pyqtSignal(str) # claim an answer, thus removing it from the cache
     stderrPrinted = pyqtSignal(str) # when stderr prints something
@@ -94,16 +94,16 @@ class KataAnswer:
         self.__dict__.update(self.answer['rootInfo'])
 
         self.__dict__['bestMove'] = self.moves[0]
-        
+
         # FIXME: seems a waste to always do for an occasional convenience
         for i, x in enumerate(self.merged_moves):
             x['mergedOrder'] = i
-    
+
     @property
     def moves(self):
         "intersection data of KataGo suggested moves"
         return self._moves
-    
+
     @cached_property
     def legal_moves(self):
         "intersection data for all legal moves for current player"
@@ -148,7 +148,7 @@ class KataAnswer:
     def intersections(self):
         "intersection data for every intersection on the board"
         return [i for i in self._intersections if not isPass(i.pos)]
-    
+
     @cached_property
     def allowed_moves(self):
         if self._allowedMoves == None: # means full-board analysis
@@ -167,30 +167,36 @@ class KataAnswer:
 
     @cached_property
     def initial_stones(self):
-        "list of stones initially placed on the board before moves were made"
+        "list of (color, intersectionInfo) placed on the board before moves were made"
         oq = self.answer['originalQuery']
         if 'initialStones' in oq and len(oq['initialStones']) > 0:
             return [ (same_color(m[0]), self.get_point(coordsToPoint(m[1]))) for m in oq['initialStones']]
         else:
             return []
-    
+
     @cached_property
     def lastMove(self):
+        "return the intersection info of the last move played"
+        #FIXME: decide whether tracking suicide moves is important, as suicide will remove stone color info
         p = self.played_moves
         if len(p):
-            return p[-1]
+            for m in reversed(p):
+                if not isPass(m[1].pos):
+                    return m[1]
+        return None
+
     @property
     def pass_move(self):
         return self.get_point ( (-1,-1,))
-    
+
     def get_point(self, gopoint: tuple) -> dotdict:
         "fetch intersection data by integer tuple, e.g. (3,3)"
         return self._intersections_by_point[gopoint]
-    
+
     def point(self, x:int, y:int) -> dotdict:
         "easier to type in a script"
         return self.get_point((x,y,))
-    
+
     def _buildIntersections(self):
         # OK so most of this junk is to
         # reshape the katago answer into something
@@ -213,14 +219,14 @@ class KataAnswer:
             allowedMoves = set()
             for m in self.answer['originalQuery']['allowMoves'][0]['moves']:
                 allowedMoves.add(coordsToPoint(m))
-        
+
             if len(allowedMoves) == 0: allowedMoves = None
 
         # note: this is a custom field so can cause probs
         blacks = [] ; whites = []
         if 'black_stones' in self.answer['originalQuery']:
             blacks = self.answer['originalQuery']['black_stones']
-        
+
         if 'white_stones' in self.answer['originalQuery']:
             whites = self.answer['originalQuery']['white_stones']
 
@@ -244,15 +250,15 @@ class KataAnswer:
 
             # policy for this intersection
             info['policy'] = self.answer['policy'][i]
-            
-            
+
+
             # OWNERSHIP INFO
             # provide different perspectives for convenience
             if notpass:
                 info['ownership'] = self.answer['ownership'][i]
             else:
                 info['ownership'] = 0.0
-            
+
             if info['policy'] < 0:
                 info['legal'] = False
             else:
@@ -272,7 +278,7 @@ class KataAnswer:
                 info['ownershipHeat'] = (o+1)/2
                 info['ownershipOpponent'] = info['ownershipWhite']
 
-            # when isMove == True, there is additional moveInfo 
+            # when isMove == True, there is additional moveInfo
             info['isMove'] = False
 
             # position as int tuple
@@ -298,7 +304,7 @@ class KataAnswer:
                 intersectionsDict[(-1,-1)] = dotdict(info)
 
 
-        # MUNGE MORE INFORMATION FOR SUGGESTED MOVES        
+        # MUNGE MORE INFORMATION FOR SUGGESTED MOVES
         for m in self.answer['moveInfos']:
             point = coordsToPoint(m['move'])
             d = intersectionsDict[point]
@@ -316,7 +322,7 @@ class KataAnswer:
 
 
             # insert more perspectives for convenience
-            if toPlay ==  "black": 
+            if toPlay ==  "black":
                 me = "Black" ; other = "White"
             else:
                 me = "White" ; other = "Black"
@@ -341,21 +347,21 @@ class KataAnswer:
         lst = [p for p in intersectionsDict.values()]
 
         self._intersections = sorted(lst, key=lambda p: p.pos[1]*1000 + p.pos[0], reverse=False)
-        
+
         # and some random access by gopoint if needed
         self._intersections_by_point = intersectionsDict
-    
+
 def moreKataData(kataAnswer: dict):
     "put some extra stats inside the dict for easy access"
     morestuff = {}
 
-    morestuff['toPlay'] = "black" 
+    morestuff['toPlay'] = "black"
 
     if "originalQuery" in kataAnswer:
         q = kataAnswer['originalQuery']
         if 'komi' in q:
             morestuff['komi'] = q['komi']
-        
+
         #determine color to play
         if 'moves' in q and len(q['moves']) > 0:
             morestuff['toPlay'] = other_color(q['moves'][-1][0])
@@ -365,19 +371,19 @@ def moreKataData(kataAnswer: dict):
                 c = "black"
             else:
                 c = "white"
-            
+
             morestuff['toPlay'] = c
 
         morestuff['xsize'] = q['boardXSize']
         morestuff['ysize'] = q['boardYSize']
-        
+
     if "moveInfos" in kataAnswer and len(kataAnswer['moveInfos']) > 0:
         # and... probably put more stats here
 
         winrates = []
         scoreleads = []
         finalscores = []
-        
+
         for m in kataAnswer['moveInfos']:
             winrates.append(m['winrate'])
             scoreleads.append(m['scoreLead'])
@@ -393,7 +399,7 @@ def moreKataData(kataAnswer: dict):
         morestuff['scoreLeadMin'] = min(scoreleads)
         morestuff['scoreLeadMedian'] = median(scoreleads)
         morestuff['scoreLeadAvg'] = mean(scoreleads)
-        
+
         morestuff['scoreSelfplayMax'] = max(finalscores)
         morestuff['scoreSelfplayMin'] = min(finalscores)
         morestuff['scoreSelfplayMedian'] = median(finalscores)
@@ -412,13 +418,13 @@ def moreKataData(kataAnswer: dict):
         #construct info from black, white and opponent perspective
         tp = morestuff['toPlay']
         other = "White"
-        if tp[0].upper() ==  "B": 
+        if tp[0].upper() ==  "B":
             me = "Black" ; other = "White"
         else:
             me = "White" ; other = "Black"
 
-        
-        for tag in ['', 'Max', 'Min', "Median", "Avg"]: 
+
+        for tag in ['', 'Max', 'Min', "Median", "Avg"]:
             morestuff['scoreSelfplay' +  tag + me] = morestuff['scoreSelfplay'+tag]
             morestuff['winrate'+ tag + me] = morestuff['winrate'+tag]
             morestuff['scoreLead' + tag + me] = morestuff['scoreLead'+tag]
@@ -446,13 +452,13 @@ Board Position:
 class KataProxyQ(QObject):
     "a proxy for katago that uses Qt"
     loginfo = pyqtSignal(str)
-    #answerReady = pyqtSignal(str) # provides the id of the answer that is ready 
+    #answerReady = pyqtSignal(str) # provides the id of the answer that is ready
     def __init__(self, cmd, model, config):
         super().__init__()
         self.buffer = ""
         self.answers = {} # received answers dicts by id
         self.queries = {} # sent queries dicts by id
-        
+
         self.quickVisits = 1
         self.fullVisits = 10
 
@@ -480,14 +486,17 @@ class KataProxyQ(QObject):
             PyQt5.QtWidgets
         except AttributeError:
             hookQuit = False
-    
+
         if hookQuit: # it's a gui
             PyQt5.QtWidgets.QApplication.instance().aboutToQuit.connect(self.kata.kill) #TODO: "terminate" hangs so i have to kill, why?
-        
+
         self.isGui = hookQuit
         self.kata.start(cmd, kataargs)
         self.kata.waitForStarted()
-        
+
+        if self.kata.exitCode() != 0:
+            raise EnvironmentError(f"KataGo at '{self.cmd}' could not be launched.")
+
         # block until katago is ready:
         res = self.analyze({"id": "wait for startup", "action": "query_version"})
         #eprint(f"KATAGO STARTED {res}")
@@ -519,7 +528,7 @@ class KataProxyQ(QObject):
     def _askBlocking(self, query: dict) -> dict:
         self.ask(query, cached=True)
         return self.getAnswer(query['id'])
-    
+
     def haveAnswer(self, id: str) -> bool:
         return id in self.answers
 
@@ -531,7 +540,7 @@ class KataProxyQ(QObject):
         while True:
             if count % 100 == 0:
                 pass #eprint(f"Count: {count}")
-            
+
             if id in self.answers:
                 result = dict(self.answers[id])
                 # add original query to result for later use
@@ -550,7 +559,7 @@ class KataProxyQ(QObject):
         "remove this answer from my cache"
         if id in self.queries:
             del self.queries[id]
-        
+
         if id in self.answers:
             del self.answers[id]
 
@@ -566,14 +575,14 @@ class KataProxyQ(QObject):
         for s in istones:
             initialStones[s[1]] = s[0] # e.g. 'Q4' = "B"
 
-        
+
         xs = oq['boardXSize']
         ys = oq['boardYSize']
 
         general = {}
         for k in ['boardXSize', 'boardYSize', 'rules', 'maxVisits']:
             general[k] = [oq[k]] * xs*ys
-        
+
         # TODO: handle all the stuff in anwer['rootInfo'] somehow
 
         for k in ['symHash', 'thisHash']:
@@ -636,10 +645,10 @@ class KataProxyQ(QObject):
 
     def analyze(self, query: dict):
         return self._askBlocking(dict(query))
-    
+
     def queueDepth(self):
         return len(self.queries) - len(self.answers)
-        
+
     def _readStdout(self):
         # have to make my own line reader because readyRead()/readline() acts irrational
         #eprint("Read STDOUT")
@@ -681,7 +690,7 @@ if __name__ == "__main__":
     #print("YOU ARE IN MAIN")
     from statistics import mean
     import traceback
-    
+
     def trap_exc_during_debug(exc_type, exc_value, exc_traceback):
         if issubclass(exc_type, KeyboardInterrupt):
             sys.__excepthook__(exc_type, exc_value, exc_traceback)
@@ -693,7 +702,7 @@ if __name__ == "__main__":
         # when app raises uncaught exception, print info
         #print(args)
 
-    
+
     sys.excepthook = trap_exc_during_debug
 
     app = QCoreApplication(sys.argv)
@@ -715,7 +724,7 @@ if __name__ == "__main__":
 
     kata = KataProxyQ(KATACMD, KATAMODEL, KATACONFIG)
 
-    try: 
+    try:
         kata.getAnswer("produceError")
     except ValueError as e:
         eprint("YUP, got ValueError: ", e)
