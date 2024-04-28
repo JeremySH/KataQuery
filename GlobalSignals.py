@@ -55,6 +55,8 @@ class _GS(QObject):
 
     SetNeuralNetSettings = pyqtSignal(dict) # state with network settings
 
+    MainWindowReadyAndWilling = pyqtSignal() # emitted when main window is fully shown, approx 1 event loop after startup
+
     def __init__(self):
         super().__init__()
     

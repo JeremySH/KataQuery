@@ -493,7 +493,6 @@ class KataProxyQ(QObject):
         self.isGui = hookQuit
         self.kata.start(cmd, kataargs)
         self.kata.waitForStarted()
-
         if self.kata.exitCode() != 0:
             raise EnvironmentError(f"KataGo at '{self.cmd}' could not be launched.")
 
@@ -549,6 +548,8 @@ class KataProxyQ(QObject):
                 del self.queries[id]
                 return result
             else:
+                if self.kata.exitCode() != 0:
+                    raise OSError(f"KataGo terminated with error {self.kata.exitCode()}, please refer to terminal output.")
                 #self._readStdout()
                 #QCoreApplication.instance().processEvents()
                 if self.kata.waitForReadyRead(0): #trigger signal without doing recursive processEvent()

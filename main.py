@@ -8,7 +8,7 @@ from GlobalSignals import GS
 from BoardController import BoardController
 
 from PyQt5 import QtGui, QtCore, QtWidgets
-from PyQt5.QtCore import Qt, QPoint, QObject, QStandardPaths, QSettings
+from PyQt5.QtCore import Qt, QPoint, QObject, QStandardPaths, QSettings, QTimer
 
 from PyQt5.QtWidgets import (
 
@@ -163,22 +163,16 @@ class Window(QMainWindow, Ui_MainWindow):
         self.firstShow = False
         
         # try to keep the splitter tight around the goban
-        #sizes = self.splitter.sizes() # BROKEN, always gives 0's, prob because they're not shown yet?
         splitHeight = self.splitter.size().height()
         settings = QSettings()
+
         # first widget is goban, make it square
         extra_space = 10 # meh, have to guess the splitter pixels
         sizes = [splitHeight+extra_space, self.splitter.size().width()-splitHeight-extra_space]
-        #sizes = [2, 1]
-        #print("SIZES: ", sizes, splitHeight)
         self.splitter.setSizes(sizes)
-        #self.splitter.setStretchFactor(200,1)
-        #self.actionLocalize.triggered.connect(self.bounceMenu)
-        self.codeEdit.nameAllSlots()
-        self.codeEdit.activateSlot(settings.value("codeeditor/current_slot", 1), force=True)
-        self.board.boardChanged() # trigger analysis on empty board
 
-
+        sing = lambda : GS.MainWindowReadyAndWilling.emit()
+        QTimer.singleShot(10, sing)
 
 class ConsoleWindow(QWidget):
     def __init__(self, parent=None):
@@ -213,11 +207,16 @@ class ConsoleWindow(QWidget):
         QtCore.QMetaObject.connectSlotsByName(self)
         GS.stderrPrinted.connect(self.addMore)
         GS.stdoutPrinted.connect(self.addMore)
+        GS.MainWindowReadyAndWilling.connect(self.afterStartup)
 
     def addMore(self, stuff: str):
         self.consoleTextEdit.moveCursor(QtGui.QTextCursor.End)
         self.consoleTextEdit.insertPlainText(stuff)
         self.consoleTextEdit.moveCursor(QtGui.QTextCursor.End)
+    
+    def afterStartup(self):
+        #self.show()
+        pass
 
 class DupeStd(QObject):
     "a pseudo file object that duplicates std outputs to signal emission"

@@ -19,7 +19,7 @@ from PyQt5.QtCore import QObject, Qt, QSettings
 from PyQt5.QtWidgets import (
 
     QGraphicsScene, QGraphicsItemGroup, QGraphicsEllipseItem, QGraphicsRectItem, 
-    QGraphicsSimpleTextItem, QGraphicsLineItem
+    QGraphicsSimpleTextItem, QGraphicsLineItem, QMessageBox, QApplication
 
 )
 from PyQt5.QtGui import QPen, QBrush, QRadialGradient
@@ -227,33 +227,7 @@ class BoardController(QObject):
     # 1: stoneInHand
     def __init__ (self, viewWidget):
         super().__init__()
-        # FIXME: kataproxy settings/management needs its own place
         settings = QSettings()
-        network = settings.value("nn/active_network", "B15")
-        if network != "B15":
-            network = "NBT"
-
-        if network == "B15":
-            model = KP.KATAMODEL_B15
-        else:
-            model = KP.KATAMODEL_NBT
-
-
-        self.quickVisits = settings.value(f"nn/{network}/quick_visits", 2)
-        self.defaultVisits = settings.value(f"nn/{network}/full_visits", 100)
-        self.moreVisitsIncrement= settings.value(f"nn/{network}/step_visits", 500)
-
-        if KP.GlobalKata() != None:
-            self.kata = KP.GlobalKata()
-            if self.kata.model != model:
-                self.kata.restart(KP.KATACMD, model, KP.KATACONFIG)
-        else:
-            self.kata = KP.GlobalKataInit(KP.KATACMD, model, KP.KATACONFIG)
-
-
-        KP.KataSignals.answerFinished.connect(self.handleAnswerFinished)
-        #GS.fullAnalysisReady.connect(self.handleFullAnalysis)
-
         GS.addMark.connect(self.makeMark)
         GS.clearMark.connect(self.clearMark)
         GS.clearAllMarks.connect(self.clearMarks)
@@ -267,7 +241,9 @@ class BoardController(QObject):
 
         GS.SetNeuralNetSettings.connect(self.nnSettingsChanged)
 
-        self.neural_net = "B15" #FIXME these should be in settings or maybe not in this class at all
+        #FIXME these should be in settings or maybe not in this class at all
+        self.neural_net = settings.value("nn/active_network", "B15") 
+        settings.setValue("nn/active_network", self.neural_net)
 
         self.boardsize = (19,19)
         self.boardView = viewWidget
@@ -311,6 +287,58 @@ class BoardController(QObject):
         self.incremental_updates = False # analyze in chunks for slower but more active board look
         self.restrictToDist = 0 # restrict analysis to this far away from stones (<=0 means no restriction)
 
+        GS.MainWindowReadyAndWilling.connect(self.afterStartup)
+
+    def relaunchKataGo(self, cmd, model, config):
+        
+        prog = QMessageBox()
+        prog.setText("Launching KataGo...")
+        prog.setStandardButtons(QMessageBox.NoButton)
+        prog.setModal(False)
+        prog.show()
+        QApplication.instance().processEvents()
+
+        try:
+            if KP.GlobalKata() != None:
+                self.kata = KP.GlobalKata()
+                if self.kata.model != model:
+                    prog.setText("Re-launching KataGo...")
+                    self.kata.restart(KP.KATACMD, model, KP.KATACONFIG)
+
+            else:
+                self.kata = KP.GlobalKataInit(KP.KATACMD, model, KP.KATACONFIG)
+            prog.close()
+        except OSError as e:
+            prog.setText(str(e))
+            prog.setStandardButtons(QMessageBox.Abort)
+            prog.setModal(True)
+            prog.exec_()
+            sys.exit()
+        finally:
+            prog.close() # doesn't really act like it's supposed to but here's hoping
+
+    def afterStartup(self) -> None:
+        # FIXME: kataproxy settings/management needs its own place
+        import sys
+        settings = QSettings()
+        network = settings.value("nn/active_network", "B15")
+        if network != "B15":
+            network = "NBT"
+
+        if network == "B15":
+            model = KP.KATAMODEL_B15
+        else:
+            model = KP.KATAMODEL_NBT
+
+
+        self.quickVisits = settings.value(f"nn/{network}/quick_visits", 2)
+        self.defaultVisits = settings.value(f"nn/{network}/full_visits", 100)
+        self.moreVisitsIncrement= settings.value(f"nn/{network}/step_visits", 500)
+
+        self.relaunchKataGo(KP.KATACMD, model, KP.KATACONFIG)
+
+        KP.KataSignals.answerFinished.connect(self.handleAnswerFinished)
+        self.boardChanged() # trigger analysis on empty board
 
     def setupGraphics(self) -> None:
         "setup all the base graphics and calculate metrics"
@@ -394,9 +422,9 @@ class BoardController(QObject):
 
         if restart:
             if self.neural_net == "NBT":
-                self.kata.restart(KP.KATACMD, KP.KATAMODEL_NBT, KP.KATACONFIG)
+                self.relaunchKataGo(KP.KATACMD, KP.KATAMODEL_NBT, KP.KATACONFIG)
             else:
-                self.kata.restart(KP.KATACMD, KP.KATAMODEL_B15, KP.KATACONFIG)                
+                self.relaunchKataGo(KP.KATACMD, KP.KATAMODEL_B15, KP.KATACONFIG)
 
     def addGrid(self) -> None:
         "build the grid and hoshi"

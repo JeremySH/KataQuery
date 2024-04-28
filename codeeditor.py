@@ -408,7 +408,7 @@ class CodeEditor(CodeEdit):
         GS.fullAnalysisReady.connect(self.rerun)
         GS.quickAnalysisReady.connect(self.rerunQuick) #FIXME Code should support quick & in-depth views
         GS.CodeGUI_Changed.connect(self.newGUIInfo)
-
+        GS.MainWindowReadyAndWilling.connect(self.afterStartup)
         
         # FIXME: QSettings is not a great choice for persisting the scripts
         # because the user can't easily access them like they could if they
@@ -418,6 +418,12 @@ class CodeEditor(CodeEdit):
 
         self.slots = []
         self.currentSlot = None # let main window set me up, as it holds the actions
+
+    def afterStartup(self):
+        settings = QSettings()
+
+        self.nameAllSlots()
+        self.activateSlot(settings.value("codeeditor/current_slot", 1), force=True)
 
     def saveCurrentSlot(self) -> None:
         settings = QSettings()
