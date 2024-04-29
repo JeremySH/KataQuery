@@ -2,7 +2,7 @@
 
 KataQuery is a freeform, scriptable analysis goban for interactively exploring Go (aka Baduk/Weiqi).
 
-![Board Value Analysis in KataQuery](screenshots/kq_screenshot.jpg)
+![Board Value Analysis in KataQuery](screenshots/kq_screenshot2.jpg)
 
 Each time the position changes, your Python script is run, which marks up the board in any way it likes. Scripts have
 full access to KataGo's analysis, and display their results in real time.
