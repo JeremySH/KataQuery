@@ -237,6 +237,13 @@ class DupeStd(QObject):
 if __name__ == "__main__":
     REDIRECT_OUTPUT = True 
     from contextlib import redirect_stderr, redirect_stdout
+    
+    from project_globals import *
+    global app_directory
+    global resource_directory
+    
+    app_directory = os.path.abspath(os.path.dirname(__file__))
+    resource_directory = os.path.join(app_directory, "resources")
 
     def main():
         app = QApplication(sys.argv)

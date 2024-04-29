@@ -11,18 +11,20 @@ import kataproxy as KP
 from GlobalSignals import GS
 from goban import Goban
 from goutils import *
+import project_globals
+import os
 
 from GameSettingsDialog import GameSettingsDialog
 
-from PyQt5.QtCore import QObject, Qt, QSettings
+from PyQt5.QtCore import QObject, Qt, QSettings, QPoint, QPointF, QSize
 
 from PyQt5.QtWidgets import (
 
     QGraphicsScene, QGraphicsItemGroup, QGraphicsEllipseItem, QGraphicsRectItem, 
-    QGraphicsSimpleTextItem, QGraphicsLineItem, QMessageBox, QApplication
+    QGraphicsSimpleTextItem, QGraphicsLineItem, QMessageBox, QApplication, QGraphicsPixmapItem
 
 )
-from PyQt5.QtGui import QPen, QBrush, QRadialGradient
+from PyQt5.QtGui import QPen, QBrush, QRadialGradient, QImage, QPixmap
 from PyQt5 import QtGui
 
 
@@ -111,7 +113,7 @@ class MarkPool:
             myoutline = mycolor
         
         #iksnay the above until themes ready
-        mycolor = QtGui.QColor.fromRgb(179,29,29, 255)
+        mycolor = QtGui.QColor.fromRgb(179,29,29, 230)
         return mycolor, myoutline
     
     def createMark(self, text: str, color: str = "empty", scale: float =1.0) -> 'QGraphicsSimpleTextItem':
@@ -171,6 +173,16 @@ class StonePool:
     def __init__(self, boardcontroller: 'BoardController') -> None:
         self.bc = boardcontroller
         self.stones = {"black": [], "white": []}
+        
+        # TODO: these are placeholders until themes are created
+        d = os.path.join(project_globals.resource_directory, "images")
+        self.black_image = QImage(os.path.join(d, "black_stone.png"))
+        self.white_image = QImage(os.path.join(d, "white_stone.png"))
+        self.shadow_image = QImage(os.path.join(d, "shadow.png"))
+
+        self.black_pixmap = QPixmap.fromImage(self.black_image)
+        self.white_pixmap = QPixmap.fromImage(self.white_image)
+        self.shadow_pixmap = QPixmap.fromImage(self.shadow_image)
 
     def _setStoneData(self, s, color: str, gopoint: tuple[int,int]) -> 'QGraphicsItem':
         setattr(s, "stoneColor", color)
@@ -190,7 +202,7 @@ class StonePool:
             self.bc.scene.addItem(s)
             return s    
 
-    def _createNewStone(self, color: str, gopoint: tuple[int,int]) -> 'QGraphicsItem':
+    def _createNewStoneBasic(self, color: str, gopoint: tuple[int,int]) -> 'QGraphicsItem':
         "actually create a real graphics item and return it"
         pen = QPen(Qt.black)
         if color == "white":
@@ -203,6 +215,39 @@ class StonePool:
         stone.setBrush(brush)
         stone.setTransformOriginPoint(self.bc.increment/2, self.bc.increment/2)
         return stone
+
+    def _createNewStone(self, color: str, gopoint: tuple[int,int]) -> 'QGraphicsItem':
+        if color == "black":
+            stone = QGraphicsPixmapItem(self.black_pixmap)
+            #stone = self.bc.scene.addPixmap(self.black_pixmap)
+        else:
+            stone = QGraphicsPixmapItem(self.white_pixmap)
+            #stone = self.bc.scene.addPixmap(self.white_pixmap)
+        
+        stone.setZValue(0)
+        shadow =  QGraphicsPixmapItem(self.shadow_pixmap)
+        shadow.setZValue(-1)
+
+        #self.bc.scene.addPixmap(self.shadow_pixmap)
+
+        brect = stone.boundingRect()
+        #stone.setOffset(-0.5 * QPointF(brect.width(), brect.height()))
+        stone.setScale(self.bc.increment/brect.width())
+
+        brect = shadow.boundingRect()
+        shadow.setTransformOriginPoint(-self.bc.increment/2, -self.bc.increment/2)
+        shadow.setOffset(QPointF(brect.width()*-0.03, brect.height()*-.03))
+        shadow.setScale(2.03*self.bc.increment/brect.width())
+        
+        group = QGraphicsItemGroup()
+        group.addToGroup(shadow)
+        group.addToGroup(stone)
+        if color == "white":
+            group.setScale(0.96)
+
+        self.bc.scene.addItem(group)
+
+        return group
 
     def remove(self, graphicsItem) -> None:
         "hide this graphics item and return it to the pool"
@@ -222,6 +267,7 @@ class BoardController(QObject):
     ## Z layers:
     # -10 : the board
     # -5 : the heatmap
+    # -1 : stone shadows
     # 0: stones
     # [0,1]: markings
     # 1: stoneInHand
@@ -351,7 +397,9 @@ class BoardController(QObject):
         else:
             self.increment = (self.scene.width()/(self.boardsize[0]+1))
         
-        self.scene.setSceneRect(0, 0, self.increment*(self.boardsize[0]+1), self.increment*(self.boardsize[1]+1))
+        hPixels = self.increment*(self.boardsize[0]+1)
+        vPixels = self.increment*(self.boardsize[1]+1)
+        self.scene.setSceneRect(0, 0, hPixels, vPixels)
 
         self.margin = self.increment
 
@@ -361,6 +409,23 @@ class BoardController(QObject):
         self.marks = {} # textual marks on the board and whatnot
 
         # create the base board graphics
+        # TODO: this will eventually be moved to themes
+        self.board_image = QImage(os.path.join(project_globals.resource_directory, "images", "board.png"))
+        self.board_pixmap = QPixmap(self.board_image)
+        
+        if hPixels > vPixels:
+            scaleSize = QSize(self.board_pixmap.rect().width(), self.board_pixmap.rect().height()*vPixels/hPixels)
+        else:
+            scaleSize = QSize(self.board_pixmap.rect().width()*hPixels/vPixels, self.board_pixmap.rect().height())
+        
+        pg = QGraphicsPixmapItem(self.board_pixmap.scaled(scaleSize, transformMode=Qt.SmoothTransformation))
+
+        brect = self.board_pixmap.rect()
+        pg.setScale(max(hPixels,vPixels)/min(brect.width(), brect.height()))
+        pg.setZValue(-11)
+
+        self.scene.addItem(pg)
+
         self.addGrid()
         self.boardView.setScene(self.scene)
         self.boardView.setSceneRect(self.scene.sceneRect()) # needed for auto alignment inside parent to work
@@ -437,8 +502,8 @@ class BoardController(QObject):
         brush = QtGui.QBrush(QtGui.QColor.fromRgb(255,200,0))
         brush = QtGui.QBrush(QtGui.QColor.fromRgb(240,192,63))
         # the board background
-        r = self.scene.addRect(0, 0, self.scene.width(), self.scene.height(), pen, brush)
-        r.setZValue(-10)
+        #r = self.scene.addRect(0, 0, self.scene.width(), self.scene.height(), pen, brush)
+        #r.setZValue(-10)
 
         #print("SCENE WIDTH: ", self.scene.width())
         #print("MARGIN: ", self.margin)
