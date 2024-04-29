@@ -245,8 +245,6 @@ class StonePool:
         if color == "white":
             group.setScale(0.96)
 
-        self.bc.scene.addItem(group)
-
         return group
 
     def remove(self, graphicsItem) -> None:
