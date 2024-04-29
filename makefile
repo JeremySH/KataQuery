@@ -34,4 +34,4 @@ clean:
 	cd KataGo/cpp && make clean
 	rm -f katago-bin/katago
 	rm -rf venv
-
+	rm GameSettingsDialog_ui.py NeuralNetSettingsDialog_ui.py mainwindow_ui.py
