@@ -7,7 +7,7 @@
 # track ko, captures, etc. Also, it's kinder to katago's caching
 
 import numpy as np
-from goutils import pointToCoords
+from goutils import pointToCoords, isPass
 
 color2int = {"E": 0, "B": 1, "W": 3, "K": 4, 0: 0, 1: 1, 3: 3, 4: 4} # empty black white ko
 int2color = {0: "empty", 1: "black", 3: "white", 4: "empty"} # just make ko "empty" for now
@@ -36,6 +36,7 @@ class Bifurcator:
         play, return list of captured stone coords. If "as_new" is True,
         collect first
         """
+        if isPass(location): return []
         if as_new:
             self.collect()
         self._plays.append([color, location])
@@ -49,6 +50,7 @@ class Bifurcator:
         return b
 
     def place(self, color: str, location: tuple[int,int]):
+        if isPass(location): return        
         res = self._board._place(color, location)
         self.collect()
         return res
@@ -137,9 +139,9 @@ class Goban:
 
             for x in y:
                 if x == 3:
-                    res += " X"
-                elif x == 1:
                     res += " O"
+                elif x == 1:
+                    res += " X"
                 else:
                     res += " ."
             rownum -= 1
@@ -198,6 +200,7 @@ class Goban:
     def play(self, color: str, gopoint: tuple[int,int]):
         "play a move"
         #print("Playing ", gopoint)
+        if isPass(gopoint): return []
 
         removed =  self.bifurcator.play(color, gopoint)
 
@@ -211,6 +214,7 @@ class Goban:
 
     def place (self, color:str, gopoint: tuple[int,int]) -> None:
         "place a stone"
+        if isPass(gopoint): return
         res = self.bifurcator.place(color, gopoint)
         
         # a "place" resets ko
