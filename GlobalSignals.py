@@ -45,7 +45,6 @@ class _GS(QObject):
     CodeGUI_SetSliderValue = pyqtSignal(str, float) # objectName, float value
     CodeGUI_SetSliderType = pyqtSignal(str, str) # objectName, "int" or "float"
     CodeGUI_SetSliderRange = pyqtSignal(str, float, float)
-    CodeGUI_MessageBox = pyqtSignal(str)
     
     # triggers from the GUI
     CodeGUI_CheckboxChanged = pyqtSignal(str, bool) # objectName, value 

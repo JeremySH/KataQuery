@@ -135,8 +135,29 @@ def log(stuff: str) -> None:
 def clearLog() -> None:
     GS.CodeGUI_LogClear.emit()
 
-def msgBox(text: str) -> None:
-    GS.CodeGUI_MessageBox.emit(text)
+def msgBox(msg: str, buttons:list[str] or None = None) -> str:
+    "Display a message box with buttons if desired. returns the name of the button clicked."
+    tops = QApplication.instance().topLevelWidgets()
+    w = None
+    for t in tops:
+        if issubclass(t.__class__, QMainWindow):
+            w = t
+            break
+
+    mb = QtWidgets.QMessageBox(w)
+
+    buttonDict = {}
+    for b in buttons:
+        buttonObject = mb.addButton(b, QtWidgets.QMessageBox.AcceptRole)
+        buttonDict[buttonObject] = b
+
+    mb.setText(msg)
+    mb.exec_()
+
+    if mb.clickedButton() in buttonDict:
+        return buttonDict[mb.clickedButton()]
+    else:
+        return "OK"
 
 def _buttonX(id: str, title: str) -> bool:
     GS.CodeGUI_SetTitle.emit(id, title)
@@ -681,7 +702,6 @@ class CodeGUISwitchboard(QObject):
         GS.CodeGUI_SetSliderType.connect(self.sliderSetType)
         GS.CodeGUI_SetSliderRange.connect(self.sliderSetRange)
         GS.CodeGUI_SetSliderValue.connect(self.sliderSetValue)
-        GS.CodeGUI_MessageBox.connect(self.messageBox)
 
         for x in ui_stuff:
             if x != self.logOutput:
@@ -786,19 +806,6 @@ class CodeGUISwitchboard(QObject):
         if name in self.checkboxNames:
             self.GUI_state[name]['checked'] = value
             self.GUI_Changed()
-
-    def messageBox(self, msg: str) -> None:
-        #find the main window to center it
-        tops = QApplication.instance().topLevelWidgets()
-        w = None
-        for t in tops:
-            if issubclass(t.__class__, QMainWindow):
-                w = t
-                break
-
-        mb = QtWidgets.QMessageBox(w)
-        mb.setText(msg)
-        mb.exec_()
 
     # keep in the code for reference
     @property
