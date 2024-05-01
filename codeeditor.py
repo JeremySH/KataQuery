@@ -55,6 +55,17 @@ def mark(gopoint: tuple or str or dict, label="triangle", halign='center', valig
 
     GS.addMark.emit(pos, str(label), options)
 
+def ghost(gopoint: tuple or str or dict, color: str, scale=1.0) -> None:
+    "make a translucent stone at this go point"
+    pos = _getGoPoint(gopoint)
+    if type(pos) != tuple:
+        return # FIXME: exception might be more appropriate, though annoying.
+    options = {'scale': scale}    
+    
+    GS.addGhostStone.emit(color, pos, options)
+
+def clearGhosts():
+    GS.clearAllGhosts.emit()
 
 def clearMarks():
     """
@@ -68,6 +79,7 @@ def clearHeat():
 def clearAll():
     "clear everything but the stones"
     GS.clearAllMarkup.emit()
+    GS.clearAllGhosts.emit()
     clearStatus()
 
 def clearStatus():
@@ -148,9 +160,11 @@ def _sliderX(id: str, title: str, default_value = 0.0, min_value=0.0, max_value=
 extrafuncs = {
     "status": status,
     "mark": mark,
+    "ghost": ghost,
     "clearMarks": clearMarks,
     "clearHeat": clearHeat,
     "clearStatus": clearStatus,
+    "clearGhosts": clearGhosts,
     "clearAll": clearAll,
     "opponent": opponent,
     "heat": heat,
@@ -328,6 +342,8 @@ def persist(variable: str, val) -> None:
         return self.context_global
     
     def createContexts(self, kataResults: dict, extraGlobals: dict = None, kind='full', manual_run=False):
+        from goban import Goban
+
         global k
         #print("CREATE CONTEXTS: explicit: ", manual_run)
         moreglobs = extraGlobals
@@ -335,6 +351,17 @@ def persist(variable: str, val) -> None:
         if extraGlobals == None: moreglobs = {}
 
         k = KataAnswer(kataResults)
+        g = Goban(k.xsize, k.ysize)
+        g.komi = k.komi
+        g.toplay = k.toPlay
+        if 'initialStones' in k.answer['originalQuery']:
+            for color, stone in k.answer['originalQuery']['initialStones']:
+                g.place(color, coordsToPoint(stone))
+        if 'moves' in k.answer['originalQuery']:
+            for color, stone in k.answer['originalQuery']['moves']:
+                p = coordsToPoint(stone)
+                g.play(color, p)
+
         setattr(k, "depth", kind)
         setattr(k, "manual_run", manual_run)
 
@@ -350,6 +377,7 @@ def persist(variable: str, val) -> None:
 
         # k will always override, sry
         self.context_global["k"] = k
+        self.context_global['goban'] = g
 
 from pyqode.core.api import CodeEdit, ColorScheme
 from pyqode.core import modes, panels

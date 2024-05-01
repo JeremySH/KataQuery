@@ -24,6 +24,10 @@ class _GS(QObject):
     
     heatValueChanged = pyqtSignal(tuple, float)
 
+    addGhostStone = pyqtSignal(str, tuple, dict) # color, gopoint, options
+    clearGhostStone = pyqtSignal(tuple) # gopoint
+    clearAllGhosts = pyqtSignal()
+
     stdoutPrinted = pyqtSignal(str)
     stderrPrinted = pyqtSignal(str)
 

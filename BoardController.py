@@ -260,6 +260,38 @@ class StonePool:
                 self.bc.scene.removeItem(s)
         self.stones = {'black': [], 'white': []}
 
+class GhostStonePool(StonePool):
+    def __init__(self, boardcontroller: 'BoardController') -> None:
+        super().__init__(boardcontroller)
+
+        for image in [self.black_image, self.white_image]:
+            #FIXME there has got to be a better way
+            for x in range(image.width()):
+                for y in range(image.height()):
+                    pix = image.pixelColor(x,y)
+                    pix.setAlpha(int(pix.alpha() * 0.6))
+                    image.setPixelColor(x,y, pix)
+
+        self.black_pixmap = QPixmap.fromImage(self.black_image)
+        self.white_pixmap = QPixmap.fromImage(self.white_image)
+
+    def _createNewStone(self, color: str, gopoint: tuple[int,int]) -> 'QGraphicsItem':
+        # no shadow
+        if color == "black":
+            stone = QGraphicsPixmapItem(self.black_pixmap)
+            #stone = self.bc.scene.addPixmap(self.black_pixmap)
+        else:
+            stone = QGraphicsPixmapItem(self.white_pixmap)
+            #stone = self.bc.scene.addPixmap(self.white_pixmap)
+        
+        stone.setZValue(0)
+        brect = stone.boundingRect()
+        #stone.setTransformOriginPoint(-self.bc.increment/2, -self.bc.increment/2)
+        #shadow.setOffset(QPointF(brect.width(), brect.height()))
+        stone.setScale(self.bc.increment/brect.width())
+
+        return stone        
+
 class BoardController(QObject):
     "Control the graphics view widget. Constructs the board graphics scene and manages mouse clicks & events"
     ## Z layers:
@@ -277,6 +309,10 @@ class BoardController(QObject):
         GS.clearAllMarks.connect(self.clearMarks)
         GS.clearAllHeat.connect(self.clearHeats)
         GS.clearAllMarkup.connect(self.clearMarkup)
+        
+        GS.addGhostStone.connect(self.addGhostStone)
+        GS.clearGhostStone.connect(self.removeGhostStone)
+        GS.clearAllGhosts.connect(self.removeAllGhostStones)
 
         GS.heatValueChanged.connect(self.setHeatValue)
 
@@ -305,6 +341,8 @@ class BoardController(QObject):
         self.heatPool = HeatPool(self)
         self.markPool = MarkPool(self)
         self.stonePool = StonePool(self)
+        self.ghostPool = GhostStonePool(self)
+
 
         # connect events to me
         self.boardView.resizeEvent = self.handleReshow
@@ -405,6 +443,7 @@ class BoardController(QObject):
         self.stones = {} # the stone graphics for managing stones on the board.
         self.heat = {} # heat map values from 0.0 - 1.0 to display on board, and their graphics item graphicsitem.heat == the value
         self.marks = {} # textual marks on the board and whatnot
+        self.ghost_stones = {}
 
         # create the base board graphics
         # TODO: this will eventually be moved to themes
@@ -997,6 +1036,31 @@ class BoardController(QObject):
             del self.marks[gopoint]
         self.marks[gopoint] = item
         #self.scene.addItem(item)
+
+    def addGhostStone(self, color:str, gopoint: tuple[int,int], options: dict) -> None:
+        "place a translucent stone at this gopoint"
+        scale = 1.0
+
+        if 'scale' in options:
+            pass # FIXME: all stones need to be offset on creation & all code adjusted :-(
+            #scale = options['scale']
+
+        self.removeGhostStone(gopoint)
+        item = self.ghostPool.createStone(color, gopoint)
+
+        item.setScale(item.scale()*scale)
+        self.ghost_stones[gopoint] = item
+
+    def removeGhostStone(self, gopoint):
+        if gopoint in self.ghost_stones:
+            self.ghostPool.remove(self.ghost_stones[gopoint])
+            del self.ghost_stones[gopoint]
+
+    def removeAllGhostStones(self):
+        for s in self.ghost_stones:
+            self.ghostPool.remove(self.ghost_stones[s])
+
+        self.ghost_stones = {}
 
     def prepQuery(self, idname: str, maxVisits:int =2, flipPlayer:bool =False) -> dict:
         "given the activeGoban, prepare a query for sending to KataGo"
