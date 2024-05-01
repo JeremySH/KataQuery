@@ -221,6 +221,7 @@ class ConsoleWindow(QWidget):
 class DupeStd(QObject):
     "a pseudo file object that duplicates std outputs to signal emission"
     def __init__(self, which):
+        super().__init__()
         if which == 'stdout':
             self.orig = sys.stdout
             self.sig = GS.stdoutPrinted
