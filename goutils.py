@@ -53,3 +53,7 @@ def opponent(color: str) -> str:
         return "white"
     else:
         raise ValueError("color string must start with either B or W")
+
+def isOnBoard(point, xsize: int, ysize: int) -> bool:
+    "simple check to see if point is inside the board"
+    return point[0] >= 0 and point[1] >= 0 and point[0] < xsize and point[1] < ysize

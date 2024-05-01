@@ -664,7 +664,9 @@ class BoardController(QObject):
     def paintStone(self, point: tuple[int,int], color: str) -> None:
         "place a stone of this color at this go point"
         changed = False
-
+        if not isOnBoard(point, self.boardsize[0], self.boardsize[1]):
+            return
+        
         if point in self.stones:
             if self.stones[point].stoneColor == color:
                 return;                
@@ -692,7 +694,7 @@ class BoardController(QObject):
     def tryMove(self, color: str, destPoint: tuple[int,int], origPoint=None) -> None:
         "try the stoneInHand move and trigger a quick analysis"
         #print("QUEUE DEPTH: ", self.kata.queueDepth())
-        if destPoint[0] < 0 or destPoint[1] < 0 or destPoint[0] >= self.boardsize[0] or destPoint[1] >= self.boardsize[1]:
+        if not isOnBoard(destPoint, self.boardsize[0], self.boardsize[1]):
             return
 
         g = self.goban.copy()
@@ -749,9 +751,7 @@ class BoardController(QObject):
         gopoint = self.mouseToGoPoint2(event.pos())
         trashIt = False
         #print("GOPOINT, ENDDRAG: ", gopoint)
-        if gopoint[0] < 0 or gopoint[0] >= self.boardsize[0]:
-            trashIt = True
-        if gopoint[1] < 0 or gopoint[1] >= self.boardsize[1]:
+        if not isOnBoard(gopoint, self.boardsize[0], self.boardsize[1]):
             trashIt = True
 
         if trashIt:
