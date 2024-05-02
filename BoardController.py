@@ -236,7 +236,7 @@ class StonePool:
 
         brect = shadow.boundingRect()
         shadow.setTransformOriginPoint(-self.bc.increment/2, -self.bc.increment/2)
-        shadow.setOffset(QPointF(brect.width()*-0.03, brect.height()*-.03))
+        shadow.setOffset(QPointF(brect.width()*-0.03, brect.height()*-0.02))
         shadow.setScale(2.03*self.bc.increment/brect.width())
         
         group = QGraphicsItemGroup()
