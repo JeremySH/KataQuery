@@ -27,7 +27,7 @@ def opposite(col: np.ubyte):
 class Bifurcator:
     "An observer that separates moves into established stones and played stones. This is to help Katago keep track of ko"
     def __init__(self, board: 'Goban'):
-        self._placements = ([], []) # white, black
+        self._placements = ([], []) # black, white
         self._plays = [] 
         self._board = board
 
@@ -49,25 +49,212 @@ class Bifurcator:
         b._plays = list(self._plays)
         return b
 
+    def place_equals_play(self, color: str, location: tuple[int,int]) -> bool:
+        "is this place of a stone equivalent to playing a stone?"
+        if isPass(location): return True
+        g1 = self._board.copy()
+        g2 = self._board.copy()
+        g1.play(color, location)
+        g2.place(color, location)
+
+        return numpy.array_equal(g1.board, g2.board)
+
+    def place_modifies_plays(self, color: str, location: tuple[int, int]) -> bool:
+        "does this place change the meaning of the moves?"
+        # basically if the only difference is that there's a stone here
+        # then the moves aren't affected
+
+        g = self._board.copy()
+        blacks, whites = self._placements
+        blacks, whites = list(blacks), list(whites)
+        if color == "black":
+            blacks.append(location)
+        elif color == "white":
+            whites.append(location)
+
+        g.clear()
+        g._place_many(blacks, whites)
+
+        for p in self._plays:
+            g._play(p[0], p[1])
+
+        result = np.not_equal(g.board, self._board.board)
+        return result.sum() != 1 or result[location] == False
+
+    def change_play(self, srcLoc, destLoc):
+        index = None
+        for i, m in enumerate(self._plays):
+            if m[1] == srcLoc:
+                index = i
+                break
+
+        if index != None:
+            col = self._plays[index][0]
+            self._plays[index] = (col, destLoc)
+            self._board.board[srcLoc] = 0
+            self._board._place(col, destLoc)
+
+    def find_stone(self, location: tuple[int,int]) -> tuple[str, tuple[int, int]]:
+        "find a stone and return kind, index. Kind is 'place_black' 'place_white' 'play' or None"
+        plays = self._plays
+        blacks, whites = self._placements
+
+        for i, p in enumerate(plays):
+            if p[1] == location:
+                return "play", i
+
+        for i, b in enumerate(blacks):
+            if b == location:
+                return "place_black", i
+
+        for i, w in enumerate(whites):
+            if w == location:
+                return "place_white", i
+
+        return None, None
+    
+    def try_remove(self, location: tuple[int, int]) -> bool:
+        "try to remove and keep move order, return true if success "
+        kind, index = self.find_stone(location)
+        
+        if kind == None: return True
+
+        blacks, whites = self._placements
+        blacks, whites = list(blacks), list(whites)
+
+        moves = list(self._plays)
+
+        if kind == 'play':
+            del moves[index]
+        elif kind == 'place_black':
+            del blacks[index]
+        elif kind == 'place_white':
+            del whites[index]
+        else:
+            return False
+
+        g = self._board.copy()
+        g.clear()
+        g._place_many(blacks, whites)
+        for m in moves:
+            g.play(m[0], m[1])
+
+        result = np.not_equal(g.board, self._board.board)            
+        if result.sum() == 1 and result[location] == True :
+            self._board.board[location] = 0
+            self._plays = moves
+            self._placements = (blacks, whites)
+            return True
+
+        return False
+
+    def try_relocate(self, srcLoc: tuple[int, int], destLoc: tuple[int,int])-> bool:
+        "relocate and try to keep move order, return if success"
+        if srcLoc == destLoc: return True
+        #FIXME: this is fugly
+        moveIndex = None
+        for i, m in enumerate(self._plays):
+            if m[1] == srcLoc:
+                moveIndex = i
+                break
+        
+        if moveIndex != None:
+            # it's a move, replay & check
+            g = self._board.copy()
+            col = g.bifurcator._plays[moveIndex][0]
+            g.bifurcator._plays[moveIndex] = (col, destLoc)
+            plays = list(g.bifurcator._plays)
+            b, w = g.bifurcator._placements
+            g.clear()
+            g._place_many(b,w)
+            for p in plays:
+                g._play(p[0], p[1])
+
+            result = np.not_equal(g.board, self._board.board)
+
+            if result.sum() == 2 and result[srcLoc] == True and result[destLoc] == True:
+                self.change_play(srcLoc, destLoc)
+                return True
+            else:
+                return False
+        else:
+            # yeah this is nasty
+            blacks, whites = self._placements
+            srcIndex = None
+            srcColor = None
+            for i,b in enumerate(blacks):
+                if srcLoc == b:
+                    srcIndex = i
+                    srcColor = "black"
+                    break
+
+            for i,w in enumerate(whites):
+                if srcLoc == w:
+                    srcIndex = i
+                    srcColor = "white"
+                    break
+
+            if srcIndex == None: 
+                #print("NOT FOUND: ", srcLoc)
+                #print(self._placements)
+                return False
+
+            group = 0
+            if srcColor == "white":
+                group = 1
+
+            g = self._board.copy()
+            
+            # move it
+            g.bifurcator._placements[group][srcIndex] = destLoc
+            blacks, whites = g.bifurcator._placements
+            plays = g.bifurcator._plays
+
+            g.clear()
+            g._place_many(blacks, whites)
+            for p in plays:
+                g._play(p[0], p[1])
+
+            result = np.not_equal(g.board, self._board.board)
+            
+            # is it legit?
+            if result.sum() == 2 and result[srcLoc] == True and result[destLoc] == True:
+                #print("REPLACING ", srcLoc, destLoc)
+                self._placements = (blacks, whites)
+                self._board.board[srcLoc] = 0
+                self._board._place(srcColor, destLoc)
+                return True
+
     def place(self, color: str, location: tuple[int,int]):
-        if isPass(location): return        
+        if isPass(location): return
+        
+        modified = self.place_modifies_plays(color, location)
         res = self._board._place(color, location)
-        self.collect()
+        
+        if modified:
+            self.collect()
+        else:
+            if color == "black":
+                self._placements[0].append(location)
+            
+            if color == "white":
+                self._placements[1].append(location)
+
         return res
 
     def collect(self) -> None:
         "collect all the stones into a placement instead of move order"
-        self._placements = (self._board.white_stones(), self._board.black_stones())
+        self._placements = (self._board.black_stones(), self._board.white_stones())
         self._plays = []
 
     def clear(self) -> None:
-        self._placements = ([], []) # white, black
+        self._placements = ([], []) # black, white
         self._plays = []
 
     def stones_n_moves(self) -> tuple[list, list]:
         stones = []
-        whites = self._placements[0]
-        blacks = self._placements[1]
+        blacks = self._placements[0]
+        whites = self._placements[1]
         for w in whites:
             stones.append(["W", w])
         for b in blacks:
@@ -78,8 +265,8 @@ class Bifurcator:
     def stones_n_moves_coords(self) -> tuple[list, list]:
         #print("placements ", self._placements)
         #print("plays", self._plays)
-        whites = [['W', pointToCoords(p)] for p in self._placements[0]]
-        blacks = [['B', pointToCoords(p)] for p in self._placements[1]]
+        blacks = [['B', pointToCoords(p)] for p in self._placements[0]]
+        whites = [['W', pointToCoords(p)] for p in self._placements[1]]
 
         whites.extend(blacks)
         stones = whites        
@@ -364,14 +551,17 @@ class Goban:
         return points
     
     def remove(self, gopoint: tuple[int,int]) -> None:
-        self._remove(gopoint)
-        self.bifurcator.collect()
+        if not self.bifurcator.try_remove(gopoint):
+            self._remove(gopoint)
+            self.bifurcator.collect()
 
     def relocate(self, srcPoint: tuple[int,int], destPoint: tuple[int,int]) -> None:
         "Try to relocate a move/stone from srcPoint to destPoint"
         # ATM we just collapse the stones
         # but better would be to retain move order if possible
         # self.bifurcator.collect()
+        if self.bifurcator.try_relocate(srcPoint, destPoint) : return
+
         col = int2color[self.board[srcPoint]]
         self._remove(srcPoint)
         self._place(col, destPoint)
