@@ -16,7 +16,7 @@ import os
 
 from GameSettingsDialog import GameSettingsDialog
 
-from PyQt5.QtCore import QObject, Qt, QSettings, QPoint, QPointF, QSize
+from PyQt5.QtCore import QObject, Qt, QSettings, QPoint, QPointF, QSize, QTimer
 
 from PyQt5.QtWidgets import (
 
@@ -292,6 +292,49 @@ class GhostStonePool(StonePool):
 
         return stone        
 
+import time,sys
+class QueueSubmitter(QObject):
+    "a simplistic way to rate-limit quick analysis submissions"
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
+        self.MINIMUM_FRAME_TIME = 1/100 # 100 fps
+        self.MAXIMUM_FRAME_TIME = 0.5
+        self.queue = None # not much of a 'queue' as it only holds latest query
+        self.delay = 1/30 # 30 fps to start
+        self.submissions  = [] # backlog, for calculating rate limit
+
+        # process at a sliding framerate
+        # discarding old queries
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.processQueue)
+        self.timer.start(self.delay*1000)
+
+        KP.KataSignals.answerFinished.connect(self.adjustRate)
+    
+    def processQueue(self):
+        if not self.queue: return
+
+        self.submissions.append((time.time(), self.queue))
+        KP.KataSignals.askForAnalysis.emit(self.queue)
+        
+        self.queue = None # drop outdated
+
+    def addToQueue(self, query: dict):
+        self.queue = query
+
+    def adjustRate(self, finishedQuery):
+        "try to guess the rate at which answers are being processed and match it"
+        if len(self.submissions) > 0:
+            t, _ = self.submissions.pop(0)
+
+            gap = time.time() - t
+            if len(self.submissions) > 0:
+                self.delay = self.delay + gap/2
+            else: # try to speed things up
+                self.delay = max(self.delay * 0.75, self.MINIMUM_FRAME_TIME)
+
+            self.timer.setInterval(self.delay*1000)
+
 class BoardController(QObject):
     "Control the graphics view widget. Constructs the board graphics scene and manages mouse clicks & events"
     ## Z layers:
@@ -320,6 +363,8 @@ class BoardController(QObject):
         GS.komiChanged.connect(self.komiChanged)
 
         GS.SetNeuralNetSettings.connect(self.nnSettingsChanged)
+
+        self.analysisQueue = QueueSubmitter() # only for quick analysis, rate limit
 
         #FIXME these should be in settings or maybe not in this class at all
         self.neural_net = settings.value("nn/active_network", "B15") 
@@ -368,6 +413,8 @@ class BoardController(QObject):
         self.moreVisits = 0 # currently added visits via AnalyzeMore command
         self.incremental_updates = False # analyze in chunks for slower but more active board look
         self.restrictToDist = 0 # restrict analysis to this far away from stones (<=0 means no restriction)
+
+        self.lastAnswerTime = None # for ordering kata answers correctly
 
         GS.MainWindowReadyAndWilling.connect(self.afterStartup)
 
@@ -1132,6 +1179,14 @@ class BoardController(QObject):
         #id is name of asker_timeinnanos
         parsed = id.split("_")
         name, t = parsed[0], int(parsed[1])
+
+        out_of_date = False
+        if self.lastAnswerTime and self.lastAnswerTime > t:
+            out_of_date = True
+            #print("OUT OF DATE: ", id, file=sys.stderr)
+
+        self.lastAnswerTime = t
+
         #print(f"NAME IS {name}")
         if name == "policyHeat":
             self.kata.claimAnswer(id)
@@ -1140,12 +1195,14 @@ class BoardController(QObject):
         elif name == "fullAnalysis":
             #print("emitting full analysis")
             self.kata.claimAnswer(id)
-            GS.fullAnalysisReady.emit({"t": t, "payload": ans})
+            if not out_of_date:
+                GS.fullAnalysisReady.emit({"t": t, "payload": ans})
             self.moreVisits = ans['originalQuery']['maxVisits']
 
         elif name == "quickAnalysis":
             self.kata.claimAnswer(id)
-            GS.quickAnalysisReady.emit({"t": t, "payload": ans})
+            if not out_of_date:
+                GS.quickAnalysisReady.emit({"t": t, "payload": ans})
 
     def handleFullAnalysis(self, signalData: dict) -> None:
         "process the full analysis info. UNUSED"
@@ -1177,6 +1234,7 @@ class BoardController(QObject):
                 "includePVVisits": True
             }
             q.update(more)
+            #self.analysisQueue.addToQueue(q) # because takes longer we don't want it mucking with rate limiting
             KP.KataSignals.askForAnalysis.emit(q)
 
         #self.kata.ask(q)
@@ -1190,7 +1248,8 @@ class BoardController(QObject):
             "includePVVisits": True
         }
         q.update(more)
-        KP.KataSignals.askForAnalysis.emit(q)
+        self.analysisQueue.addToQueue(q)
+        #KP.KataSignals.askForAnalysis.emit(q)
 
     def setHeatValue(self, gopoint: tuple[int, int], value: float) -> None:
         "Set the heatmap value at gopoint"
