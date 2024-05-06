@@ -287,7 +287,6 @@ class Goban:
 
         if not makingCopy:
             self.board = np.zeros((self.xsize,self.ysize), dtype=np.ubyte)
-            self.visited_template = np.zeros((self.xsize,self.ysize), dtype=np.ubyte)
 
         self.bifurcator = Bifurcator(self)
 
@@ -307,7 +306,6 @@ class Goban:
         "return a duplicate of myself"
         c = Goban(self.xsize, self.ysize, makingCopy=True)
         c.board = np.copy(self.board)
-        c.visited_template = self.visited_template
         c.bifurcator = self.bifurcator.copy(c)
 
         return c
@@ -632,7 +630,7 @@ class Goban:
 
     def groups(self)-> tuple[list[tuple[int, int]], list[tuple[int,int]]]:
         "return black_groups, white_groups on the board"
-        v = {} #self.visited_template.copy()
+        v = {} 
 
         result = {"black": [], "white": []}
 
