@@ -361,7 +361,7 @@ class Goban:
             pos = m[1]
             color = m[0]
             coord = letters[pos[0]] + letters[self.ysize-pos[1]-1]
-            if color[0].upper() == "B":
+            if color[0].upper() == "W":
                 sgf += f";W[{coord}]"
             else:
                 sgf += f";B[{coord}]"
