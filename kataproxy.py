@@ -92,8 +92,12 @@ class KataAnswer:
 
         self.__dict__.update(self.answer['stats'])
         self.__dict__.update(self.answer['rootInfo'])
-
-        self.__dict__['bestMove'] = self.moves[0]
+        
+        if len(self._moves): #FIXME: len(self.moves == 0) shouldn't happen ever
+            self.__dict__['bestMove'] = self.moves[0]
+        else:
+            self.__dict__['bestMove'] = self.pass_move
+            self._moves = [self.pass_move]
 
         # FIXME: seems a waste to always do for an occasional convenience
         for i, x in enumerate(self.merged_moves):
