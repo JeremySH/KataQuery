@@ -22,6 +22,13 @@ class Bail(Exception):
 def bail() -> None:
     raise Bail
 
+def snooze(seconds:float =0) -> None:
+    t = time.time()
+    QApplication.instance().processEvents()
+    while time.time() - t < seconds:
+        time.sleep(1/60)
+        QApplication.instance().processEvents()
+
 def status(info: str, **kwargs):
     "change status line to provided text"
     GS.statusBarPrint.emit(str(info))
@@ -201,6 +208,7 @@ extrafuncs = {
     "_sliderX": _sliderX,
     "bail": bail,
     "dist": dist,
+    "snooze": snooze
 }
 
 # the GUI functions have to be compiled
