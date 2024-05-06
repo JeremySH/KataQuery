@@ -808,7 +808,7 @@ class CodeGUISwitchboard(QObject):
             self.GUI_state[b]['clicked'] = False
         if name in self.buttonNames:
             self.GUI_state[name]['clicked'] = True
-            self.GUI_Changed()
+            self.GUI_Changed(clear_buttons=False)
 
     def checkboxClicked(self, name, value):
         if name in self.checkboxNames:
@@ -828,8 +828,11 @@ class CodeGUISwitchboard(QObject):
     def checkboxNames(self):
         return [o.objectName() for o in self.checkboxes]
 
-   
+    def GUI_Changed(self, clear_buttons = True):
+        # by default clear the buttons to False
+        # as I only want buttons true after a click
+        if clear_buttons:
+            for b in self.buttonNames:
+                self.GUI_state[b]['clicked'] = False
 
-
-    def GUI_Changed(self):
         GS.CodeGUI_Changed.emit(self.GUI_state)
