@@ -97,23 +97,29 @@ class MarkPool:
     def __init__(self, boardcontroller: 'BoardController') -> None:
         self.bc = boardcontroller
         self.marks = []
-    
+        
+        self.brushes = {
+        "white": QBrush(self.color2qcolor("white")[0]),
+        "black": QBrush(self.color2qcolor("black")[0]),
+        "empty": QBrush(self.color2qcolor("empty")[0])
+        }
+        self.noPen = QPen(Qt.NoPen)
+
     def color2qcolor(self, color: str):
         # color is the color of the board beneath the mark
         if color == "empty":
             mycolor = QtGui.QColor.fromRgb(179,29,29, 255)
-            myoutline = QtGui.QColor.fromRgb(255,255,255, 255) #YUCK
+            myoutline = mycolor
         elif color == "white":
             mycolor = QtGui.QColor.fromRgb(25,25,25,255)
-            mycolor = QtGui.QColor.fromRgb(179,29,29, 255)
             myoutline = mycolor
         else:
             mycolor = QtGui.QColor.fromRgb(240,240,240,255)
-            mycolor = QtGui.QColor.fromRgb(179,29,29, 255)
-            myoutline = mycolor
+            myoutline = mycolor 
         
-        #iksnay the above until themes ready
-        mycolor = QtGui.QColor.fromRgb(179,29,29, 230)
+        # uniform red, which is really hard to read
+        #mycolor = QtGui.QColor.fromRgb(179,29,29, 230) # red
+
         return mycolor, myoutline
     
     def createMark(self, text: str, color: str = "empty", scale: float =1.0) -> 'QGraphicsSimpleTextItem':
@@ -127,6 +133,9 @@ class MarkPool:
                 m.setFont(f)
             if text != m.text():
                 m.setText(text)
+
+            m.setBrush(self.brushes[color])
+
             m.show()
             return m
         else:
@@ -136,8 +145,8 @@ class MarkPool:
 
     def _createNewMark(self, text: str, color: str = "empty", scale: float =1.0) -> 'QGraphicsSimpleTextItem':
         from PyQt5.QtGui import QFont
+        
         mycolor, _ = self.color2qcolor(color)
-        p = QPen(mycolor) # NOTE myoutline is terrible looking
         brush = QBrush(mycolor)
 
         t = QGraphicsSimpleTextItem(text)
@@ -149,9 +158,8 @@ class MarkPool:
             newF.setPointSize(max(int(newF.pointSize()*scale),1))
             t.setFont(newF)
 
-        t.setPen(p)
-        t.setBrush(brush)
-
+        t.setPen(self.noPen)
+        t.setBrush(self.brushes[color])
         #t.setTransformOriginPoint(self.bc.increment/2 -t.boundingRect().width()/2, -t.boundingRect().height()/2)
         t.setZValue(2)
         return t
@@ -522,6 +530,7 @@ class BoardController(QObject):
         pointPerPix = 10/w
         pointSize = (self.increment * pointPerPix)/2.5 # generally fits 3 characters
         default.setPointSize(int(pointSize))
+        default.setBold(True)
         self.markFont = default
 
     def boardResized(self, size: tuple[int, int]) -> None:
