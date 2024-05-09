@@ -31,14 +31,11 @@ def calcBoardValue(ka):
 
 
 def calcThreat(m):
-	global calcBoardValue
 	future = quickPlay(k, [[k.toPlay, m.coords], [opponent(k.toPlay), "pass"]])
 	return (future.scoreLead - k.scoreLead)/2	
 
 def grabThreats(visits):
 	"grab visits many threats and add them to threats dict"
-	global threats
-	global calcThreat
 	i = 0
 	for m in k.moves_by_policy:
 		if m.pos not in threats:

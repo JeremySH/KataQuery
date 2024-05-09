@@ -16,7 +16,6 @@ def dist(p1, p2):
 	return abs(p1[0] - p2[0]) + abs(p1[1] - p2[1])
 
 def fightValue(movelist):
-	global dist
 	if len(movelist) < 2: return 0
 
 	m = movelist[0]

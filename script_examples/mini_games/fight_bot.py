@@ -15,7 +15,6 @@ def dist(p1, p2):
 
 def fightValue(movelist):
 	"calculate the fightValue (len(pv)/total_dist)"
-	global dist
 	if len(movelist) < 2: return 0
 
 	m = movelist[0]

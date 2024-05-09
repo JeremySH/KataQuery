@@ -19,7 +19,6 @@ def getMove(futures, testFunction):
 	# it can play with a "style" by choosing
 	# moves using different criteria
 
-	global MAX_MOVES
 	bestJump = None
 	bestMove = k.moves[0]
 	for m, future in futures:
