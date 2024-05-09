@@ -52,6 +52,11 @@ class _GS(QObject):
     CodeGUI_SliderChangedRaw = pyqtSignal(str, int) # objectName, value
     CodeGUI_ButtonClicked = pyqtSignal(str, bool) # objectName, value (always true)
 
+    
+    # simplistic way to hide unused gui stuff
+    CodeGUI_ShowMe = pyqtSignal(str) # id
+    CodeGUI_HideAll = pyqtSignal() 
+    
     # general trigger when GUI is changed, it's time for the code editor
     # to rerun the script
     CodeGUI_Changed = pyqtSignal(dict) # gui state dict

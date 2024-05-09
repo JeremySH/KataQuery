@@ -187,6 +187,11 @@ def msgBox(msg: str, buttons:list[str] or None = None) -> str:
     else:
         return "OK"
 
+def _guiPing(id: str, title:str) -> None:
+    "ping the gui to show me"
+    GS.CodeGUI_SetTitle.emit(id, title)
+    GS.CodeGUI_ShowMe.emit(id)
+
 def _buttonX(id: str, title: str) -> bool:
     "internal function to access a GUI button"
     GS.CodeGUI_SetTitle.emit(id, title)
@@ -230,6 +235,7 @@ extrafuncs = {
     "_buttonX": _buttonX,
     "_checkX": _checkX,
     "_sliderX": _sliderX,
+    "_guiPing": _guiPing,
     "bail": bail,
     "dist": dist,
     "snooze": snooze
@@ -241,6 +247,7 @@ GUI_FUNCS_SRC = ""
 buttonFuncTemplate = """
 def button{n}(title:str="button{n}") -> bool:
     "connect to GUI button {n} and return true whenever pressed"
+    _guiPing("button{n}", title)
     if 'button{n}' in __GUI__:
         x =  __GUI__['button{n}']['clicked']
         
@@ -261,6 +268,7 @@ def button{n}(title:str="button{n}") -> bool:
 checkFuncTemplate = """
 def check{n}(title:str="check{n}", default_value:bool =False) -> bool:
     "connect to GUI checkbox {n} and return default value on first run, and its value otherwise"
+    _guiPing("check{n}", title)
     changed = False
     if 'check{n}' in __GUI__:
         x = __GUI__['check{n}']['checked']
@@ -282,6 +290,7 @@ def check{n}(title:str="check{n}", default_value:bool =False) -> bool:
 sliderFuncTemplate = """
 def slider{n}(title: str="dial{n}", default_value:float =0.0, min_value:float =0.0, max_value:float =1.0, value_type:float ='float') -> float:
     "connect to GUI checkbox {n} and return default value on first run, and its value otherwise."
+    _guiPing("dial{n}", title)
     changed = False
     if 'dial{n}' in __GUI__:
         x = __GUI__['dial{n}']['value']
@@ -368,6 +377,7 @@ def persist(variable: str, val) -> None:
             # TODO: set context's __builtins__ to None and rebuild necessary stuff like print
             try:
                 exec(self.preambleC, self.context_global, self.context_global)
+                GS.CodeGUI_HideAll.emit()
                 exec(self.code, self.context_global, self.context_global)
             except Bail as e:
                 # don't care
@@ -735,6 +745,8 @@ class CodeGUISwitchboard(QObject):
         GS.CodeGUI_SetSliderRange.connect(self.sliderSetRange)
         GS.CodeGUI_SetSliderValue.connect(self.sliderSetValue)
 
+        GS.CodeGUI_ShowMe.connect(self.showMe)
+        GS.CodeGUI_HideAll.connect(self.hideAll)
         for x in ui_stuff:
             if x != self.logOutput:
                 GS.CodeGUI_SetTitle.emit(x.objectName(), f"{x.objectName()}")
@@ -838,6 +850,29 @@ class CodeGUISwitchboard(QObject):
         if name in self.checkboxNames:
             self.GUI_state[name]['checked'] = value
             self.GUI_Changed()
+
+    def showMe(self, name: str) -> None:
+        if name in self.lookup:
+            self.lookup[name].setEnabled(True)
+            self.lookup[name].show()
+        
+        n = "label_"+name
+        if n in self.lookup_labels:
+            self.lookup_labels[n].setEnabled(True)
+            self.lookup_labels[n].show()
+
+
+    def hideAll(self) -> None:
+        for name, item in self.lookup.items():
+            if item != self.logOutput:
+                item.setEnabled(False)
+                self.setATitle(name, name)
+                #item.hide()
+        for name, item in self.lookup_labels.items():
+            item.setEnabled(False)
+            #item.hide()
+            self.setATitle(name, name)
+        
 
     # keep in the code for reference
     @property
