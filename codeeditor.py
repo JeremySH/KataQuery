@@ -325,7 +325,6 @@ class CodeRunner(QObject):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.context_global = {}
-        self.context_local = {}
         self.code = None
 
         # this is needed as text to execute in the same global context
@@ -368,8 +367,8 @@ def persist(variable: str, val) -> None:
         if self.code != None:
             # TODO: set context's __builtins__ to None and rebuild necessary stuff like print
             try:
-                exec(self.preambleC, self.context_global, self.context_local)
-                exec(self.code, self.context_global, self.context_local)
+                exec(self.preambleC, self.context_global, self.context_global)
+                exec(self.code, self.context_global, self.context_global)
             except Bail as e:
                 # don't care
                 pass
@@ -421,15 +420,13 @@ def persist(variable: str, val) -> None:
         setattr(k, "depth", kind)
         setattr(k, "manual_run", manual_run)
 
-        saved_globals, saved_locals = self.getSavedVars(self.context_global, self.context_local)
+        saved_globals, saved_locals = self.getSavedVars(self.context_global, self.context_global)
 
         self.context_global = {'__saved__': {}}
-        self.context_local = {'__saved__': {}}
 
         self.context_global.update(extrafuncs)
         self.context_global.update(moreglobs)
         self.context_global.update(saved_globals)
-        self.context_local.update(saved_locals)
 
         # k will always override, sry
         self.context_global["k"] = k
