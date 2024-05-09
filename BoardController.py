@@ -109,12 +109,14 @@ class MarkPool:
         # color is the color of the board beneath the mark
         if color == "empty":
             mycolor = QtGui.QColor.fromRgb(179,29,29, 255)
+            mycolor = QtGui.QColor.fromRgb(0,0,220, 255)
+            
             myoutline = mycolor
         elif color == "white":
             mycolor = QtGui.QColor.fromRgb(25,25,25,255)
             myoutline = mycolor
         else:
-            mycolor = QtGui.QColor.fromRgb(240,240,240,255)
+            mycolor = QtGui.QColor.fromRgb(230,230,230,255)
             myoutline = mycolor 
         
         # uniform red, which is really hard to read
