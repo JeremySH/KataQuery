@@ -28,6 +28,9 @@ class _GS(QObject):
     clearGhostStone = pyqtSignal(tuple) # gopoint
     clearAllGhosts = pyqtSignal()
 
+    setHoverText = pyqtSignal(tuple, str) # gopoint, string
+    clearHoverTexts = pyqtSignal()
+    
     stdoutPrinted = pyqtSignal(str)
     stderrPrinted = pyqtSignal(str)
 

@@ -16,17 +16,15 @@ import os
 
 from GameSettingsDialog import GameSettingsDialog
 
-from PyQt5.QtCore import QObject, Qt, QSettings, QPoint, QPointF, QSize, QTimer
+from PyQt5.QtCore import QObject, Qt, QSettings, QPoint, QPointF, QSize, QTimer, QRect
 
 from PyQt5.QtWidgets import (
 
     QGraphicsScene, QGraphicsItemGroup, QGraphicsEllipseItem, QGraphicsRectItem, 
     QGraphicsSimpleTextItem, QGraphicsLineItem, QMessageBox, QApplication, QGraphicsPixmapItem
-
 )
-from PyQt5.QtGui import QPen, QBrush, QRadialGradient, QImage, QPixmap
+from PyQt5.QtGui import QPen, QBrush, QRadialGradient, QImage, QPixmap, QFont, QFontMetrics
 from PyQt5 import QtGui
-
 
 # Use pools for the graphics items to reduce
 # the amount of remove/creates, whch slow down the display
@@ -302,6 +300,84 @@ class GhostStonePool(StonePool):
 
         return stone        
 
+class HoverText(QObject):
+    "Manage the hover text above the board."
+    def __init__(self, boardcontroller: 'BoardController') -> None:
+        super().__init__(parent=None)
+        self.bc = boardcontroller
+        self.hoverGroup = None
+        self.recreate()
+
+    def setHover(self, gopoint: tuple[int,int], text:str) -> None:
+        "Set hover text for specified go point"
+        self.hoverTexts[gopoint] = str(text)
+
+    def clearHovers(self) -> None:
+        "Clear all hover texts."
+        self.hoverTexts = {}
+        self.hoverGroup.hide()
+
+    def mouseMove(self, eventpos: QPoint) -> None:
+        "the mouse has moves, manage displaying the hover text, if any."
+        if not self.bc.boardView.underMouse(): return
+        
+        gopoint = self.bc.mouseToGoPoint2(eventpos)
+        
+        if gopoint in self.hoverTexts and len(self.hoverTexts[gopoint]):
+            text = self.hoverTexts[gopoint]
+
+            # because QT is silly I have to calculate the box myself
+            lines = text.splitlines()
+            maxline = ""
+            for l in lines:
+                if len(l) > len(maxline):
+                    maxline = l
+            
+            fm = QFontMetrics(self.hoverFont)
+            rect = fm.boundingRect(maxline)
+            rect.setHeight(fm.lineSpacing()*(len(lines)+1))
+            
+            self.hoverRectItem.setRect(-5,-5, rect.width()+10, rect.height())
+            self.hoverTextItem.setText(text)
+            
+            x,y =  self.bc.goPointToMouse(gopoint)
+            x += self.bc.increment/2 + 10
+            y += self.bc.increment/2 + 10
+            
+            self.hoverGroup.setPos(QPoint(x,y))
+            self.hoverGroup.show()
+        else:
+            self.hoverGroup.hide()
+    
+    def recreate(self) -> None:
+        "destroy and rebuild, useful when board resized"
+        if self.hoverGroup and self.hoverGroup in self.bc.scene.items():
+            self.bc.scene.removeItem(self.hoverGroup)
+
+        self.hoverTexts = {}
+        self.hoverTextItem = QGraphicsSimpleTextItem()
+        self.hoverTextItem.setPen(QPen(Qt.NoPen))
+        self.hoverTextItem.setBrush(QBrush(Qt.black))
+        self.hoverFont = QFont(self.bc.markFont)
+        size = int(self.bc.markFont.pointSize()*0.75)
+        if size <= 0:
+            size = 1
+
+        self.hoverFont.setPointSize(size)
+
+        self.hoverTextItem.setFont(self.hoverFont)
+
+        self.hoverRectItem = QGraphicsRectItem()
+        self.hoverRectItem.setPen(QPen(Qt.black))
+        self.hoverRectItem.setBrush(QBrush(Qt.white))
+
+        self.hoverGroup = QGraphicsItemGroup()
+        self.hoverGroup.addToGroup(self.hoverRectItem)
+        self.hoverGroup.addToGroup(self.hoverTextItem)
+        self.bc.scene.addItem(self.hoverGroup)
+        self.hoverGroup.setZValue(100)
+        self.hoverGroup.hide()
+
 import time,sys
 class QueueSubmitter(QObject):
     "a simplistic way to rate-limit quick analysis submissions"
@@ -405,6 +481,10 @@ class BoardController(QObject):
         self.boardView.mouseMoveEvent = self.handleMouseMove
         self.boardView.mouseReleaseEvent = self.handleMouseUp
         self.boardView.setMouseTracking(True)
+        self.hoverThing = HoverText(self)
+
+        GS.setHoverText.connect(self.hoverThing.setHover)
+        GS.clearHoverTexts.connect(self.hoverThing.clearHovers)
 
         # variables for dragging stones with mouse
         self.mouseButtons = None
@@ -547,6 +627,7 @@ class BoardController(QObject):
         self.stonePool.destroyAll()  
         self.scene.clear()
         self.setupGraphics()
+        self.hoverThing.recreate()
         self.handleClearBoard()
         self.handleReshow(None)
 
@@ -895,6 +976,8 @@ class BoardController(QObject):
         "drag the stone, paint, etc."
         import time
         self.mouseLastEvents.append({"x": event.x(), "y": event.y(), "t": time.time()})
+        self.hoverThing.mouseMove(event.pos())
+
         if self.mouseState in ["Dragging", "Dragging Copy", "Dragging Play"]:
             gopoint = self.mouseToGoPoint2(event.pos())
             

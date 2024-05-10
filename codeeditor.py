@@ -187,6 +187,13 @@ def msgBox(msg: str, buttons:list[str] or None = None) -> str:
     else:
         return "OK"
 
+def hover(gopoint: tuple[int,int], text:str ) -> None:
+    p = _getGoPoint(gopoint)
+    GS.setHoverText.emit(p, str(text))
+
+def clearHovers() -> None:
+    GS.clearHoverTexts.emit()
+
 def _guiPing(id: str, title:str) -> None:
     "ping the gui to show me"
     GS.CodeGUI_SetTitle.emit(id, title)
@@ -222,6 +229,8 @@ extrafuncs = {
     "clearHeat": clearHeat,
     "clearStatus": clearStatus,
     "clearGhosts": clearGhosts,
+    "hover": hover,
+    "clearHovers": clearHovers,
     "clearAll": clearAll,
     "opponent": opponent,
     "heat": heat,
