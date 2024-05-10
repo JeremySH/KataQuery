@@ -92,6 +92,7 @@ def clearAll() -> None:
     "clear everything but the stones"
     GS.clearAllMarkup.emit()
     GS.clearAllGhosts.emit()
+    GS.clearHoverTexts.emit()
     clearStatus()
 
 def clearStatus() -> None:
