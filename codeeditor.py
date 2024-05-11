@@ -564,6 +564,7 @@ class CodeEditor(CodeEdit):
         #print("NAMING SLOT ", slotnum)
         settings = QSettings()
         text = settings.value(f"codeeditor/slot{slotnum}_src", "")
+        name = ""
         if text != "":
             for line in text.splitlines():
                 stripped = line.strip()
@@ -573,8 +574,8 @@ class CodeEditor(CodeEdit):
                     if len(name) > 30:
                         name = name[:29] + "…"
                     #print(f"SLOT {slotnum} name: '{name}'")
-                    GS.Code_SetSlotName.emit(slotnum, name)
                     break
+        GS.Code_SetSlotName.emit(slotnum, name)
 
     def nameAllSlots(self) -> None:
         for s in range(1,11):
