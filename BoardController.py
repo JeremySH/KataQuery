@@ -462,7 +462,10 @@ class BoardController(QObject):
         self.neural_net = settings.value("nn/active_network", "B15") 
         settings.setValue("nn/active_network", self.neural_net)
 
-        self.boardsize = (19,19)
+        x = settings.value("GameSettings/board/xsize", 19)
+        y = settings.value("GameSettings/board/ysize", 19)
+        self.boardsize = (x,y)
+
         self.boardView = viewWidget
 
 
@@ -503,7 +506,7 @@ class BoardController(QObject):
 
         self._toplay = "black"
 
-        self.komi = 6.5
+        self.komi = settings.value("GameSettings/komi", 6.5)
 
         # visits and analysis settings
         self.moreVisits = 0 # currently added visits via AnalyzeMore command
@@ -625,6 +628,10 @@ class BoardController(QObject):
         "the goban is a different size/shape so destroy everything and create the new one"
         # could be shortened TBH
         self.boardsize = size
+        settings = QSettings()
+        settings.setValue("GameSettings/board/xsize", size[0])
+        settings.setValue("GameSettings/board/ysize", size[1])
+
         self.goban = Goban(size[0], size[1])
         self.clearMarks()
         self.clearHeats()
@@ -639,6 +646,8 @@ class BoardController(QObject):
 
     def komiChanged(self, komi: float) -> None:
         self.komi = komi
+        settings = QSettings()
+        settings.setValue("GameSettings/komi", komi)
         self.boardChanged()
 
     def doGameSettings(self) -> None:
