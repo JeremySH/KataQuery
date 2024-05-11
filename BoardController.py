@@ -358,22 +358,28 @@ class HoverText(QObject):
         self.hoverTextItem = QGraphicsSimpleTextItem()
         self.hoverTextItem.setPen(QPen(Qt.NoPen))
         self.hoverTextItem.setBrush(QBrush(Qt.black))
+        
         self.hoverFont = QFont(self.bc.markFont)
         size = int(self.bc.markFont.pointSize()*0.75)
         if size <= 0:
             size = 1
-
         self.hoverFont.setPointSize(size)
 
         self.hoverTextItem.setFont(self.hoverFont)
 
         self.hoverRectItem = QGraphicsRectItem()
-        self.hoverRectItem.setPen(QPen(Qt.black))
-        self.hoverRectItem.setBrush(QBrush(Qt.white))
+        p = QPen(Qt.black)
+        p.setColor(QtGui.QColor.fromRgb(0,0,0,200))
+        self.hoverRectItem.setPen(p)
+        
+        b = QBrush(Qt.white)
+        b.setColor(QtGui.QColor.fromRgb(255,255,255,153))
+        self.hoverRectItem.setBrush(QBrush(b))
 
         self.hoverGroup = QGraphicsItemGroup()
         self.hoverGroup.addToGroup(self.hoverRectItem)
         self.hoverGroup.addToGroup(self.hoverTextItem)
+        
         self.bc.scene.addItem(self.hoverGroup)
         self.hoverGroup.setZValue(100)
         self.hoverGroup.hide()
