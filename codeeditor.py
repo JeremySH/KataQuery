@@ -506,8 +506,8 @@ class CodeEditor(CodeEdit):
 
         self.setTabStopDistance(QtGui.QFontMetricsF(self.font()).horizontalAdvance(' ') * 2)
         
-        GS.fullAnalysisReady.connect(self.rerun)
-        GS.quickAnalysisReady.connect(self.rerunQuick) #FIXME Code should support quick & in-depth views
+        GS.fullAnalysisReady.connect(self.handleFullAnalysis)
+        GS.quickAnalysisReady.connect(self.handleQuickAnalysis) 
         GS.CodeGUI_Changed.connect(self.newGUIInfo)
         GS.MainWindowReadyAndWilling.connect(self.afterStartup)
         
@@ -557,7 +557,7 @@ class CodeEditor(CodeEdit):
         self.activateSlot(self.sender().data())
         self.GUI_Saved = {}
         self._dirty = True
-        self.runRequested()
+        self.runit(explicit=False)
 
     def nameASlot(self, slotnum: int) -> None:
         "auto-generate a name for the slot in the menu"
@@ -590,52 +590,46 @@ class CodeEditor(CodeEdit):
     def markDirty(self) -> None:
         self._dirty = True
 
-    def runRequested(self) -> None:
-        print("RUN REQUESTED.")
+    def runit(self, explicit:bool =False) -> None:
+        "run against the analysis in self.lastAnswer. If explicit is true, treat this as a manual run by user."
         if self.lastAnswer != None:
+            if "error" in self.lastAnswer:
+                print(f"KATAGO ERROR: {self.lastAnswer['error']}", file=sys.stderr)
+                return
+
             if self._dirty:
                 self.codeRunner.setCode(self.document().toPlainText())
                 self._dirty = False
                 self.saveCurrentSlot()
-            self.codeRunner.run(self.lastAnswer, extraGlobals = {"__GUI__": self.GUI_Saved}, explicit=True)
+
+            self.codeRunner.run(self.lastAnswer, extraGlobals = {"__GUI__": self.GUI_Saved}, explicit=explicit)
             self.updateGUIVars()
         else:
             GS.statusBarPrint.emit("No KataGo Analysis to run against.")
+
+    def runRequested(self) -> None:
+        "User has explicitly run the script via menu or shortcut."
+        print("RUN REQUESTED.")
+        self.runit(explicit = True)
     
     def updateGUIVars(self) -> None:
         g = self.codeRunner.getGlobals()
         if "__GUI__" in g:
             self.GUI_Saved.update(g['__GUI__'])
-    
-    def runAfterGUI(self) -> None:
-        if self.lastAnswer != None:
-            if self._dirty:
-                self.codeRunner.setCode(self.document().toPlainText())
-                self._dirty = False
-                self.saveCurrentSlot()
-            self.codeRunner.run(self.lastAnswer, extraGlobals = {"__GUI__": self.GUI_Saved}, explicit=False)
-            self.updateGUIVars()
 
-        else:
-            GS.statusBarPrint.emit("No KataGo Analysis to run against.")
+    def handleQuickAnalysis(self, signalData: dict) -> None:
+        "Handle an incoming quick analysis from KataProxy"
+        self.handleAnalysis(signalData, kind='quick')
 
-    def rerunQuick(self, signalData: dict) -> None:
-        self.rerun(signalData, kind='quick')
+    def handleFullAnalysis(self, signalData: dict) -> None:
+        "Handle an incoming full analysis from KataProxy"
+        self.handleAnalysis(signalData, kind="full")
 
-
-    def rerun(self, signalData: dict, kind:str ='full'):
+    def handleAnalysis(self, signalData: dict, kind:str ='full') -> None:
+        "Handle an analysis from KataProxy. kind can be 'quick' or 'full'."
         signalData['payload']['depth'] = kind
         self.lastAnswer = signalData['payload']
-        if "error" in self.lastAnswer:
-            print(f"KATAGO ERROR: {self.lastAnswer['error']}", file=sys.stderr)
-            return
-        if self._dirty:
-            self.codeRunner.setCode(self.document().toPlainText())
-            self._dirty = False
-            self.saveCurrentSlot()
-        self.codeRunner.createContexts(signalData["payload"], extraGlobals={"__GUI__": self.GUI_Saved}, kind=kind)
-        self.codeRunner.run()
-        self.updateGUIVars()
+        self.runit()
 
     def newGUIInfo(self, info: dict) -> None:
         changed = False
@@ -644,7 +638,7 @@ class CodeEditor(CodeEdit):
                 self.GUI_Saved[thing].update(info[thing])
                 changed = True
         if changed:
-            self.runAfterGUI()
+            self.runit(explicit=False)
 
 class CodeEditorBasic(QPlainTextEdit):
     "older version, but kept in case pyqode goes wacky"
