@@ -307,7 +307,8 @@ class Goban:
         c = Goban(self.xsize, self.ysize, makingCopy=True)
         c.board = np.copy(self.board)
         c.bifurcator = self.bifurcator.copy(c)
-
+        c.komi = self.komi
+        c.toPlay = self.toPlay
         return c
 
     def asASCII(self) -> str:
@@ -336,12 +337,14 @@ class Goban:
 
     def asSGF(self) -> str:
         # sgf format inverts the y axis 
-
-        sgf = f"(;GM[1]FF[4]CA[UTF-8]KM[{self.komi}]"
-        sgf += f"PL[{self.toPlay[0].upper()}]"
-
         letters = 'abcdefghijklmnopqrstuvwxyz'
         initial, moves = self.bifurcator.stones_n_moves()
+
+        sgf = f"(;GM[1]FF[4]CA[UTF-8]KM[{self.komi}]"
+        x,y = letters[self.xsize-1], letters[self.ysize-1]
+        sgf += f"SZ[{self.xsize}:{self.ysize}]"
+        sgf += f"PL[{self.toPlay[0].upper()}]"
+
 
         if len(initial):
             sgf += ";"
@@ -350,9 +353,9 @@ class Goban:
             color = i[0]
             coord = letters[pos[0]] + letters[self.ysize-pos[1]-1]
             if color[0].upper() == "W":
-                sgf += "AW[{coord}]"
+                sgf += f"AW[{coord}]"
             else:
-                sgf += "AB[{coord}]"
+                sgf += f"AB[{coord}]"
 
 
         for m in moves:
