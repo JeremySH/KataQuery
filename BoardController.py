@@ -519,11 +519,15 @@ class BoardController(QObject):
 
     def relaunchKataGo(self, cmd, model, config):
         
-        prog = QMessageBox()
+        prog = QMessageBox(project_globals.getMainWindow())
         prog.setText("Launching KataGo...")
         prog.setStandardButtons(QMessageBox.NoButton)
         prog.setModal(False)
         prog.show()
+        # seems to only show if I spam these (shrug)
+        QApplication.instance().processEvents()
+        QApplication.instance().processEvents()
+        QApplication.instance().processEvents()
         QApplication.instance().processEvents()
 
         try:
@@ -535,6 +539,7 @@ class BoardController(QObject):
 
             else:
                 self.kata = KP.GlobalKataInit(KP.KATACMD, model, KP.KATACONFIG)
+            prog.hide()
             prog.close()
         except OSError as e:
             prog.setText(str(e))
@@ -543,6 +548,7 @@ class BoardController(QObject):
             prog.exec_()
             sys.exit()
         finally:
+            prog.hide()
             prog.close() # doesn't really act like it's supposed to but here's hoping
 
     def afterStartup(self) -> None:
