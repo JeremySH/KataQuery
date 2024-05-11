@@ -7,7 +7,11 @@ clearStatus()
 
 # intersections without suggested move
 print("\n#### INTERSECTION INFO EXAMPLE ####")
-i = k.illegal_moves[0]
+i = k.get_point((0,0))
+
+if len(k.illegal_moves):
+	i = k.illegal_moves[0]
+
 for key,val in i.items():
 	if type(val) == str:
 		print(f"'{key}': '{val}'")
@@ -33,7 +37,7 @@ for x in dir(k):
 				print(x, ": ", getattr(k,x))
 			else:
 				if type(getattr(k,x)) is str:
-					print(x, ": '", getattr(k,x), "'")
+					print(x, ": ", f"'{getattr(k,x)}'")
 				else:
 					print(x, ": ", type(getattr(k,x)))
 
