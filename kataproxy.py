@@ -111,7 +111,7 @@ class KataAnswer:
     @cached_property
     def legal_moves(self):
         "intersection data for all legal moves for current player"
-        return [i for i in self.intersections if i['policy'] > 0]
+        return [self.pass_move] + [i for i in self.intersections if i['policy'] > 0]
 
     @cached_property
     def illegal_moves(self):
