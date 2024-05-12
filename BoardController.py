@@ -386,46 +386,51 @@ class HoverText(QObject):
 
 import time,sys
 class QueueSubmitter(QObject):
-    "a simplistic way to rate-limit quick analysis submissions"
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
-        self.MINIMUM_FRAME_TIME = 1/100 # 100 fps
-        self.MAXIMUM_FRAME_TIME = 0.5
         self.queue = None # not much of a 'queue' as it only holds latest query
-        self.delay = 1/30 # 30 fps to start
-        self.submissions  = [] # backlog, for calculating rate limit
+        self.delay = 1/30 # 30 fps-ish to start
+        self.submissions = [] # backlog, for calculating rate limit
 
-        # process at a sliding framerate
-        # discarding old queries
         self.timer = QTimer()
+        self.timer.setSingleShot(True)
         self.timer.timeout.connect(self.processQueue)
-        self.timer.start(self.delay*1000)
+        self.timer.setInterval(self.delay*500)
 
         KP.KataSignals.answerFinished.connect(self.adjustRate)
-    
+
     def processQueue(self):
+        "timer is triggered, submit the latest query if available"
         if not self.queue: return
 
         self.submissions.append((time.time(), self.queue))
+
         KP.KataSignals.askForAnalysis.emit(self.queue)
         
         self.queue = None # drop outdated
 
     def addToQueue(self, query: dict):
+        "Add a query but wait for a delay before sumbitting, so that fast future queries can supplant this one"
         self.queue = query
+        self.timer.start()
 
-    def adjustRate(self, finishedQuery):
-        "try to guess the rate at which answers are being processed and match it"
+    def adjustRate(self, finishedQuery: dict) -> None:
+        """
+        Called after an answer is ready.
+        Try to guess the rate at which answers are being stalled and match the delay
+        """
+
         if len(self.submissions) > 0:
             t, _ = self.submissions.pop(0)
 
             gap = time.time() - t
-            if len(self.submissions) > 0:
-                self.delay = self.delay + gap/2
-            else: # try to speed things up
-                self.delay = max(self.delay * 0.75, self.MINIMUM_FRAME_TIME)
 
-            self.timer.setInterval(self.delay*1000)
+            self.delay = (self.delay + gap)/2
+            self.delay = min(self.delay, 1.0)
+
+            #print("delay: ", self.delay)
+
+            self.timer.setInterval(self.delay*500) # 1/2 to keep it snappy
 
 class BoardController(QObject):
     "Control the graphics view widget. Constructs the board graphics scene and manages mouse clicks & events"
