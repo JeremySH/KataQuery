@@ -252,6 +252,7 @@ class Bifurcator:
         self._plays = []
 
     def stones_n_moves(self) -> tuple[list, list]:
+        "return the current position as a list of placd stones and a list of plays after these placements"
         stones = []
         blacks = self._placements[0]
         whites = self._placements[1]
@@ -263,6 +264,7 @@ class Bifurcator:
         return stones, self._plays
 
     def stones_n_moves_coords(self) -> tuple[list, list]:
+        "just like stones_n_moves except the coordinates are GTP style (e.g. 'D4'). Useful for sending to KataGo"
         #print("placements ", self._placements)
         #print("plays", self._plays)
         blacks = [['B', pointToCoords(p)] for p in self._placements[0]]
@@ -275,6 +277,7 @@ class Bifurcator:
 
         #print(stones, plays)
         return stones, plays
+
 
 class Goban:
     def __init__(self, xsize:int = 19, ysize = None, makingCopy:bool =False) -> None:
@@ -523,6 +526,7 @@ class Goban:
         return legal
     
     def nearby_stones(self, hops: int) -> set[tuple[int,int]]:
+        "return the set of intersections nearby the current stones on the board, at distance hops"
         hopset = set(self.black_stones() + self.white_stones())
         v = set(hopset) #visited
 
@@ -558,9 +562,7 @@ class Goban:
 
     def relocate(self, srcPoint: tuple[int,int], destPoint: tuple[int,int]) -> None:
         "Try to relocate a move/stone from srcPoint to destPoint"
-        # ATM we just collapse the stones
-        # but better would be to retain move order if possible
-        # self.bifurcator.collect()
+
         if self.bifurcator.try_relocate(srcPoint, destPoint) : return
 
         col = int2color[self.board[srcPoint]]
@@ -707,7 +709,13 @@ class Goban:
                     return True
         return False
 
+    def diff(self, other_goban: 'Goban') -> list[tuple[int,int]]:
+        "return a list of intersections that are different between these boards. Boards of different sizes is undefined."
+        s = zip(*np.where(self.board != other_goban.board))
+        return list(s)
+
     def _randomLegal(self, color = None) -> tuple[str, tuple[int,int]]:
+        "generate a random legal move and return (color, move tuple)"
         import random
 
         col = color
@@ -730,6 +738,7 @@ class Goban:
 
     # some terrible bots to test the board
     def _randomPlay(self, color = None) -> tuple[str, tuple[int,int], list]:
+        "play a random move and return the move as (color, intersection, resulting_captures)"
         import random
 
         col, move = self._randomLegal(color)
@@ -738,6 +747,7 @@ class Goban:
         return col, move, caps
 
     def _captureGo(self, col) -> tuple[str, tuple[int,int], list]:
+        "randomly pick an opponent's liberty to fill"
         import random
         #col = random.choice(["white", "black"])
 
@@ -768,6 +778,7 @@ class Goban:
 
 
     def _leastLibGo(self, col) -> tuple[str, tuple[int,int], list]:
+        "pick a group with least liberties and play at one of them"
         import random
         #col = random.choice(["white", "black"])
 
@@ -815,7 +826,7 @@ def test(length: int = 180) -> 'Goban':
     return b
 
 if __name__ == "__main__":
-    import time
+    import time, sys
 
     class Perf:
         def __init__(self):
@@ -839,7 +850,16 @@ if __name__ == "__main__":
     movecount = 180
     p.start('moves')
     b = test(movecount)
+
     p.show()
+
+    b2 = test(movecount)
+    
+    b2 = b.copy()
+    b2._randomPlay()
+
+    print("DIFF: ")
+    print(b2.diff(b))
 
     #b = Goban(19)
     b.print()

@@ -78,6 +78,18 @@ In "Draw Mode," the analysis perspective never changes. This has some interestin
 
 These shortcuts are subject to change as I continue tweak it to have the most "flow."
 
+### Bookmarks
+Bookmarks are created "On Request." That means: your edits to the position aren't automatically remembered in the history, *you must
+save a position to return to it.* This is to keep things from getting hella confusing when dragging about stones, etc.
+
+To create a positional bookmark, use the "Bookmarks" menu or CMD-SHIFT-B
+
+To navigate through your bookmarked positions, use the mouse wheel.
+
+When you change board sizes, all bookmarks are deleted.
+
+In the future there will be a more visual way to navigate bookmarked positions (and SGF imported games)
+
 ### Neural Networks
 
 KataQuery will only support two neural networks: a snappy network, and an unfathomably strong one. That means:
@@ -109,7 +121,7 @@ for m in k.moves:
     mark(m, m.order+1)
 ```
 
-Scripts are typical python, but note that there are some **global/local scoping quirks** with running it ATM.
+Scripts are typical python, so you have all the python facilities at hand.
 
 Included importables are `pandas`, `numpy`, and a few other I forget at the moment. Of course, you can import all the
 standard python things you want.

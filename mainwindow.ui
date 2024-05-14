@@ -700,11 +700,20 @@
       <string>Localize</string>
      </property>
     </widget>
+    <widget class="QMenu" name="menuBookmark">
+     <property name="title">
+      <string>Bookmarks</string>
+     </property>
+     <addaction name="actionBookmark"/>
+     <addaction name="actionClear_Current_Bookmark"/>
+     <addaction name="actionClear_All_Bookmarks"/>
+    </widget>
     <addaction name="actionFlip_Player"/>
     <addaction name="actionAnalyze_More"/>
     <addaction name="actionClearBoard"/>
     <addaction name="actionToggleDraw"/>
     <addaction name="menuLocalize"/>
+    <addaction name="menuBookmark"/>
     <addaction name="separator"/>
     <addaction name="actionGame_Settings"/>
     <addaction name="actionNeural_Nets"/>
@@ -847,6 +856,24 @@
   <action name="actionNeural_Nets">
    <property name="text">
     <string>Neural Nets…</string>
+   </property>
+  </action>
+  <action name="actionBookmark">
+   <property name="text">
+    <string>Bookmark</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+B</string>
+   </property>
+  </action>
+  <action name="actionClear_Current_Bookmark">
+   <property name="text">
+    <string>Clear Current</string>
+   </property>
+  </action>
+  <action name="actionClear_All_Bookmarks">
+   <property name="text">
+    <string>Clear All</string>
    </property>
   </action>
  </widget>

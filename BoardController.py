@@ -386,6 +386,7 @@ class HoverText(QObject):
 
 import time,sys
 class QueueSubmitter(QObject):
+    "Class that submits quick analyses to KataProxy and rate-limts to avoid update lag"
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.queue = None # not much of a 'queue' as it only holds latest query
@@ -431,6 +432,72 @@ class QueueSubmitter(QObject):
             #print("delay: ", self.delay)
 
             self.timer.setInterval(self.delay*500) # 1/2 to keep it snappy
+
+class GobanSnapshots:
+    "Class to manage position snapshots"
+    # about the only thing different betweeen this and a list
+    # is that it copies on insert and keeps track of the insertion point
+    def __init__(self):
+        self.snaps = []
+        self.cursor = 0
+
+    def insertSnap(self, board: 'Goban') -> None:
+        "insert this snapshot at current cursor"
+        b = board.copy()
+        self.snaps.insert(self.cursor, b)
+        self.cursor += 1
+
+    def getCurrentSnap(self) -> 'Goban':
+        i = min(self.cursor, len(self.snaps) -1 )
+        return self.snaps[i]
+
+    def goBack(self, count:int = 1) -> 'Goban':
+        "go back a snapshot and return it"
+        more = 0
+        if self.atEnd():
+            more = 1
+        self.cursor -= (count + more)
+        if self.cursor < 0: self.cursor = 0
+        return self.snaps[self.cursor]
+
+    def goForward(self, count:int = 1) -> 'Goban':
+        "go forward and return the snapshot found"
+        self.cursor += count
+        if self.cursor > len(self.snaps):
+            self.cursor = len(self.snaps)
+        
+        i = min(self.cursor, len(self.snaps) -1 )
+        
+        return self.snaps[i]
+
+    def goToBeginning(self) -> 'Goban':
+        "go to the beginning of snapshots and return the position there"
+        self.cursor = 0
+        return self.getCurrentSnap()
+
+    def goToEnd(self) -> 'Goban':
+        "go to the end and return the position there"
+        self.cursor = len(self.snaps)
+        return self.getCurrentSnap()
+
+    def atEnd(self) -> bool:
+        "is cursor at the end?"
+        return self.cursor >= len(self.snaps)
+
+    def atBeginning(self) -> bool:
+        "is cursor at beginning?"
+        return self.cursor == 0
+
+    def deleteCurrent(self) -> None:
+        "delete the current snapshot"
+        if len(self.snaps) == 0: return
+        i = min(self.cursor, len(self.snaps) -1 )        
+        del self.snaps[i]
+
+    def deleteAll(self) -> None:
+        if len(self.snaps) == 0: return
+        self.snaps = []
+        self.cursor = 0
 
 class BoardController(QObject):
     "Control the graphics view widget. Constructs the board graphics scene and manages mouse clicks & events"
@@ -480,6 +547,17 @@ class BoardController(QObject):
         self.goban = Goban(19,19)
         self.activeGoban = self.goban.copy()
 
+        # snapshots are a list of "saved" goban positions
+        # which can be reverted to and navigated to
+        self.gobanSnapshots = GobanSnapshots()
+        
+        # Navigation timer is used to delay full analysis
+        # during snapshot navigation
+        self.navigationTimer = QTimer()
+        self.navigationTimer.setSingleShot(True)
+        self.navigationTimer.setInterval(0.5)
+        self.navigationTimer.timeout.connect(self.analyzeAfterNavigate)
+
         self.setupGraphics()
 
         # pools for graphic items to reduce removes
@@ -494,6 +572,8 @@ class BoardController(QObject):
         self.boardView.mousePressEvent = self.handleMouseDown
         self.boardView.mouseMoveEvent = self.handleMouseMove
         self.boardView.mouseReleaseEvent = self.handleMouseUp
+        self.boardView.wheelEvent = self.handleMouseWheel
+
         self.boardView.setMouseTracking(True)
         self.hoverThing = HoverText(self)
 
@@ -523,7 +603,7 @@ class BoardController(QObject):
         GS.MainWindowReadyAndWilling.connect(self.afterStartup)
 
     def relaunchKataGo(self, cmd, model, config):
-        
+        "Display a 'Launching KataGo' message and restart KataGo"
         prog = QMessageBox(project_globals.getMainWindow())
         prog.setText("Launching KataGo...")
         prog.setStandardButtons(QMessageBox.NoButton)
@@ -557,6 +637,7 @@ class BoardController(QObject):
             prog.close() # doesn't really act like it's supposed to but here's hoping
 
     def afterStartup(self) -> None:
+        "main app window is ready, so now do stuff that may depend upon it"
         # FIXME: kataproxy settings/management needs its own place
         import sys
         settings = QSettings()
@@ -643,6 +724,7 @@ class BoardController(QObject):
         settings.setValue("GameSettings/board/xsize", size[0])
         settings.setValue("GameSettings/board/ysize", size[1])
 
+        self.clearAllBookmarks()
         self.goban = Goban(size[0], size[1])
         self.clearMarks()
         self.clearHeats()
@@ -678,7 +760,7 @@ class BoardController(QObject):
             pass #cancel
 
     def nnSettingsChanged(self, info: dict) -> None:
-        "restart KataGo if necessary"
+        "Neural net settings changed, so restart KataGo if necessary"
         restart = False
         if self.neural_net != info['network']:
             restart = True
@@ -826,6 +908,15 @@ class BoardController(QObject):
             self.mouseMode = "paint"
         else:
             self.mouseMode = "play"
+
+    def handleBookmark(self) -> None:
+        self.gobanSnapshots.insertSnap(self.goban)
+
+    def clearBookmark(self) -> None:
+        self.gobanSnapshots.deleteCurrent()
+
+    def clearAllBookmarks(self) -> None:
+        self.gobanSnapshots.deleteAll()
 
     def paintStone(self, point: tuple[int,int], color: str) -> None:
         "place a stone of this color at this go point"
@@ -1040,6 +1131,49 @@ class BoardController(QObject):
         self.stoneInHand = None
         self.mouseLastEvents = []
 
+    def historyBack(self) -> None:
+        if not self.gobanSnapshots.atBeginning():
+            newGoban = self.gobanSnapshots.goBack()
+            self.changeGoban(newGoban)
+            self.navigationTimer.start()
+
+    def historyForward(self) -> None:
+        if not self.gobanSnapshots.atEnd():
+            newGoban = self.gobanSnapshots.goForward()
+            self.changeGoban(newGoban)
+            self.navigationTimer.start()
+
+    def handleMouseWheel(self, event) -> None:
+        # have to be careful, ignore if inside a drag or paint
+        if self.mouseState != None: return
+        newGoban = None
+        if len(self.gobanSnapshots.snaps):
+            if event.angleDelta().y() < 0:
+                self.historyBack()
+            else:
+                self.historyForward()
+
+    def analyzeAfterNavigate(self) -> None:
+        "Called through a timer signal so as not to lag during history navigation"
+        self.askForFullAnalysis()
+
+    def changeGoban(self, newGoban: 'Goban') -> None:
+        "when user navigates through history"
+        diffs = self.goban.diff(newGoban)
+        for intersection in diffs:
+            if intersection in self.stones:
+                self.stonePool.remove(self.stones[intersection])
+                del self.stones[intersection]
+
+            col  = newGoban.get(intersection)
+            if col != "empty":
+                s = self.stonePool.createStone(col, intersection)
+                self.stones[intersection] = s
+
+        self.goban = newGoban.copy()
+        self.activeGoban = newGoban.copy()
+        self.askForQuickAnalysis()
+
     def mouseSpeed(self) -> tuple[float, float]:
         "calculate mouse speed, unused ATM"
         e = self.mouseLastEvents
@@ -1101,8 +1235,10 @@ class BoardController(QObject):
         "typically during a drag, request a quick analysis for the changed board"
         self.askForQuickAnalysis()
 
-    def boardChanged(self) -> None:
+    def boardChanged(self, save_snap:bool = False) -> None:
         "usually on mouse up, ask for a deeper full analysis"
+        if save_snap:
+            self.gobanSnapshots.insertSnap(self.goban)
         self.askForFullAnalysis()
 
     def getBoardToPlay(self) -> str:
@@ -1205,6 +1341,19 @@ class BoardController(QObject):
         self.marks[gopoint] = item
         #self.scene.addItem(item)
 
+    def setHeatValue(self, gopoint: tuple[int, int], value: float) -> None:
+        "Set the heatmap value at gopoint"
+        if gopoint in self.heat:
+            self.heatPool.remove(self.heat[gopoint])
+            del self.heat[gopoint]
+        newheat = self.heatPool.createHeat(value, 0.001)
+        newheat.value = value
+        #newheat.setZValue(-9)
+        x,y = self.goPointToMouse(gopoint)
+        newheat.setPos(x,y)
+        #self.scene.addItem(newheat)
+        self.heat[gopoint] = newheat
+        
     def addGhostStone(self, color:str, gopoint: tuple[int,int], options: dict) -> None:
         "place a translucent stone at this gopoint"
         scale = 1.0
@@ -1292,7 +1441,7 @@ class BoardController(QObject):
         return query
 
     def handleAnswerFinished(self, ans: dict) -> None:
-        "KataGo has finished an analysis, process it. Called by katago via KataSignal"
+        "KataGo has finished an analysis, process it. Called by KataProxy via KataSignal"
         id = ans['id']
         if id == "wait for startup": return # FIXME: total hack for when user changes networks
 
@@ -1372,15 +1521,4 @@ class BoardController(QObject):
         self.analysisQueue.addToQueue(q)
         #KP.KataSignals.askForAnalysis.emit(q)
 
-    def setHeatValue(self, gopoint: tuple[int, int], value: float) -> None:
-        "Set the heatmap value at gopoint"
-        if gopoint in self.heat:
-            self.heatPool.remove(self.heat[gopoint])
-            del self.heat[gopoint]
-        newheat = self.heatPool.createHeat(value, 0.001)
-        newheat.value = value
-        #newheat.setZValue(-9)
-        x,y = self.goPointToMouse(gopoint)
-        newheat.setPos(x,y)
-        #self.scene.addItem(newheat)
-        self.heat[gopoint] = newheat
+

@@ -46,6 +46,10 @@ class Window(QMainWindow, Ui_MainWindow):
         self.actionGame_Settings.triggered.connect(self.board.doGameSettings)        
         self.actionNeural_Nets.triggered.connect(self.doNeuralNetSettings)
 
+        self.actionBookmark.triggered.connect(self.board.handleBookmark)
+        self.actionClear_All_Bookmarks.triggered.connect(self.board.clearAllBookmarks)
+        self.actionClear_Current_Bookmark.triggered.connect(self.board.clearBookmark)
+        
         # have to build the submenu, meh
 
         localizeGroup = QActionGroup(self.menuLocalize)
