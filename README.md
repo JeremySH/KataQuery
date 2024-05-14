@@ -92,16 +92,17 @@ In the future there will be a more visual way to navigate bookmarked positions (
 
 ### Neural Networks
 
-KataQuery will only support two neural networks: a snappy network, and an unfathomably strong one. That means:
+KataQuery supports only two neural networks: a snappy network, and an unfathomably strong one. That means:
 
 1. strongest 15-block network (kata1-b15c192-s1672170752-d466197061.txt)
 2. strongest confidently rated nbt network (kata1-b18c384nbt-s9131461376-d4087399203.bin)
 
 These networks are included.
 
-The 15-block network is both superhuman and fast, so it should meet your needs. It also gives more move of suggestions,
-which is useful in an analysis environment. This is the default network in KataQuery, until you can are able to select
-networks in the GUI.
+The 15-block network is both superhuman and fast, so it should meet your needs. It also gives more move suggestions,
+which is useful in an analysis environment. This is the default network in KataQuery.
+
+To change networks, select "Neural Nets" from the "Board" menu.
 
 > I may add a third network < 15 blocks for users with slow gpus.
 
