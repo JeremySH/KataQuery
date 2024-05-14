@@ -11,7 +11,7 @@ import time
 
 from goutils import pointToCoords, coordsToPoint
 from kataproxy import KataAnswer, GlobalKata
-
+from io import StringIO
 
 # built in functions for the code editor to use
 
@@ -156,9 +156,13 @@ def get_clipboard() -> str:
     app = QApplication.instance()
     return app.clipboard().text()
 
-def log(stuff: str) -> None:
-    "put this string into the GUI log"
-    GS.CodeGUI_LogPrint.emit(str(stuff)+"\n")
+def log(*args, **kwargs) -> None:
+    "like print() but to the GUI log"
+    s = StringIO("")
+    kwargs['file'] = s
+    print(*args, **kwargs)
+
+    GS.CodeGUI_LogPrint.emit(s.getvalue())
 
 def clearLog() -> None:
     "clear the GUI log"
