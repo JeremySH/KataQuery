@@ -46,26 +46,30 @@ KataSignals = _KataSignals()
 # this is not necessary if you don't need blocking answer/response in a gui
 
 _globalKata = None
-def GlobalKata():
+def GlobalKata() -> "KataProxyQ":
+    "get the global KataProxy object, or None"
     return _globalKata
 
-def GlobalKataInit(cmd, model, config):
+def GlobalKataInit(cmd, model, config) -> "KataProxyQ":
+    "initialize GlobalKata if necessary"
     global _globalKata
     _globalKata = KataProxyQ(cmd, model, config)
     return _globalKata
 
-def eprint(*args, **kwargs):
+def eprint(*args, **kwargs) -> None:
     "just like print() but to stderr"
     kwargs['file'] = sys.stderr
     print(*args, **kwargs)
 
-def other_color(color: str):
+def other_color(color: str) -> str:
+    "get the opposite player of color"
     if color.upper()[0] == "W":
         return "black"
     else:
         return "white"
 
-def same_color(color: str):
+def same_color(color: str) -> str:
+    "get the same color as color, but with regular, lowercase full name (e.g. 'white')"
     # to make the black/white regular
     if color.upper()[0] == "W":
         return "white"
@@ -85,7 +89,7 @@ class dotdict(dict):
 class KataAnswer:
     "a class to make using katago analysis data easier"
     from functools import cached_property
-    def __init__(self, rawAnswer: dict):
+    def __init__(self, rawAnswer: dict) -> None:
         self.answer = moreKataData(rawAnswer)
         self._buildIntersections()
         self._moves = sorted([m for m in self.intersections if m.isMove], key=lambda m: m['order'], reverse=False)
@@ -104,64 +108,64 @@ class KataAnswer:
             x['mergedOrder'] = i
 
     @property
-    def moves(self):
+    def moves(self) -> list['dotdict']:
         "intersection data of KataGo suggested moves"
         return self._moves
 
     @cached_property
-    def legal_moves(self):
+    def legal_moves(self) -> list['dotdict']:
         "intersection data for all legal moves for current player"
         return [self.pass_move] + [i for i in self.intersections if i['policy'] > 0]
 
     @cached_property
-    def illegal_moves(self):
+    def illegal_moves(self) -> list['dotdict']:
         "intersection data for all illegal moves for current player"
         return [i for i in self.intersections if i['policy'] <= 0]
 
     @cached_property
-    def moves_by_policy(self):
+    def moves_by_policy(self) -> list['dotdict']:
         "legal_moves pre-sorted by policy value"
         return sorted(self.legal_moves, key=lambda p: -p.policy)
 
     @cached_property
-    def merged_moves(self):
+    def merged_moves(self) -> list['dotdict']:
         "both moves and unvisited legals combined & sorted by rank"
         return self.moves + [p for p in self.moves_by_policy if p not in self.moves]
 
     @cached_property
-    def white_stones(self):
+    def white_stones(self) -> list['dotdict']:
         "intersection data for each intersection with a white stone on it"
         return [i for i in self.intersections if i.color == "white"]
 
     @cached_property
-    def black_stones(self):
+    def black_stones(self) -> list['dotdict']:
         "intersection data for each intersection with a black stone on it"
         return [i for i in self.intersections if i.color == "black"]
 
     @cached_property
-    def stones(self):
+    def stones(self) -> list['dotdict']:
         "intersection data for each intersection with a stone on it"
         return [i for i in self.intersections if i.color != "empty"]
 
     @cached_property
-    def empties(self):
+    def empties(self) -> list['dotdict']:
         "intersection data for each empty point on the board"
         return [i for i in self.intersections if i.color == "empty"]
 
     @cached_property
-    def intersections(self):
+    def intersections(self) -> list['dotdict']:
         "intersection data for every intersection on the board"
         return [i for i in self._intersections if not isPass(i.pos)]
 
     @cached_property
-    def allowed_moves(self):
+    def allowed_moves(self) -> list['dotdict']:
         if self._allowedMoves == None: # means full-board analysis
             return self.legal_moves
         else:
             return [a for a in self.legal_moves if a.pos  in self._allowedMoves]
 
     @cached_property
-    def played_moves(self):
+    def played_moves(self) -> list[tuple[str,'dotdict']]:
         "list of (color, intersection info) corresponding to the moves made"
         oq = self.answer['originalQuery']
         if 'moves' in oq and len(oq['moves']) > 0:
@@ -170,7 +174,7 @@ class KataAnswer:
             return []
 
     @cached_property
-    def initial_stones(self):
+    def initial_stones(self) -> list[tuple[str, 'dotdict']]:
         "list of (color, intersectionInfo) placed on the board before moves were made"
         oq = self.answer['originalQuery']
         if 'initialStones' in oq and len(oq['initialStones']) > 0:
@@ -179,7 +183,7 @@ class KataAnswer:
             return []
 
     @cached_property
-    def lastMove(self):
+    def lastMove(self) -> 'dotdict':
         "return the intersection info of the last move played"
         #FIXME: decide whether tracking suicide moves is important, as suicide will remove stone color info
         p = self.played_moves
@@ -190,18 +194,20 @@ class KataAnswer:
         return None
 
     @property
-    def pass_move(self):
+    def pass_move(self) -> 'dotdict':
+        'get the intersection info for the pass move'
         return self.get_point ( (-1,-1,))
 
-    def get_point(self, gopoint: tuple) -> dotdict:
+    def get_point(self, gopoint: tuple[int, int]) -> dotdict:
         "fetch intersection data by integer tuple, e.g. (3,3)"
         return self._intersections_by_point[gopoint]
 
     def point(self, x:int, y:int) -> dotdict:
-        "easier to type in a script"
+        "easier to type in a script. Get intersection info by coordinates"
         return self.get_point((x,y,))
 
-    def _buildIntersections(self):
+    def _buildIntersections(self) -> None:
+        "build much intersection data from the analysis dict"
         # OK so most of this junk is to
         # reshape the katago answer into something
         # easy to work with in a python script
@@ -355,7 +361,7 @@ class KataAnswer:
         # and some random access by gopoint if needed
         self._intersections_by_point = intersectionsDict
 
-def moreKataData(kataAnswer: dict):
+def moreKataData(kataAnswer: dict) -> dict:
     "put some extra stats inside the dict for easy access"
     morestuff = {}
 
@@ -457,7 +463,7 @@ class KataProxyQ(QObject):
     "a proxy for katago that uses Qt"
     loginfo = pyqtSignal(str)
     #answerReady = pyqtSignal(str) # provides the id of the answer that is ready
-    def __init__(self, cmd, model, config):
+    def __init__(self, cmd:str, model:str, config:str) -> None:
         super().__init__()
         self.buffer = ""
         self.answers = {} # received answers dicts by id
@@ -470,7 +476,8 @@ class KataProxyQ(QObject):
         KataSignals.claimAnswer.connect(self.claimAnswer)
         self._startup(cmd, model, config)
 
-    def _startup(self, cmd, model, config):
+    def _startup(self, cmd:str, model:str, config:str) -> None:
+        "called on __init__() and during restart()"
         self.cmd = cmd
         self.model = model
         self.config = config
@@ -504,12 +511,13 @@ class KataProxyQ(QObject):
         res = self.analyze({"id": "wait for startup", "action": "query_version"})
         #eprint(f"KATAGO STARTED {res}")
 
-    def _kill(self):
-        "oddly katago has no means of gracefully quitting"
+    def _kill(self) -> None:
+        "oddly katago has no means of gracefully quitting?"
         if self.kata:
             self.kata.kill()
 
-    def restart(self, cmd=None, model=None, config=None):
+    def restart(self, cmd:str =None, model:str =None, config:str =None) -> None:
+        "restart KataGo with the provided cmd, model and/or config"
         if cmd == None: cmd = self.cmd
         if model == None: model = self.model
         if config == None: config = self.config
@@ -517,7 +525,8 @@ class KataProxyQ(QObject):
         self._kill()
         self._startup(cmd, model, config)
 
-    def ask(self, query: dict, cached=False):
+    def ask(self, query: dict, cached:bool =False) -> None:
+        "Submit query to KataGo. If 'cached', keep a copy until manually claimed with getAnswer()/claimAnswer()"
         orig = dict(query)
         orig['proxy_cached'] = cached
         #eprint(f"CACHED IS {orig['proxy_cached']}")
@@ -529,14 +538,20 @@ class KataProxyQ(QObject):
         #QCoreApplication.instance().processEvents()
 
     def _askBlocking(self, query: dict) -> dict:
+        "Submit query to KataGo, block until ready, and return the answer."
         self.ask(query, cached=True)
         return self.getAnswer(query['id'])
 
     def haveAnswer(self, id: str) -> bool:
+        "Do I have the answer with this id?"
         return id in self.answers
 
-    def getAnswer(self, id: str):
+    def getAnswer(self, id: str) -> dict:
+        "Get the analysis answer identified by id"
         #eprint(f"ANSWER REQUESTED: {id}, current answer size: {len(self.answers)}, query size: {len(self.queries)}")
+        
+        # FIXME: this needs a timeout option or something, it feels weird looping forever (even though it works)
+
         if id not in self.queries:
             raise ValueError(f"KataProxy: Cannot get answer for non-existing query id '{id}'")
         count = 0
@@ -552,6 +567,7 @@ class KataProxyQ(QObject):
                 del self.queries[id]
                 return result
             else:
+                # have to check for execution error as it can fail during startup 
                 if self.kata.exitCode() != 0:
                     raise OSError(f"KataGo terminated with error {self.kata.exitCode()}, please refer to terminal output.")
                 #self._readStdout()
@@ -560,6 +576,7 @@ class KataProxyQ(QObject):
                     self._readStdout()
                 #self.kata.readyRead.emit()
             count +=1
+
     def claimAnswer(self, id: str) -> None:
         "remove this answer from my cache"
         if id in self.queries:
@@ -568,7 +585,7 @@ class KataProxyQ(QObject):
         if id in self.answers:
             del self.answers[id]
 
-    def answerToPD(self, answer: str):
+    def answerToPD(self, answer: str) -> "DataFrame":
         """
         provides a many-columned flat df for all intersections.
         Global stuff (like rules & current move number) are repeated for each intersection
@@ -645,16 +662,19 @@ class KataProxyQ(QObject):
         result = pd.DataFrame(columns)
         return result
 
-    def analyzePANDA(self, query: dict):
+    def analyzePANDA(self, query: dict) -> "DataFrame":
         return self.answerToPD(self.analyze(query))
 
-    def analyze(self, query: dict):
+    def analyze(self, query: dict) -> dict:
+        "Analyze the provided query, block until it's ready, and return the answer"
         return self._askBlocking(dict(query))
 
-    def queueDepth(self):
+    def queueDepth(self) -> int:
+        "return the amount of queries still waiting to be answered"
         return len(self.queries) - len(self.answers)
 
-    def _readStdout(self):
+    def _readStdout(self) -> None:
+        'custom stdout reader because Qt has strange operating procedures with lines'
         # have to make my own line reader because readyRead()/readline() acts irrational
         #eprint("Read STDOUT")
         b = self.kata.bytesAvailable()
@@ -670,12 +690,15 @@ class KataProxyQ(QObject):
                 self.buffer = lines[-1]
                 for l in lines[:-1]:
                     if len(l): self._processLine(l)
-    def _readStderr(self):
+    
+    def _readStderr(self) -> None:
+        "read the stderr output from katago, print, and forward it"
         b = str(self.kata.readAllStandardError(), 'utf-8')
         KataSignals.stderrPrinted.emit(b)
         print(b, end='', file=sys.stderr)
 
-    def _processLine(self, line: str):
+    def _processLine(self, line: str) -> None:
+        "process a line from KataGo's stdout and emit answerFinished signal, which provides the answer"
         j = json.loads(line)
         #eprint(f"KATAGO RESPONDED: {j['id']}")
         self.answers[j['id']] = j
