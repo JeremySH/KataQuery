@@ -588,6 +588,8 @@ class BoardController(QObject):
         self.paintColor = "black" # "black" "white" "empty"
         self.stoneInHand = None
 
+        # bucket for storing inertial wheel info
+        self.wheelBucket = 0
 
         self._toplay = "black"
 
@@ -1145,13 +1147,28 @@ class BoardController(QObject):
 
     def handleMouseWheel(self, event) -> None:
         # have to be careful, ignore if inside a drag or paint
-        if self.mouseState != None: return
-        newGoban = None
-        if len(self.gobanSnapshots.snaps):
-            if event.angleDelta().y() < 0:
-                self.historyBack()
-            else:
-                self.historyForward()
+        if self.mouseState != None: 
+            self.wheelBucket = 0
+            return
+
+        sign = lambda x: -1 if x < 0 else 1
+
+        dy = event.angleDelta().y()
+        if dy == 0:
+            self.wheelBucket = 0
+            return
+
+        self.wheelBucket += dy
+        if abs(self.wheelBucket) >= 120: # 120 is standard Qt angle amount
+            forward = sign(self.wheelBucket)
+            self.wheelBucket -= forward*120
+            
+            newGoban = None
+            if len(self.gobanSnapshots.snaps):
+                if forward < 0:
+                    self.historyBack()
+                else:
+                    self.historyForward()
 
     def analyzeAfterNavigate(self) -> None:
         "Called through a timer signal so as not to lag during history navigation"
