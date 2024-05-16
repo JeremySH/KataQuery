@@ -1464,7 +1464,17 @@ class BoardController(QObject):
     def handleAnswerFinished(self, ans: dict) -> None:
         "KataGo has finished an analysis, process it. Called by KataProxy via KataSignal"
         id = ans['id']
-        if id == "wait for startup": return # FIXME: total hack for when user changes networks
+        if id == "wait for startup": 
+            return # FIXME: total hack for when user changes networks
+
+        if id == "clear cache":
+            m = QMessageBox(project_globals.getMainWindow())
+            m.setText("KataGo cache cleared.")
+            m.setModal(True)
+            m.show()
+
+            self.askForFullAnalysis()
+            return
 
         #print(f"ANSWER FINISHED {id}")
         #id is name of asker_timeinnanos
@@ -1542,4 +1552,6 @@ class BoardController(QObject):
         self.analysisQueue.addToQueue(q)
         #KP.KataSignals.askForAnalysis.emit(q)
 
-
+    def clearKataGoCache(self) -> None:
+        q = {"id": "clear cache", "action": "clear_cache"}
+        KP.KataSignals.askForAnalysis.emit(q)

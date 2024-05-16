@@ -717,6 +717,7 @@
     <addaction name="separator"/>
     <addaction name="actionGame_Settings"/>
     <addaction name="actionNeural_Nets"/>
+    <addaction name="actionClear_Cache"/>
    </widget>
    <addaction name="menuHelp"/>
    <addaction name="menuBoard"/>
@@ -874,6 +875,11 @@
   <action name="actionClear_All_Bookmarks">
    <property name="text">
     <string>Clear All</string>
+   </property>
+  </action>
+  <action name="actionClear_Cache">
+   <property name="text">
+    <string>Clear Analysis Cache</string>
    </property>
   </action>
  </widget>
