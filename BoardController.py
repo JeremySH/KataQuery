@@ -626,6 +626,10 @@ class BoardController(QObject):
 
             else:
                 self.kata = KP.GlobalKataInit(KP.KATACMD, model, KP.KATACONFIG)
+            
+            # run another analysis with new engine settings
+            self.askForFullAnalysis()
+
             prog.hide()
             prog.close()
         except OSError as e:
