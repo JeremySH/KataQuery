@@ -23,7 +23,7 @@ from PyQt5.QtWidgets import (
     QGraphicsScene, QGraphicsItemGroup, QGraphicsEllipseItem, QGraphicsRectItem, 
     QGraphicsSimpleTextItem, QGraphicsLineItem, QMessageBox, QApplication, QGraphicsPixmapItem
 )
-from PyQt5.QtGui import QPen, QBrush, QRadialGradient, QImage, QPixmap, QFont, QFontMetrics
+from PyQt5.QtGui import QPen, QBrush, QRadialGradient, QImage, QPixmap, QFont, QFontMetrics, QCursor
 from PyQt5 import QtGui
 
 # Use pools for the graphics items to reduce
@@ -499,6 +499,27 @@ class GobanSnapshots:
         self.snaps = []
         self.cursor = 0
 
+class Cursors:
+    "create and store the QCursors used by board controller"
+    def __init__(self) -> None:
+        d = os.path.join(project_globals.resource_directory, "images")
+        
+        # FIXME this silently fails if bad path:
+        black_arrow = QImage(os.path.join(d, "black_arrow.png"))
+        white_arrow = QImage(os.path.join(d, "white_arrow.png"))
+        circle = QImage(os.path.join(d, "circle_cursor.png"))
+
+        self.black_toplay = self.image2cursor(black_arrow, 1, 1)
+        self.white_toplay = self.image2cursor(white_arrow, 1, 1)
+        self.paint_white = self.image2cursor(circle, -1, -1)
+        self.paint_black = self.paint_white 
+
+    def image2cursor(self, img:'QImage', x, y) -> 'QCursor':
+        "convert image to cursor"
+        pixmap = QPixmap.fromImage(img)
+        cursor = QCursor(pixmap, x, y)
+        return cursor
+
 class BoardController(QObject):
     "Control the graphics view widget. Constructs the board graphics scene and manages mouse clicks & events"
     ## Z layers:
@@ -592,6 +613,9 @@ class BoardController(QObject):
         self.wheelBucket = 0
 
         self._toplay = "black"
+
+        self.cursors = Cursors()
+        self.boardView.setCursor(self.cursors.black_toplay)
 
         self.komi = settings.value("GameSettings/komi", 6.5)
 
@@ -896,6 +920,10 @@ class BoardController(QObject):
     def toplay(self, color: str) -> None:
         if (self._toplay != color):
             self._toplay = color
+            if self._toplay == "white":
+                self.boardView.setCursor(self.cursors.white_toplay)
+            else:
+                self.boardView.setCursor(self.cursors.black_toplay)
             GS.toPlayChanged.emit(self._toplay)
 
     def handleFlipPlayer(self) -> None:
@@ -912,8 +940,13 @@ class BoardController(QObject):
         "user chose to toggle paint mode"
         if onOff:
             self.mouseMode = "paint"
+            self.boardView.setCursor(self.cursors.paint_black)
         else:
             self.mouseMode = "play"
+            if self.toplay == "white":
+                self.boardView.setCursor(self.cursors.white_toplay)
+            else:
+                self.boardView.setCursor(self.cursors.black_toplay)
 
     def handleBookmark(self) -> None:
         self.gobanSnapshots.insertSnap(self.goban)
@@ -996,6 +1029,9 @@ class BoardController(QObject):
             self.activeGoban = self.goban.copy()
             #self.activeGoban.remove(gopoint)
 
+        if self.mouseState in ["Dragging", "Dragging Copy", "Dragging Play"]:
+            self.boardView.setCursor(Qt.ClosedHandCursor)
+
     def capture_capturable(self, color:str) -> None:
         """
         capture all groups with no liberties, assuming color caps first.
@@ -1060,6 +1096,9 @@ class BoardController(QObject):
                     self.stones[gopoint] = self.stoneInHand
                     self.stoneInHand = None
 
+        if self.mouseState in ["Dragging", "Dragging Copy", "Dragging Play"]:
+            self.boardView.setCursor(Qt.OpenHandCursor)
+
         self.activeGoban = self.goban.copy()
         self.boardChanged()
 
@@ -1119,9 +1158,16 @@ class BoardController(QObject):
             gopoint = self.mouseToGoPoint2(event.pos())
             self.paintStone(gopoint, self.paintColor)
         else:
-            # if intersection info is on, show information about that point in
-            # a pop-up
-            pass
+            if self.mouseMode == "play":
+                gopoint = self.mouseToGoPoint2(event.pos())
+                if gopoint in self.stones:
+                    self.boardView.setCursor(Qt.OpenHandCursor)
+                else:
+                    if self.toplay == "white":
+                        self.boardView.setCursor(self.cursors.white_toplay)
+                    else:
+                        self.boardView.setCursor(self.cursors.black_toplay)
+
 
 
     def handleMouseUp(self, event) -> None:
@@ -1131,6 +1177,14 @@ class BoardController(QObject):
         elif self.mouseState == "Painting":
             self.capture_capturable(self.paintColor)
             self.activeGoban = self.goban.copy()
+            if self.mouseMode == "paint":
+                self.boardView.setCursor(self.cursors.paint_black)
+            else:
+                if self.toplay == "white":
+                    self.boardView.setCursor(self.cursors.white_toplay)
+                else:
+                    self.boardView.setCursor(self.cursors.black_toplay)
+            
             self.boardChanged()
 
         self.mouseState = None
