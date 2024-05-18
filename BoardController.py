@@ -320,7 +320,8 @@ class HoverText(QObject):
 
     def mouseMove(self, eventpos: QPoint) -> None:
         "the mouse has moves, manage displaying the hover text, if any."
-        if not self.bc.boardView.underMouse(): return
+        if not self.bc.boardView.underMouse(): 
+            return
         
         gopoint = self.bc.mouseToGoPoint2(eventpos)
         
@@ -345,11 +346,22 @@ class HoverText(QObject):
             x += self.bc.increment/2 + 10
             y += self.bc.increment/2 + 10
             
+            # constrain to board area
+            if x + rect.width() > self.bc.scene.sceneRect().width():
+                x = x - rect.width() - 20
+
+            if y + rect.height() > self.bc.scene.sceneRect().height():
+                y = y - rect.height() - 10
+
             self.hoverGroup.setPos(QPoint(x,y))
             self.hoverGroup.show()
         else:
             self.hoverGroup.hide()
     
+    def mouseLeave(self):
+        if self.hoverGroup:
+            self.hoverGroup.hide()
+
     def recreate(self) -> None:
         "destroy and rebuild, useful when board resized"
         if self.hoverGroup and self.hoverGroup in self.bc.scene.items():
@@ -593,6 +605,7 @@ class BoardController(QObject):
         self.boardView.resizeEvent = self.handleReshow
         self.boardView.mousePressEvent = self.handleMouseDown
         self.boardView.mouseMoveEvent = self.handleMouseMove
+        self.boardView.leaveEvent = self.handleMouseLeave
         self.boardView.mouseReleaseEvent = self.handleMouseUp
         self.boardView.wheelEvent = self.handleMouseWheel
 
@@ -1191,6 +1204,9 @@ class BoardController(QObject):
         self.mouseState = None
         self.stoneInHand = None
         self.mouseLastEvents = []
+
+    def handleMouseLeave(self, event) -> None:
+        self.hoverThing.mouseLeave()
 
     def historyBack(self) -> None:
         if not self.gobanSnapshots.atBeginning():
