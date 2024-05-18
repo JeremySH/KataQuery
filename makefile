@@ -68,6 +68,7 @@ build_receipts/venv_built: build_receipts/receipts_ready
 	pyqode.qt==2.10.0 \
 	pyqode.python==4.0.2 \
 	Pygments==2.17.2 \
+	pillow==10.3.0 \
 	pyinstaller==6.6.0 \
 	&& deactivate && touch build_receipts/venv_built" 
 

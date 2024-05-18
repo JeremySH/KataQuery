@@ -10,7 +10,7 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=["PIL", "setuptools"],
     noarchive=False,
     optimize=0,
 )
@@ -45,6 +45,6 @@ coll = COLLECT(
 app = BUNDLE(
     coll,
     name='KataQuery.app',
-    icon=None,
+    icon='resources/images/icon.ico',
     bundle_identifier=None,
 )
