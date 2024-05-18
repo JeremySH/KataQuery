@@ -963,6 +963,7 @@ class BoardController(QObject):
                 self.boardView.setCursor(self.cursors.black_toplay)
 
     def handleBookmark(self, _=None) -> None:
+        self.goban.toPlay = self.toplay
         self.gobanSnapshots.insertSnap(self.goban)
 
     def clearBookmark(self, _=None) -> None:
@@ -1264,6 +1265,8 @@ class BoardController(QObject):
 
         self.goban = newGoban.copy()
         self.activeGoban = newGoban.copy()
+        if self.toplay != self.goban.toPlay:
+            self.toplay = self.goban.toPlay
         self.askForQuickAnalysis()
 
     def mouseSpeed(self) -> T.Tuple[float, float]:
