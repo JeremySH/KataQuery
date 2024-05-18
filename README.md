@@ -41,11 +41,18 @@ make
 
 This will build the KataGo engine and create a virtual environment necessary for running KataQuery.
 
+If the default build doesn't work for you (pyinstaller tries to build a clickable app) you can try:
+
+```
+make command-line
+```
+
 To run KataQuery, type:
 
 ```
 . run_kataquery.sh
 ```
+or double-click the app in the `dist/` folder
 
 ## How To Use
 
@@ -138,8 +145,7 @@ The "Analyze More" feature (Board->Analyze More) is different from other fronten
 updating as results come in, you "feed" KataGo more visits when you want a deeper analysis. This keeps the interface
 snappy and furthermore allows you to investigate the effect of visits on analysis.
 
-> Right now, starting visits and visit chunks are hard coded. In the future you will be able to tweak these values
-> per network from the GUI.
+To adjust the amount of visits to feed KataGo per "Analyze More," choose `Board->Neural Nets...` from the menu.
 
 When you flip players, the same amount of accumulated visits will be used for the opponent. This is to keep
 compare/contrast strategies consistent.

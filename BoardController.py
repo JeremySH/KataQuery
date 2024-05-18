@@ -13,6 +13,7 @@ from goban import Goban
 from goutils import *
 import project_globals
 import os
+import typing as T
 
 from GameSettingsDialog import GameSettingsDialog
 
@@ -192,12 +193,12 @@ class StonePool:
         self.white_pixmap = QPixmap.fromImage(self.white_image)
         self.shadow_pixmap = QPixmap.fromImage(self.shadow_image)
 
-    def _setStoneData(self, s, color: str, gopoint: tuple[int,int]) -> 'QGraphicsItem':
+    def _setStoneData(self, s, color: str, gopoint: T.Tuple[int,int]) -> 'QGraphicsItem':
         setattr(s, "stoneColor", color)
         x,y = self.bc.goPointToMouse(gopoint)
         s.setPos(x,y)
 
-    def createStone(self, color: str, gopoint: tuple[int,int]) -> 'QGraphicsItem':
+    def createStone(self, color: str, gopoint: T.Tuple[int,int]) -> 'QGraphicsItem':
         "create a stone graphic and return it, use a cached one if possible"
         if len(self.stones[color]) > 0:
             s = self.stones[color].pop()
@@ -210,7 +211,7 @@ class StonePool:
             self.bc.scene.addItem(s)
             return s    
 
-    def _createNewStoneBasic(self, color: str, gopoint: tuple[int,int]) -> 'QGraphicsItem':
+    def _createNewStoneBasic(self, color: str, gopoint: T.Tuple[int,int]) -> 'QGraphicsItem':
         "actually create a real graphics item and return it"
         pen = QPen(Qt.black)
         if color == "white":
@@ -224,7 +225,7 @@ class StonePool:
         stone.setTransformOriginPoint(self.bc.increment/2, self.bc.increment/2)
         return stone
 
-    def _createNewStone(self, color: str, gopoint: tuple[int,int]) -> 'QGraphicsItem':
+    def _createNewStone(self, color: str, gopoint: T.Tuple[int,int]) -> 'QGraphicsItem':
         if color == "black":
             stone = QGraphicsPixmapItem(self.black_pixmap)
             #stone = self.bc.scene.addPixmap(self.black_pixmap)
@@ -283,7 +284,7 @@ class GhostStonePool(StonePool):
         self.black_pixmap = QPixmap.fromImage(self.black_image)
         self.white_pixmap = QPixmap.fromImage(self.white_image)
 
-    def _createNewStone(self, color: str, gopoint: tuple[int,int]) -> 'QGraphicsItem':
+    def _createNewStone(self, color: str, gopoint: T.Tuple[int,int]) -> 'QGraphicsItem':
         # no shadow
         if color == "black":
             stone = QGraphicsPixmapItem(self.black_pixmap)
@@ -308,7 +309,7 @@ class HoverText(QObject):
         self.hoverGroup = None
         self.recreate()
 
-    def setHover(self, gopoint: tuple[int,int], text:str) -> None:
+    def setHover(self, gopoint: T.Tuple[int,int], text:str) -> None:
         "Set hover text for specified go point"
         self.hoverTexts[gopoint] = str(text)
 
@@ -529,7 +530,7 @@ class BoardController(QObject):
     # 0: stones
     # [0,1]: markings
     # 1: stoneInHand
-    def __init__ (self, viewWidget):
+    def __init__ (self, viewWidget) -> None:
         super().__init__()
         settings = QSettings()
         GS.addMark.connect(self.makeMark)
@@ -746,7 +747,7 @@ class BoardController(QObject):
         default.setBold(True)
         self.markFont = default
 
-    def boardResized(self, size: tuple[int, int]) -> None:
+    def boardResized(self, size: T.Tuple[int, int]) -> None:
         "the goban is a different size/shape so destroy everything and create the new one"
         # could be shortened TBH
         self.boardsize = size
@@ -774,7 +775,7 @@ class BoardController(QObject):
         settings.setValue("GameSettings/komi", komi)
         self.boardChanged()
 
-    def doGameSettings(self) -> None:
+    def doGameSettings(self, _=None) -> None:
         "present the game settings dialog box"
         dlg = GameSettingsDialog(settings = (self.boardsize[0], self.boardsize[1], self.komi))
         #dlg.setWindowTitle("Game Settings")
@@ -901,7 +902,7 @@ class BoardController(QObject):
         "adjust the view on resize/show so board is always centered at max size."
         self.boardView.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
 
-    def handleClearBoard(self) -> None:
+    def handleClearBoard(self, _=None) -> None:
         "remove stones from the board, sync the activeGoban, send a boardChanged signal"
         for point in list(self.stones.keys()):
             self.stonePool.remove(self.stones[point])
@@ -926,12 +927,12 @@ class BoardController(QObject):
                 self.boardView.setCursor(self.cursors.black_toplay)
             GS.toPlayChanged.emit(self._toplay)
 
-    def handleFlipPlayer(self) -> None:
+    def handleFlipPlayer(self, _=None) -> None:
         "user chose to flip player"
         self._toplay = opponent(self._toplay)
         self.askForFullAnalysis(visits = self.moreVisits)
 
-    def handleAnalyzeMore(self) -> None:
+    def handleAnalyzeMore(self, _=None) -> None:
         "user chose analyze more command"
         self.moreVisits = self.moreVisits + self.moreVisitsIncrement
         self.askForFullAnalysis(visits = self.moreVisits)
@@ -948,16 +949,16 @@ class BoardController(QObject):
             else:
                 self.boardView.setCursor(self.cursors.black_toplay)
 
-    def handleBookmark(self) -> None:
+    def handleBookmark(self, _=None) -> None:
         self.gobanSnapshots.insertSnap(self.goban)
 
-    def clearBookmark(self) -> None:
+    def clearBookmark(self, _=None) -> None:
         self.gobanSnapshots.deleteCurrent()
 
-    def clearAllBookmarks(self) -> None:
+    def clearAllBookmarks(self, _=None) -> None:
         self.gobanSnapshots.deleteAll()
 
-    def paintStone(self, point: tuple[int,int], color: str) -> None:
+    def paintStone(self, point: T.Tuple[int,int], color: str) -> None:
         "place a stone of this color at this go point"
         changed = False
         if not isOnBoard(point, self.boardsize[0], self.boardsize[1]):
@@ -982,12 +983,12 @@ class BoardController(QObject):
             self.activeGoban = self.goban.copy()
             self.boardQuickChanged()
 
-    def snapPoint(self, mousepoint) -> tuple[int,int]:
+    def snapPoint(self, mousepoint) -> T.Tuple[int,int]:
         "given a mouse location, return a location snapped to nearest go point"
         pos = self.mouseToGoPoint(self.boardView.mapToScene(mousepoint))
         return self.goPointToMouse(pos)
 
-    def tryMove(self, color: str, destPoint: tuple[int,int], origPoint=None) -> None:
+    def tryMove(self, color: str, destPoint: T.Tuple[int,int], origPoint=None) -> None:
         "try the stoneInHand move and trigger a quick analysis"
         #print("QUEUE DEPTH: ", self.kata.queueDepth())
         if not isOnBoard(destPoint, self.boardsize[0], self.boardsize[1]):
@@ -1008,7 +1009,7 @@ class BoardController(QObject):
             self.scene.removeItem(self.stoneInHand)
             self.stoneInHand = None
 
-    def startDrag(self, event, gopoint: tuple[int,int]) -> None:
+    def startDrag(self, event, gopoint: T.Tuple[int,int]) -> None:
         "user starts dragging, set up state and create a stone in hand if necessary"
         if self.mouseState == "Dragging Copy" or self.mouseState == "Dragging Play":
             self.clearStoneInHand()
@@ -1249,7 +1250,7 @@ class BoardController(QObject):
         self.activeGoban = newGoban.copy()
         self.askForQuickAnalysis()
 
-    def mouseSpeed(self) -> tuple[float, float]:
+    def mouseSpeed(self) -> T.Tuple[float, float]:
         "calculate mouse speed, unused ATM"
         e = self.mouseLastEvents
         if len(e) < 2: return 0,0
@@ -1265,7 +1266,7 @@ class BoardController(QObject):
         s, dist = self.mouseSpeed()
         return dist > 8 and s > 500
 
-    def mouseToGoPoint(self, qpoint) -> tuple[int,int]:
+    def mouseToGoPoint(self, qpoint) -> T.Tuple[int,int]:
         "local mouse point to go coordinates"
         x = int((qpoint.x() - self.margin/2)/self.increment) # margin/2 to create clicable area around the intersection
         y = int((qpoint.y() - self.margin/2)/self.increment)
@@ -1273,7 +1274,7 @@ class BoardController(QObject):
 
         return (x,y)
 
-    def mouseToGoPoint2(self, qpoint) -> tuple[int,int]:
+    def mouseToGoPoint2(self, qpoint) -> T.Tuple[int,int]:
         "like moustToGoPoint but automatically map to scene"
         p = self.boardView.mapToScene(qpoint)
         x = int((p.x() - self.margin/2)/self.increment) # margin/2 to create clicable area around the intersection
@@ -1282,7 +1283,7 @@ class BoardController(QObject):
 
         return (x,y)
 
-    def goPointToMouse(self, point: tuple[int, int]) -> tuple[int, int]:
+    def goPointToMouse(self, point: T.Tuple[int, int]) -> T.Tuple[int, int]:
         "go point to local x,y"
         x = (point[0])*self.increment + self.margin/2
         y = (self.boardsize[1] - point[1] -1)*self.increment + self.margin/2
@@ -1299,7 +1300,7 @@ class BoardController(QObject):
             self.restrictToDist = dist
             self.askForFullAnalysis()
 
-    def restrictedPoints(self) -> list[tuple[int,int]]:
+    def restrictedPoints(self) -> T.List[T.Tuple[int,int]]:
         "retrieve a list of points at which the analysis is restricted to"
         if self.restrictToDist <= 0: 
             return None
@@ -1346,13 +1347,13 @@ class BoardController(QObject):
         self.clearMarks()
         self.clearHeats()
 
-    def clearMark(self, gopoint: tuple[int, int]) -> None:
+    def clearMark(self, gopoint: T.Tuple[int, int]) -> None:
         "clear a single mark"
         if gopoint in self.marks:
             self.markPool.remove(self.marks[gopoint])
             del self.marks[gopoint]
 
-    def makeMark(self, gopoint: tuple[int, int], symType: str, options: dict):
+    def makeMark(self, gopoint: T.Tuple[int, int], symType: str, options: dict):
         "construct a mark and put it in the scene, reacts to a signal request"
         halign = 'center'
         valign = 'center'
@@ -1416,7 +1417,7 @@ class BoardController(QObject):
         self.marks[gopoint] = item
         #self.scene.addItem(item)
 
-    def setHeatValue(self, gopoint: tuple[int, int], value: float) -> None:
+    def setHeatValue(self, gopoint: T.Tuple[int, int], value: float) -> None:
         "Set the heatmap value at gopoint"
         if gopoint in self.heat:
             self.heatPool.remove(self.heat[gopoint])
@@ -1429,7 +1430,7 @@ class BoardController(QObject):
         #self.scene.addItem(newheat)
         self.heat[gopoint] = newheat
         
-    def addGhostStone(self, color:str, gopoint: tuple[int,int], options: dict) -> None:
+    def addGhostStone(self, color:str, gopoint: T.Tuple[int,int], options: dict) -> None:
         "place a translucent stone at this gopoint"
         scale = 1.0
 
@@ -1606,6 +1607,6 @@ class BoardController(QObject):
         self.analysisQueue.addToQueue(q)
         #KP.KataSignals.askForAnalysis.emit(q)
 
-    def clearKataGoCache(self) -> None:
+    def clearKataGoCache(self, _=None) -> None:
         q = {"id": "clear cache", "action": "clear_cache"}
         KP.KataSignals.askForAnalysis.emit(q)

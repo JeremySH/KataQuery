@@ -2,6 +2,7 @@
 # for KataGo that provides enhanced analysis facilities
 
 import os
+import typing as T
 
 _mypath = os.path.abspath(os.path.dirname(__file__))
 
@@ -108,64 +109,64 @@ class KataAnswer:
             x['mergedOrder'] = i
 
     @property
-    def moves(self) -> list['dotdict']:
+    def moves(self) -> T.List['dotdict']:
         "intersection data of KataGo suggested moves"
         return self._moves
 
     @cached_property
-    def legal_moves(self) -> list['dotdict']:
+    def legal_moves(self) -> T.List['dotdict']:
         "intersection data for all legal moves for current player"
         return [self.pass_move] + [i for i in self.intersections if i['policy'] > 0]
 
     @cached_property
-    def illegal_moves(self) -> list['dotdict']:
+    def illegal_moves(self) -> T.List['dotdict']:
         "intersection data for all illegal moves for current player"
         return [i for i in self.intersections if i['policy'] <= 0]
 
     @cached_property
-    def moves_by_policy(self) -> list['dotdict']:
+    def moves_by_policy(self) -> T.List['dotdict']:
         "legal_moves pre-sorted by policy value"
         return sorted(self.legal_moves, key=lambda p: -p.policy)
 
     @cached_property
-    def merged_moves(self) -> list['dotdict']:
+    def merged_moves(self) -> T.List['dotdict']:
         "both moves and unvisited legals combined & sorted by rank"
         return self.moves + [p for p in self.moves_by_policy if p not in self.moves]
 
     @cached_property
-    def white_stones(self) -> list['dotdict']:
+    def white_stones(self) -> T.List['dotdict']:
         "intersection data for each intersection with a white stone on it"
         return [i for i in self.intersections if i.color == "white"]
 
     @cached_property
-    def black_stones(self) -> list['dotdict']:
+    def black_stones(self) -> T.List['dotdict']:
         "intersection data for each intersection with a black stone on it"
         return [i for i in self.intersections if i.color == "black"]
 
     @cached_property
-    def stones(self) -> list['dotdict']:
+    def stones(self) -> T.List['dotdict']:
         "intersection data for each intersection with a stone on it"
         return [i for i in self.intersections if i.color != "empty"]
 
     @cached_property
-    def empties(self) -> list['dotdict']:
+    def empties(self) -> T.List['dotdict']:
         "intersection data for each empty point on the board"
         return [i for i in self.intersections if i.color == "empty"]
 
     @cached_property
-    def intersections(self) -> list['dotdict']:
+    def intersections(self) -> T.List['dotdict']:
         "intersection data for every intersection on the board"
         return [i for i in self._intersections if not isPass(i.pos)]
 
     @cached_property
-    def allowed_moves(self) -> list['dotdict']:
+    def allowed_moves(self) -> T.List['dotdict']:
         if self._allowedMoves == None: # means full-board analysis
             return self.legal_moves
         else:
             return [a for a in self.legal_moves if a.pos  in self._allowedMoves]
 
     @cached_property
-    def played_moves(self) -> list[tuple[str,'dotdict']]:
+    def played_moves(self) -> T.List[T.Tuple[str,'dotdict']]:
         "list of (color, intersection info) corresponding to the moves made"
         oq = self.answer['originalQuery']
         if 'moves' in oq and len(oq['moves']) > 0:
@@ -174,7 +175,7 @@ class KataAnswer:
             return []
 
     @cached_property
-    def initial_stones(self) -> list[tuple[str, 'dotdict']]:
+    def initial_stones(self) -> T.List[T.Tuple[str, 'dotdict']]:
         "list of (color, intersectionInfo) placed on the board before moves were made"
         oq = self.answer['originalQuery']
         if 'initialStones' in oq and len(oq['initialStones']) > 0:
@@ -198,7 +199,7 @@ class KataAnswer:
         'get the intersection info for the pass move'
         return self.get_point ( (-1,-1,))
 
-    def get_point(self, gopoint: tuple[int, int]) -> dotdict:
+    def get_point(self, gopoint: T.Tuple[int, int]) -> dotdict:
         "fetch intersection data by integer tuple, e.g. (3,3)"
         return self._intersections_by_point[gopoint]
 

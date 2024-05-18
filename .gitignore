@@ -4,15 +4,23 @@
 *.obj
 *.elf
 *_ui.py
+*.so
 
 # other products & artifacts
 katago-bin/katago
 __pycache__/
 *.py[cod]
 *$py.class
+*.swp
 
 # python virtual environment created by makefile
 venv/
+
+# pyinstaller stuff
+build/
+dist/
+
+build_receipts/
 
 # PyCharm detritus
 .idea/
