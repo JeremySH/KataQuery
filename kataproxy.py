@@ -194,6 +194,21 @@ class KataAnswer:
                     return m[1]
         return None
 
+    @cached_property
+    def policyMax(self) -> float:
+        "maximum policy value in this position"
+        return max(p.policy for p in self.legal_moves)
+    
+    @cached_property
+    def policyMin(self) -> float:
+        "minimum legal policy value in this position"
+        return min(p.policy for p in self.legal_moves)
+
+    @cached_property
+    def policyRange(self) -> float:
+        "policyMax - policyMin"
+        return self.policyMax - self.policyMin
+
     @property
     def pass_move(self) -> 'dotdict':
         'get the intersection info for the pass move'
