@@ -1217,6 +1217,17 @@ class BoardController(QObject):
         self.hoverThing.mouseLeave()
 
     def historyBack(self) -> None:
+        theSnap = self.gobanSnapshots.getCurrentSnap()
+        if not theSnap: return
+
+        # if the position has been altered from current snap
+        # just return to current snap
+        diffs = theSnap.diff(self.goban)
+        if len(diffs): 
+            self.changeGoban(theSnap)
+            self.navigationTimer.start()
+            return
+
         if not self.gobanSnapshots.atBeginning():
             newGoban = self.gobanSnapshots.goBack()
             self.changeGoban(newGoban)
