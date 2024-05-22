@@ -943,6 +943,13 @@ class BoardController(QObject):
     def handleFlipPlayer(self, _=None) -> None:
         "user chose to flip player"
         self._toplay = opponent(self._toplay)
+        
+        if self.mouseMode == "play":
+            if self.toplay == "white":
+                self.boardView.setCursor(self.cursors.white_toplay)
+            else:
+                self.boardView.setCursor(self.cursors.black_toplay)
+        
         self.askForFullAnalysis(visits = self.moreVisits)
 
     def handleAnalyzeMore(self, _=None) -> None:
