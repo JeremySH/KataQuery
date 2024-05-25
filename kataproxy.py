@@ -214,6 +214,26 @@ class KataAnswer:
         'get the intersection info for the pass move'
         return self.get_point ( (-1,-1,))
 
+    @cached_property
+    def dfInfos(self) -> 'DataFrame':
+        "return a data frame of every move infos, legal and illegal"
+        def convert(thing):
+            d = dict(thing)
+            d['x'], d['y'] = thing['pos']
+            d['info'] = thing
+            return d            
+        return pd.DataFrame(convert(m) for m in ([self.pass_move] + self.intersections))
+
+    @cached_property
+    def dfRoot(self) -> 'DataFrame':
+        "return a single-row data frame that holds the rootInfo (general position info)"
+        a = self.answer['rootInfo']
+        a.update(self.answer['stats'])
+        a['policyMin'] = self.policyMin
+        a['policyMax'] = self.policyMax
+        a['policyRange'] = self.policyRange
+        return pd.DataFrame([a]) # pandas needs a list to construct an index
+
     def get_point(self, gopoint: T.Tuple[int, int]) -> dotdict:
         "fetch intersection data by integer tuple, e.g. (3,3)"
         return self._intersections_by_point[gopoint]
