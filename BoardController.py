@@ -1573,12 +1573,16 @@ class BoardController(QObject):
         parsed = id.split("_")
         name, t = parsed[0], int(parsed[1])
 
+        if name == "codeAnalysis":
+            # it's handled by code editor
+            return
+
         out_of_date = False
         if self.lastAnswerTime and self.lastAnswerTime > t:
             out_of_date = True
-            #print("OUT OF DATE: ", id, file=sys.stderr)
-
-        self.lastAnswerTime = t
+            print("OUT OF DATE: ", id, file=sys.stderr)
+        else:
+            self.lastAnswerTime = t
 
         #print(f"NAME IS {name}")
         if name == "policyHeat":
