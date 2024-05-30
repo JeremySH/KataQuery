@@ -295,13 +295,17 @@ class Goban:
         self.bifurcator = Bifurcator(self)
 
     @property
-    def komi(self): return self._komi
+    def komi(self): 
+        "the komi used in this position. Only used for SGF export."
+        return self._komi
     
     @komi.setter
     def komi(self, newK): self._komi = newK
 
     @property
-    def toPlay(self): return self._toPlay
+    def toPlay(self): 
+        "Meta-information of the current player to play. Only really used for SGF export."
+        return self._toPlay
 
     @toPlay.setter
     def toPlay(self, value): self._toPlay = value
@@ -316,6 +320,7 @@ class Goban:
         return c
 
     def asASCII(self) -> str:
+        "return an ASCII text rendering of the board"
         res = "\n   "
         for x in range(self.board.shape[0]):
             if x < 10: res += " "
@@ -340,6 +345,7 @@ class Goban:
         return res
 
     def asSGF(self) -> str:
+        "Convert to SGF text suitable for importing into an SGF editor"
         # sgf format inverts the y axis 
         letters = 'abcdefghijklmnopqrstuvwxyz'
         initial, moves = self.bifurcator.stones_n_moves()
@@ -349,9 +355,6 @@ class Goban:
         sgf += f"SZ[{self.xsize}:{self.ysize}]"
         sgf += f"PL[{self.toPlay[0].upper()}]"
 
-
-        if len(initial):
-            sgf += ";"
         for i in initial:
             pos = i[1]
             color = i[0]
@@ -380,6 +383,7 @@ class Goban:
         return sgf
 
     def print(self) -> None:
+        "print the ASCII board to stderr"
         res = self.asASCII()
         eprint(res, end='')
 
@@ -405,7 +409,7 @@ class Goban:
         return removed
 
     def place (self, color:str, gopoint: T.Tuple[int,int]) -> None:
-        "place a stone"
+        "place a stone of color at gopoint"
         if isPass(gopoint): return
         res = self.bifurcator.place(color, gopoint)
         
@@ -466,7 +470,7 @@ class Goban:
 
     def cap_all_stones(self, toPlayColor: str) -> T.Tuple[T.List[T.Tuple[int,int]], T.List[T.Tuple[int,int]]]:
         """
-        cap all stones, assuming toPlayColor is first to play.
+        Capture all stones, assuming toPlayColor is first to play.
         This is not good for a standard move capture as it gathers all stones into _placements.
         Use only if the board was modified with place() etc.
         """
@@ -557,6 +561,7 @@ class Goban:
         return points
     
     def remove(self, gopoint: T.Tuple[int,int]) -> None:
+        "remove the stone at this go point"
         if not self.bifurcator.try_remove(gopoint):
             self._remove(gopoint)
             self.bifurcator.collect()
@@ -615,11 +620,12 @@ class Goban:
         return self._recast(s)
 
     def stones(self) -> T.List[T.Tuple[int,int]]:
-        "return indices of all stones on board"
+        "return gopoints of all stones on board"
         s = zip(*np.where(self.board & 1 == 1))
         return self._recast(s)
 
     def stones_byCol(self, color:str) -> T.List[T.Tuple[int,int]]:
+        "like stones() but only of specified color (e.g. 'white')"
         c = color2int[color[0].upper()]
         #return list(zip(*np.where(self.board == c)))
         # sadly we must recast it so JSON works
@@ -627,11 +633,11 @@ class Goban:
         return self._recast(s)
 
     def white_stones(self) -> T.List[T.Tuple[int,int]]:
-        "return indices of all white stones on board"
+        "return list of gopoints of all white stones on board"
         return self.stones_byCol("white")
 
     def black_stones(self) -> T.List[T.Tuple[int,int]]:
-        "return indices of all black stones on board"
+        "return list of gopoints of all black stones on board"
         return self.stones_byCol("black")
 
     def groups(self)-> T.Tuple[T.List[T.Tuple[int,int]], T.List[T.Tuple[int,int]]]:
@@ -652,7 +658,7 @@ class Goban:
         return result["black"], result["white"]
 
     def stones_n_moves(self) -> T.Tuple[list, list]:
-        "return stones, movelist suitable for sending to katago for position"
+        "return stones, movelist suitable for (eventually) sending to katago for analysis"
         return self.bifurcator.stones_n_moves()
 
     def stones_n_moves_coords(self) -> T.Tuple[list, list]:
@@ -660,13 +666,14 @@ class Goban:
         return self.bifurcator.stones_n_moves_coords()
 
     def ko_location(self): # returns tuple or None
+        "return a tuple of the current ko location or None"
         k = list(zip(*np.where(self.board == 4)))
         if len(k):
             return k[0]
         return None
 
     def adjacent(self, gopoint: T.Tuple[int,int]) -> T.List[T.Tuple[int,int]]:
-        "return indices of spaces adjacent to this point"
+        "return list of gopoints adjacent to this point"
         res = []
         for d in [(1,0), (-1, 0), (0, 1), (0, -1)]:
             res.append((gopoint[0] + d[0], gopoint[1] + d[1]))
@@ -674,6 +681,7 @@ class Goban:
         return [i for i in res if i[0] >= 0 and i[0] < self.xsize and i[1] >= 0 and i[1] < self.ysize]
 
     def connected(self, gopoint: T.Tuple[int,int]) -> T.List[T.Tuple[int,int]]:
+        "return the stones connected to this gopoint, given they are the same color"
         visited = {}
         grouped = {}
         col = self.board[gopoint]
@@ -683,6 +691,7 @@ class Goban:
         return list(grouped.keys())
 
     def _connectedRec(self, col: np.ubyte, gopoints: T.List[T.Tuple[int,int]], visited: dict, grouped: dict) -> None:
+        "recursive subroutine for connected()"
         for p in gopoints:
             if p in visited: continue
             visited[p] = True
@@ -714,6 +723,10 @@ class Goban:
         "return a list of intersections that are different between these boards. Boards of different sizes is undefined."
         s = zip(*np.where(self.board != other_goban.board))
         return list(s)
+
+    def collapse(self) -> None:
+        "collapse all plays into placements"
+        self.bifurcator.collect()
 
     def _randomLegal(self, color = None) -> T.Tuple[str, T.Tuple[int,int]]:
         "generate a random legal move and return (color, move tuple)"

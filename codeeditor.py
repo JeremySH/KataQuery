@@ -421,7 +421,6 @@ def persist(variable: str, val) -> None:
         return self.context_global
     
     def createContexts(self, kataResults: dict, extraGlobals: dict = None, kind='full', manual_run=False) -> None:
-        from goban import Goban
 
         global k
         #print("CREATE CONTEXTS: explicit: ", manual_run)
@@ -430,16 +429,6 @@ def persist(variable: str, val) -> None:
         if extraGlobals == None: moreglobs = {}
 
         k = KataAnswer(kataResults)
-        g = Goban(k.xsize, k.ysize)
-        g.komi = k.komi
-        g.toplay = k.toPlay
-        if 'initialStones' in k.answer['originalQuery']:
-            for color, stone in k.answer['originalQuery']['initialStones']:
-                g.place(color, coordsToPoint(stone))
-        if 'moves' in k.answer['originalQuery']:
-            for color, stone in k.answer['originalQuery']['moves']:
-                p = coordsToPoint(stone)
-                g.play(color, p)
 
         setattr(k, "depth", kind)
         setattr(k, "manual_run", manual_run)
@@ -454,7 +443,6 @@ def persist(variable: str, val) -> None:
 
         # k will always override, sry
         self.context_global["k"] = k
-        self.context_global['goban'] = g
 
 from pyqode.core.api import CodeEdit, ColorScheme
 from pyqode.core import modes, panels

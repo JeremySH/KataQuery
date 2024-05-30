@@ -28,6 +28,7 @@ import pandas as pd
 import numpy as np
 
 from goutils import *
+from goban import Goban
 
 class _KataSignals(QObject):
     askForAnalysis = pyqtSignal(dict)
@@ -182,6 +183,20 @@ class KataAnswer:
             return [ (same_color(m[0]), self.get_point(coordsToPoint(m[1]))) for m in oq['initialStones']]
         else:
             return []
+
+    @cached_property
+    def goban(self) -> "Goban":
+        "return a Goban object for this position"
+        g = Goban(self.xsize, self.ysize)
+        g.komi = self.komi
+        for color, stone in self.initial_stones:
+            g.place(color, stone.pos)
+        
+        for color, move in self.played_moves:
+            g.play(color, move.pos)
+
+        g.toplay = self.toPlay
+        return g
 
     @cached_property
     def lastMove(self) -> 'dotdict':
