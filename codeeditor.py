@@ -420,7 +420,7 @@ def persist(variable: str, val) -> None:
     def getGlobals(self) -> dict:
         return self.context_global
     
-    def createContexts(self, kataResults: dict, extraGlobals: dict = None, kind='full', manual_run=False) -> None:
+    def createContexts(self, kataResults: dict, extraGlobals: dict = None, manual_run=False) -> None:
 
         global k
         #print("CREATE CONTEXTS: explicit: ", manual_run)
@@ -430,7 +430,7 @@ def persist(variable: str, val) -> None:
 
         k = KataAnswer(kataResults)
 
-        setattr(k, "depth", kind)
+        setattr(k, "depth", kataResults['depth'])
         setattr(k, "manual_run", manual_run)
 
         saved_globals, saved_locals = self.getSavedVars(self.context_global, self.context_global)
