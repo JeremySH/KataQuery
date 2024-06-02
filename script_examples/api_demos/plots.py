@@ -74,7 +74,9 @@ plt.ion() # interactive mode is required
 
 # you must de/reconstruct the axis because
 # its labels stick around otherwise
-fig.delaxes(axis)
+if axis:
+	fig.delaxes(axis)
+	
 axis = fig.add_subplot()
 
 df = k.dfInfos
