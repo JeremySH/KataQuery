@@ -64,6 +64,7 @@ build_receipts/venv_built: build_receipts/receipts_ready
 	sh -c "python3.9 -m venv venv && . venv/bin/activate && pip install \
 	pyqt5==5.15.10 \
 	pandas==2.2.2 \
+	matplotlib==3.9.0 \
 	pyqode-core==4.0.11 \
 	pyqode.qt==2.10.0 \
 	pyqode.python==4.0.2 \

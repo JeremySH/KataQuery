@@ -6,11 +6,11 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[('resources', 'resources'), ('katago-bin', 'katago-bin')],
-    hiddenimports=['pandas', 'GameSettingsDialog', "GameSettingsDialog_ui", "NeuralNetSettingsDialog_ui", "NeuralNetSettingsDialog"],
+    hiddenimports=['matplotlib.backends.backend_qtagg', 'pandas', 'GameSettingsDialog', "GameSettingsDialog_ui", "NeuralNetSettingsDialog_ui", "NeuralNetSettingsDialog"],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=["PIL", "setuptools", "pip", "pyinstaller"],
+    excludes=["setuptools", "pip", "pyinstaller"],
     noarchive=False,
     optimize=0,
 )
