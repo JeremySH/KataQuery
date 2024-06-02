@@ -180,9 +180,10 @@ def msgBox(msg: str, buttons:list[str] or None = None) -> str:
     mb = QtWidgets.QMessageBox(w)
 
     buttonDict = {}
-    for b in buttons:
-        buttonObject = mb.addButton(b, QtWidgets.QMessageBox.AcceptRole)
-        buttonDict[buttonObject] = b
+    if buttons:
+        for b in buttons:
+            buttonObject = mb.addButton(b, QtWidgets.QMessageBox.AcceptRole)
+            buttonDict[buttonObject] = b
 
     mb.setText(msg)
     mb.exec_()
