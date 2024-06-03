@@ -84,9 +84,22 @@ def same_color(color: str) -> str:
 
 class dotdict(dict):
     "dot notation for dictionary"
-    __getattr__ = dict.__getitem__
-    __delattr__ = dict.__delitem__
-    __setattr__ = dict.__setitem__
+    # note: __getattr__/__delattr__ needs to raise AttributeError 
+    # so that code which catches AttributeError (but not  KeyError)
+    # will continue to work (aka  PANDAS pretty printer)
+    #__getattr__ = dict.__getitem__ 
+    #__delattr__ = dict.__delitem__
+    __setattr__ = dict.__setitem__ # note this will succeed even for types (e.g. int) not supported by a regular setattr()
+    def __getattr__(self,key):
+        try:
+            return dict.__getitem__(self, key)
+        except KeyError:
+            raise AttributeError(key)
+    def __delattr__(self, key):
+        try:
+            return dict.__delitem__(self, key)
+        except KeyError:
+            raise AttributeError(key)
 
 class KataAnswer:
     "a class to make using katago analysis data easier"
