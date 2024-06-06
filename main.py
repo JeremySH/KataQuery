@@ -4,6 +4,7 @@ from kataproxy import KataProxyQ, KataSignals, GlobalKata, GlobalKataInit
 from goutils import coordsToPoint, pointToCoords, opponent
 from goban import Goban
 from GlobalSignals import GS
+from SgfParser import SgfParser
 
 from BoardController import BoardController
 
@@ -13,6 +14,7 @@ from PyQt5.QtCore import Qt, QPoint, QObject, QStandardPaths, QSettings, QTimer
 from PyQt5.QtWidgets import (
 
     QApplication, QMainWindow, QMessageBox, QPlainTextEdit, QWidget, QFormLayout,
+    QFileDialog,
     QGraphicsScene, QGraphicsItemGroup, QGraphicsEllipseItem, QGraphicsRectItem, 
     QGraphicsSimpleTextItem, QGraphicsLineItem,
     QGraphicsView, QActionGroup, QAction
@@ -96,6 +98,8 @@ class Window(QMainWindow, Ui_MainWindow):
             GS.Code_SetSlotName.connect(titleset)
             GS.Code_SlotActivated.connect(selectset)
 
+        self.actionImport_SGF.triggered.connect(self.doImportSGF)
+
     def _BounceMenu(self):
         self.board.setRestrictDist(self.sender().data())
 
@@ -163,6 +167,60 @@ class Window(QMainWindow, Ui_MainWindow):
 
             GS.SetNeuralNetSettings.emit(d)
 
+
+    def doImportSGF(self):
+        "import an SGF file and emit a signal for it"
+        def whoops(exception):
+            "generic parsing error presented to user"
+            QMessageBox.critical(self, 
+                        "Couldn't Parse SGF", 
+                        f"Sorry, I couldn't parse the sgf file '{fileName}':\n\n{exception}")
+
+        mb = QtWidgets.QMessageBox(self)
+        mb.setText("This will replace all positions and bookmarks.")
+        mb.setInformativeText("Do you want to continue?")
+        mb.setIcon(QMessageBox.Warning)
+        mb.setStandardButtons(QMessageBox.Cancel | QMessageBox.Ok)
+        b = mb.exec_()
+
+
+        if b == QMessageBox.Ok:
+            options = QFileDialog.Options()
+            options |= QFileDialog.DontUseNativeDialog
+            fileName, _ = QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileName()", "","SGF Files (*.sgf)", options=options)
+            if fileName:
+                try:
+                    sgf = SgfParser.fromFile(fileName)
+                except Exception as e:
+                    whoops(e) ; return
+
+                try:
+                    gobans = sgf.root.toGobanList()
+                except Exception as e:
+                    whoops(e) ; return
+
+                if len(gobans) == 0:
+                    whoops("no positions found.") ; return
+
+                komi, size = (gobans[0].komi, (gobans[0].xsize, gobans[1].ysize,))
+
+                for g in gobans:
+                    if g.komi != komi:
+                        whoops("Inconsistent Komi") ; return
+                    if (g.xsize, g.ysize) != size:
+                        whoops("Inconsistent board sizes") ; return
+
+                d = {
+                "xsize": gobans[0].xsize, 
+                "ysize": gobans[0].ysize, 
+                "komi": gobans[0].komi, 
+                "gobans": gobans
+                }
+
+                GS.loadBoard.emit(d)
+
+        else:
+            print("Not OK!")
 
     def showEvent(self, whatever):
         if not self.firstShow:return

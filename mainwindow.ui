@@ -718,6 +718,8 @@
     <addaction name="actionGame_Settings"/>
     <addaction name="actionNeural_Nets"/>
     <addaction name="actionClear_Cache"/>
+    <addaction name="separator"/>
+    <addaction name="actionImport_SGF"/>
    </widget>
    <addaction name="menuHelp"/>
    <addaction name="menuBoard"/>
@@ -880,6 +882,11 @@
   <action name="actionClear_Cache">
    <property name="text">
     <string>Clear Analysis Cache</string>
+   </property>
+  </action>
+  <action name="actionImport_SGF">
+   <property name="text">
+    <string>Import SGF…</string>
    </property>
   </action>
  </widget>

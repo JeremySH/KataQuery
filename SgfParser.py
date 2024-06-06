@@ -25,6 +25,7 @@ position derived from the main line moves and placed stones
 
 import sys
 from goban import Goban
+from goutils import *
 
 # some value parsing functions
 
@@ -123,6 +124,7 @@ class SgfNode:
 
 		for p in self.children:
 			if p.key == "PropList":
+				print(";")
 				p.pprint(depth+1)
 			elif p.key == "GameTree":
 				# only the main line
@@ -130,7 +132,7 @@ class SgfNode:
 				print(" " * depth + ")")
 				break
 			else:
-				print(f";{p.key}[{p.value}]", end='')
+				print(f"{p.key}[{p.value}]", end='')
 
 	def toGobanList(self, boards:list['Goban'] or None =None, testPrint=False) -> list['Goban']:
 		"construct a goban for every new position and return these as a list"
@@ -161,26 +163,30 @@ class SgfNode:
 				p.toGobanList(boards)
 			
 			if p.key == "W":
+				g.toPlay = "white"
 				g = g.copy()
 				g.play("white", toCoord(p.value, g.ysize))
+				g.toPlay = opponent(g.toPlay)
 				boards.append(g)
 			
 			elif p.key == "B":
+				g.toPlay = "black"
 				g = g.copy()
 				g.play("black", toCoord(p.value, g.ysize))
+				g.toPlay = opponent(g.toPlay)
 				boards.append(g)
 			
 			elif p.key == "AW":
-				g = g.copy()
+				# g = g.copy()
 				for location in toCoordList(p.value, g.ysize):
 					g.place("white", location)
-				boards.append(g)
+				# boards.append(g)
 			
 			elif p.key == "AB":
-				g = g.copy()
+				#g = g.copy()
 				for location in toCoordList(p.value, g.ysize):
 					g.place("black", location)
-				boards.append(g)
+				#boards.append(g)
 			
 			elif p.key == "PL":
 				color = toColor(p.value)
@@ -306,14 +312,15 @@ class SgfParser:
 		return i
 
 
-	def gulpProp(self, contents: str, index: int) -> tuple[int, 'SgfNode']:
+	def gulpProp(self, contents: str, index: int, lastKey="") -> tuple[int, 'SgfNode']:
 		"consume a property and return (new cursor, node)"
 		i = self.nextReal("[", contents, index)
 		if i < 0:
 			raise ValueError("Bad property, sry")
 
 		key = contents[index:i].strip()
-
+		if key == "":
+			key = lastKey
 		i2 = self.nextReal("]", contents, i)
 
 		if i2 < 0:
@@ -326,13 +333,15 @@ class SgfParser:
 		"consume all following properties and return (new cursor, list of nodes)"
 		props = []
 		i = index
+		lastKey = ""
 		while True:
 			c = contents[i:].lstrip()[0]
 			if c == ';' or c == ')' or c == '(' :
 				return i, props
 			else:
-				i2, node = self.gulpProp(contents, i)
+				i2, node = self.gulpProp(contents, i, lastKey)
 				i = i2
+				lastKey = node.key
 				props.append(node)
 
 		return i, props
@@ -372,11 +381,15 @@ class SgfParser:
 		return curNode
 
 if __name__ == "__main__":
-	thing = SgfParser.fromFile("test_files/test_normal.sgf")
+	#thing = SgfParser.fromFile("test_files/test_normal.sgf")
 	#thing.root.pprint()
 
-	thing = SgfParser.fromFile("test_files/test_escaped.sgf")
+	#thing = SgfParser.fromFile("test_files/test_escaped.sgf")
 
+
+	thing = SgfParser.fromFile("test_files/test_rootplaces.sgf")
+	thing.root.pprint()
+	sys.exit()
 	gl = thing.root.toGobanList()
 
 	print ("GOBANS: ", gl)

@@ -545,6 +545,8 @@ class BoardController(QObject):
     def __init__ (self, viewWidget) -> None:
         super().__init__()
         settings = QSettings()
+        GS.loadBoard.connect(self.handleLoadBoard)
+
         GS.addMark.connect(self.makeMark)
         GS.clearMark.connect(self.clearMark)
         GS.clearAllMarks.connect(self.clearMarks)
@@ -589,7 +591,7 @@ class BoardController(QObject):
         # during snapshot navigation
         self.navigationTimer = QTimer()
         self.navigationTimer.setSingleShot(True)
-        self.navigationTimer.setInterval(0.5)
+        self.navigationTimer.setInterval(100)
         self.navigationTimer.timeout.connect(self.analyzeAfterNavigate)
 
         self.setupGraphics()
@@ -819,6 +821,28 @@ class BoardController(QObject):
                 self.relaunchKataGo(KP.KATACMD, KP.KATAMODEL_NBT, KP.KATACONFIG)
             else:
                 self.relaunchKataGo(KP.KATACMD, KP.KATAMODEL_B15, KP.KATACONFIG)
+
+    def handleLoadBoard(self, boardinfo: dict) -> None:
+        "a list of gobans in the dict are ready to be loaded into the interface"
+        g = boardinfo['gobans']
+        
+        if g[0].xsize != self.boardsize[0] or g[0].ysize != self.boardsize[1]:
+            self.boardResized(size=(g[0].xsize, g[0].ysize,))
+
+        if g[0].komi != self.komi:
+            self.komiChanged(g[0].komi)
+
+        self.clearAllBookmarks()
+        for gob in g:
+            self.gobanSnapshots.insertSnap(gob)
+
+        # FIXME: User sees empty board as first position so it appears that
+        # file doesn't load... There should be some feedback
+        self.gobanSnapshots.goToBeginning()
+        
+        self.changeGoban(self.gobanSnapshots.getCurrentSnap())
+        self.navigationTimer.start()
+
 
     def addGrid(self) -> None:
         "build the grid and hoshi"
@@ -1266,6 +1290,7 @@ class BoardController(QObject):
 
     def analyzeAfterNavigate(self) -> None:
         "Called through a timer signal so as not to lag during history navigation"
+        self.askForQuickAnalysis()
         self.askForFullAnalysis()
 
     def changeGoban(self, newGoban: 'Goban') -> None:
@@ -1285,7 +1310,7 @@ class BoardController(QObject):
         self.activeGoban = newGoban.copy()
         if self.toplay != self.goban.toPlay:
             self.toplay = self.goban.toPlay
-        self.askForQuickAnalysis()
+
 
     def mouseSpeed(self) -> T.Tuple[float, float]:
         "calculate mouse speed, unused ATM"

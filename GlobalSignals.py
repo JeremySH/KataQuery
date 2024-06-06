@@ -34,6 +34,8 @@ class _GS(QObject):
     stdoutPrinted = pyqtSignal(str)
     stderrPrinted = pyqtSignal(str)
 
+    loadBoard = pyqtSignal(dict) # dict is xsize, ysize, komi, and list of gobans
+
     Code_SetSlotName = pyqtSignal(int, str) # int, text
     Code_SlotActivated = pyqtSignal(int)
 

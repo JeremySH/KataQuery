@@ -15,8 +15,7 @@ any position you dream up.
 As a result, "Move order" is a fuzzy concept in KataQuery. KataQuery can only track sequences fully if you leave stones
 mostly where they are (but I hope you don't!).
 
-While you can certainly review a game in KataQuery, there is no SGF import at the moment. SGF import/export
-*will* be supported, but KataQuery is definitely *not* an SGF editor. It's built for exploration and "Asking Questions."
+While you can certainly review a game in KataQuery, there is limited SGF import, and clunky export (you must do it through a script). SGF export *will* be supported, but KataQuery is definitely *not* an SGF editor. It's built for exploration and "Asking Questions."
 
 ## Requirements
 
@@ -86,7 +85,7 @@ In "Draw Mode," the analysis perspective never changes. This has some interestin
 These shortcuts are subject to change as I continue tweak it to have the most "flow."
 
 ### Bookmarks
-Bookmarks are created "On Request." That means: your edits to the position aren't automatically remembered in the history, *you must
+Bookmarks are created "On Request." That means: your edits aren't automatically remembered in the history, *you must
 save a position to return to it.* This is to keep things from getting hella confusing when dragging about stones, etc.
 
 To create a positional bookmark, use the "Bookmarks" menu or CMD-SHIFT-B
@@ -95,7 +94,15 @@ To navigate through your bookmarked positions, use the mouse wheel.
 
 When you change board sizes, all bookmarks are deleted.
 
-In the future there will be a more visual way to navigate bookmarked positions (and SGF imported games)
+In the future there will be a more visual way to navigate bookmarked positions.
+
+### SGF Import
+SGF Import (Board->Import SGF) loads the main line of an SGF file and creates a bookmark for every new position (aka "move"). This allows you to navigate through a game using the scrollwheel.
+
+I have no dreams of supporting full SGF trees and whatnot, as KataQuery is built for interaction rather
+than replay. But at least the import feature makes it possible to review a game without manually inputting moves.
+
+SGF export is possible through a script (see `script_examples/api_demos/goban_object.py`). For the moment, I have to decide how to treat positions in the SGF (collections, diagrams, or etc) before I implement export.
 
 ### Neural Networks
 
@@ -154,4 +161,4 @@ compare/contrast strategies consistent.
 
 There's a lot I want to do with KataQuery, from graphics improvements to differential position analysis features, and
 various GUI doodads that can make analysis easier. Too much to list here. However, for the near future, I'll be
-normalizing the API, adding SGF import/export, and tweaking the UX to make exploration as fluent as possible.
+normalizing the API, adding SGF export, and tweaking the UX to make exploration as fluent as possible.
