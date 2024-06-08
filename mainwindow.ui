@@ -690,6 +690,8 @@
     <addaction name="menuCodeSlot"/>
     <addaction name="separator"/>
     <addaction name="actionShow_Console"/>
+    <addaction name="separator"/>
+    <addaction name="actionDisable_Code"/>
    </widget>
    <widget class="QMenu" name="menuBoard">
     <property name="title">
@@ -887,6 +889,14 @@
   <action name="actionImport_SGF">
    <property name="text">
     <string>Import SGF…</string>
+   </property>
+  </action>
+  <action name="actionDisable_Code">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Disable</string>
    </property>
   </action>
  </widget>

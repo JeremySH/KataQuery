@@ -457,6 +457,7 @@ class CodeEditor(CodeEdit):
         self.textChanged.connect(self.markDirty)
         self._dirty = True
         self.GUI_Saved = {} # saved gui info by the script
+        self.disabled = False
 
         # code completion is pretty basic and annoying
         # so don't use it. 
@@ -515,7 +516,8 @@ class CodeEditor(CodeEdit):
 
     def afterStartup(self) -> None:
         settings = QSettings()
-
+        self.disabled = settings.value("codeeditor/disabled", False)
+        
         self.nameAllSlots()
         self.activateSlot(settings.value("codeeditor/current_slot", 1), force=True)
 
@@ -605,6 +607,17 @@ class CodeEditor(CodeEdit):
         print("RUN REQUESTED.")
         self.runit(explicit = True)
     
+    def handleDisableCode(self, value) -> None:
+        "Disable/Enable running the code automatically"
+        self.disabled = value
+        settings = QSettings()
+        settings.setValue("codeeditor/disabled", value)
+        
+        if not self.disabled:
+            self.runit()
+        else:
+            clearAll()
+
     def updateGUIVars(self) -> None:
         g = self.codeRunner.getGlobals()
         if "__GUI__" in g:
@@ -622,7 +635,8 @@ class CodeEditor(CodeEdit):
         "Handle an analysis from KataProxy. kind can be 'quick' or 'full'."
         signalData['payload']['depth'] = kind
         self.lastAnswer = signalData['payload']
-        self.runit()
+        if not self.disabled:
+            self.runit()
 
     def newGUIInfo(self, info: dict) -> None:
         changed = False

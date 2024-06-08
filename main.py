@@ -9,6 +9,8 @@ from SgfParser import SgfParser
 from BoardController import BoardController
 
 from PyQt5 import QtGui, QtCore, QtWidgets
+from PyQt5.QtGui import QGuiApplication
+
 from PyQt5.QtCore import Qt, QPoint, QObject, QStandardPaths, QSettings, QTimer
 
 from PyQt5.QtWidgets import (
@@ -34,10 +36,22 @@ class Window(QMainWindow, Ui_MainWindow):
         self.firstShow = True
         self.connectSignalsSlots()
 
+        # panic startup for runaway scripts
+        mods = QGuiApplication.queryKeyboardModifiers()
+        if mods & Qt.ShiftModifier == Qt.ShiftModifier:
+            self.actionDisable_Code.setChecked(True)
+        else:
+            settings = QSettings()
+            dis = settings.value("codeeditor/disabled", False)
+            self.actionDisable_Code.setChecked(dis)
+
+
     def connectSignalsSlots(self) -> None:
         self.actionQuit.triggered.connect(self.close)
         self.actionAbout.triggered.connect(self.about)
         self.actionRun.triggered.connect(self.codeEdit.runRequested)
+        self.actionDisable_Code.toggled.connect(self.codeEdit.handleDisableCode)
+
         self.actionFlip_Player.triggered.connect(self.board.handleFlipPlayer)
         self.actionAnalyze_More.triggered.connect(self.board.handleAnalyzeMore)
         self.actionClearBoard.triggered.connect(self.board.handleClearBoard)

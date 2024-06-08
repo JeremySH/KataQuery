@@ -55,6 +55,9 @@ or double-click the app in the `dist/` folder
 
 ## How To Use
 
+### HOW TO PANIC
+> If your script gets in an infinite loop or crashes KataQuery, you can temporarily disable script execution by holding `SHIFT` during startup.
+
 ### Playing Stones
 
 By default, you're in "Play Mode," which alternates colors for you, and sets the analysis perspective to the current
