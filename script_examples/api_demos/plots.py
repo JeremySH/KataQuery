@@ -1,36 +1,28 @@
 # Plots
 # matplotlib is a big hack right now.
-# By default it opens a new window per plt.show(),
+# By default, plt.show() creates a new window every time,
 # which can be frightening when the script is rerun
 # every millisecond
 
 # there are two workarounds:
-# 1. protect plt.show() with a GUI button, 
-#    so that user gets a new plot
-#    on-demand instead of automatically
-# 2. persist a figure and reuse the same window
+# 1. protect plt.show() with a GUI button, so it creates
+#    a new window on-demand
+# 2. use figure(num=1) to reuse a figure window
 
 # both are shown below
 
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib
+plt.ion() # interactive mode is REQUIRED 
 
 SHOW_SCATTER = button1("scatter plt")
-SHOW_WR = button2("winrate plt")
-
-# we must persist both the figure and the axis
-# it uses
-persist("fig", None)
-persist("axis", None)
 
 if k.depth == 'quick':
 	bail()
 
 if SHOW_SCATTER:
-	# this will create a new window every run,
-	# which is default behavior. It is protected by a button
-	# so window creation doesn't get out of control
+	# this is easier, but plt.show() creates new windows,
+	# so we protect it with a GUI Button
 	clearAll()
 	df = k.dfInfos
 	df = df.query('isMove')
@@ -39,57 +31,35 @@ if SHOW_SCATTER:
 	plt.show()
 	bail()
 
-if SHOW_WR:
-	# creates new window
-	clearAll()
-	df = k.dfInfos
-	df = df.query("isMove")
-	df = df[['winrate', 'info', 'coords']]
-	df = df.sort_values('winrate', ascending=False)
-	df.plot.bar(y='winrate', x='coords', legend=False)
-	for m in df['info']:
-		mark(m, m.coords)
-	bail()
+# REUSING A FIGURE WINDOW
+# by specifying a figure ID (aka "num") we use the same window
+# over and over:
+fig = plt.figure(num=1)
 
-	
-# SHOW POLICY PIE
-# this updates the same window over and over,
-# so it's safe to automatically rebuild
-# the chart every run
+# but we need to make sure the axes and/or layout is legit
+# for our purpose.
+if len(fig.get_axes()) == 1:
+	axis = fig.get_axes()[0]
+else:
+	for a in fig.get_axes():
+		fig.delaxes(a)
+	axis = fig.add_subplot()
 
-# Key points:
-# 1. Create persisted figure (persist("figure"))
-# 2. enable ion() (interactive mode)
-# 3. delete and re-add the axes every time
+# clean previous labels, etc
+axis.clear()
 
-# it takes a while to render the plot, so
-if k.depth != "full":
-	bail()
-
-# create a persisted figure
-if not fig:
-	fig = plt.figure()
-
-plt.ion() # interactive mode is required 
-
-# you must de/reconstruct the axis because
-# its labels stick around otherwise
-if axis:
-	fig.delaxes(axis)
-	
-axis = fig.add_subplot()
-
+# munge some data
 df = k.dfInfos
 df = df.query('legal')
 df = df.sort_values('policy', ascending=False)
 df = df[['policy', 'coords', 'info']]
 
-# plot it. MAKE SURE YOU USE THE PERSISTED FIGURE'S AXIS
-# as this will force an in-place update
+# plot it, using proper axes (ax=axis)
 df = df.set_index('coords')
 df.plot.pie(y='policy', ax=axis, legend=False)
-fig.show()
-
+fig.show() # NOTE: don't use plt.show()!
+		
+# mark up the board for easy cross-ref
 clearAll()
 
 for m in df['info'][:10]:
