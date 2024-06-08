@@ -552,7 +552,8 @@ class CodeEditor(CodeEdit):
         self.activateSlot(self.sender().data())
         self.GUI_Saved = {}
         self._dirty = True
-        self.runit(explicit=False)
+        if not self.disabled:
+            self.runit(explicit=False)
 
     def nameASlot(self, slotnum: int) -> None:
         "auto-generate a name for the slot in the menu"
@@ -644,7 +645,7 @@ class CodeEditor(CodeEdit):
             if thing in info:
                 self.GUI_Saved[thing].update(info[thing])
                 changed = True
-        if changed:
+        if changed and not self.disabled:
             self.runit(explicit=False)
 
 class CodeEditorBasic(QPlainTextEdit):
