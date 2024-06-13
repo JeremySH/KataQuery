@@ -454,11 +454,19 @@ class GobanSnapshots:
         self.snaps = []
         self.cursor = 0
 
-    def insertSnap(self, board: 'Goban') -> None:
+    def insertSnap(self, board: 'Goban', location: str = "current") -> None:
         "insert this snapshot at current cursor"
         b = board.copy()
-        self.snaps.insert(self.cursor, b)
-        self.cursor += 1
+        if location == "current":
+            self.snaps.insert(self.cursor, b)
+            self.cursor += 1
+        elif location == "end":
+            self.snaps.insert(len(self.snaps), b)
+        elif location == "start":
+            self.snaps.insert(0, b)
+        else:
+            self.snaps.insert(self.cursor,b)
+            self.cursor += 1
 
     def getCurrentSnap(self) -> 'Goban':
         i = min(self.cursor, len(self.snaps) -1 )
@@ -546,6 +554,7 @@ class BoardController(QObject):
         super().__init__()
         settings = QSettings()
         GS.loadBoard.connect(self.handleLoadBoard)
+        GS.addBookmark.connect(self.addBookmark)
 
         GS.addMark.connect(self.makeMark)
         GS.clearMark.connect(self.clearMark)
@@ -992,6 +1001,13 @@ class BoardController(QObject):
                 self.boardView.setCursor(self.cursors.white_toplay)
             else:
                 self.boardView.setCursor(self.cursors.black_toplay)
+
+    def addBookmark(self, params:dict) ->  None:
+        loc = "current"
+        if 'location' in params:
+            loc = params['location']
+
+        self.gobanSnapshots.insertSnap(params['goban'], location=loc)
 
     def handleBookmark(self, _=None) -> None:
         self.goban.toPlay = self.toplay

@@ -31,6 +31,10 @@ def snooze(seconds:float =0) -> None:
         time.sleep(1/60)
         QApplication.instance().processEvents()
 
+def bookmark(g: 'Goban', location: str="current") -> None:
+    "add a bookmark for the passed Goban, at location 'start', 'end' or 'current'(default)"
+    GS.addBookmark.emit({'goban': g, 'location': location})
+
 def status(info: str, **kwargs):
     "change status line to provided text"
     GS.statusBarPrint.emit(str(info))
@@ -111,7 +115,7 @@ def haveK() -> bool:
     "does k exist? OUTDATED FUNCTION, cuz it always exists"
     return k != None
 
-def quickPlay(katainfo: 'KataAnswer', plays: list) -> 'KataAnswer':
+def quickPlay(katainfo: 'KataAnswer', plays: list, visits=2) -> 'KataAnswer':
     """
     play a sequence of moves on the provided KataAnswer
     and return a new KataAnswer Analysis.
@@ -128,7 +132,7 @@ def quickPlay(katainfo: 'KataAnswer', plays: list) -> 'KataAnswer':
     orig = dict(katainfo.answer['originalQuery'])
     orig['moves'] = orig['moves'] + plays
     orig['id'] = "codeAnalysis_" + str(time.time_ns())
-    orig['maxVisits'] = 2
+    orig['maxVisits'] = max(visits,2)
     response = kata.analyze(orig)
 
     return KataAnswer(response)
@@ -253,7 +257,8 @@ extrafuncs = {
     "_guiPing": _guiPing,
     "bail": bail,
     "dist": dist,
-    "snooze": snooze
+    "snooze": snooze,
+    "bookmark": bookmark
 }
 
 # the GUI functions have to be compiled
