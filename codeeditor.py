@@ -9,7 +9,7 @@ import sys
 import traceback
 import time
 
-from goutils import pointToCoords, coordsToPoint
+from goutils import pointToCoords, coordsToPoint, goban2Query
 from kataproxy import KataAnswer, GlobalKata
 from io import StringIO
 
@@ -137,6 +137,20 @@ def quickPlay(katainfo: 'KataAnswer', plays: list, visits=2) -> 'KataAnswer':
 
     return KataAnswer(response)
 
+def analyze(goban: 'Goban', visits=2, allowedMoves: list[tuple[int, int]] =  None, nearby: int=0) -> 'KataAnswer':
+    "Analyze a goban. If 'nearby' > 0, analyze points within specified hop distance of existing stones"
+    allowed = None
+    if nearby > 0:
+        allowed = goban.nearby_stones(nearby)
+    else:
+        allowed = allowedMoves
+
+    kata = GlobalKata() # if this doesn't succeed it's a KataQuery bug
+
+    q = goban2Query(goban, "codeAnalysis", maxVisits=visits, allowedMoves = allowed)
+    response = kata.analyze(q)
+    return KataAnswer(response)
+
 def opponent(color: str) -> str:
     "return the opponent's color"
     if color[0].upper() == "W":
@@ -246,6 +260,7 @@ extrafuncs = {
     "heat": heat,
     "havek": haveK,
     "quickPlay": quickPlay,
+    "analyze": analyze,
     "set_clipboard": set_clipboard,
     "get_clipboard": get_clipboard,
     "log": log,

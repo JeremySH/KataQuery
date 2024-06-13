@@ -208,7 +208,7 @@ class KataAnswer:
         for color, move in self.played_moves:
             g.play(color, move.pos)
 
-        g.toplay = self.toPlay
+        g.toPlay = self.toPlay
         return g
 
     @cached_property

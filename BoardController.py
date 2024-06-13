@@ -1537,61 +1537,11 @@ class BoardController(QObject):
         "given the activeGoban, prepare a query for sending to KataGo"
         import time
         #print("PREPPING QUERY ", idname)
-        id = idname + "_" + str(time.time_ns())
-
-        initial, moves = self.positionToStoneList()
         restricted = self.restrictedPoints()
-        #print("RESTRICTED ", restricted)
 
-        if len(moves) == 0:
-            if len(initial) > 0:
-                moves = [initial[-1]]
-                initial = initial[:-1]
-
-        white_stones = self.activeGoban.white_stones()
-        black_stones = self.activeGoban.black_stones()
+        self.activeGoban.toPlay = self.getBoardToPlay()[0].upper()
+        return goban2Query(self.activeGoban, idname, maxVisits = maxVisits, flipPlayer = flipPlayer, allowedMoves = restricted)
         
-        query = {
-            "id": id,
-            "boardXSize": self.boardsize[0],
-            "boardYSize": self.boardsize[1],
-            "initialStones": initial,
-            "rules": "Chinese",
-            "maxVisits": maxVisits,
-            "moves": moves,
-            "black_stones": black_stones,
-            "white_stones": white_stones,
-            "komi": self.komi
-            #"includeOwnership": True,
-            #"includePolicy": True,
-            #"includePVVisits": True
-        }
-
-        toplay = self.getBoardToPlay()[0].upper()
-        if flipPlayer: toplay = opponent(toplay)
-
-        if restricted:
-            theMoves= [pointToCoords(p) for p in restricted]
-            #print("ALLOW MOVES: ", theMoves)
-            theDict = {
-                    'player': toplay,
-                    'moves' : theMoves,
-                    'untilDepth': 1,
-                    }
-
-            query['allowMoves'] = [theDict]
-
-        if len(moves) == 0:
-            query["initialPlayer"] = toplay
-        else:
-            # KataGo tries to "guess" which perspective I want (black or white's).
-            # This leads to nonsense results when moves[] available. So, force a pass
-            # if needed to keep the side to play correct
-            #print(toplay, opponent(toplay))
-            if toplay[0].upper() == (moves[-1][0])[0].upper():
-                moves.append([opponent(toplay)[0].upper(), "pass"])
-            #print(f"MOVES: {moves}")
-        #print(f"TO PLAY: {self.getBoardToPlay()}")
         return query
 
     def handleAnswerFinished(self, ans: dict) -> None:

@@ -57,3 +57,67 @@ def opponent(color: str) -> str:
 def isOnBoard(point, xsize: int, ysize: int) -> bool:
     "simple check to see if point is inside the board"
     return point[0] >= 0 and point[1] >= 0 and point[0] < xsize and point[1] < ysize
+
+def goban2Query(goban: 'Goban', id: str, maxVisits=2, flipPlayer=False, allowedMoves: list[tuple[int, int]] or None = None) -> dict:
+    "convert a goban into a query dict for sending to KataGo."
+    # FIXME: maybe goutils isn't a great place for this, but other places are just as dubious 
+    import time
+    #print("PREPPING QUERY ", idname)
+    id = id + "_" + str(time.time_ns())
+
+    initial, moves = goban.stones_n_moves_coords()
+
+    restricted = None
+    if allowedMoves:
+        restricted = allowedMoves
+
+    if len(moves) == 0:
+        if len(initial) > 0:
+            moves = [initial[-1]]
+            initial = initial[:-1]
+
+    white_stones = goban.white_stones()
+    black_stones = goban.black_stones()
+    
+    query = {
+        "id": id,
+        "boardXSize": goban.xsize,
+        "boardYSize": goban.ysize,
+        "initialStones": initial,
+        "rules": "Chinese",
+        "maxVisits": maxVisits,
+        "moves": moves,
+        "black_stones": black_stones,
+        "white_stones": white_stones,
+        "komi": goban.komi,
+        "includeOwnership": True,
+        "includePolicy": True,
+        "includePVVisits": True
+    }
+
+    toplay = goban.toPlay.upper()
+    if flipPlayer: toplay = opponent(toplay).upper()
+
+    if restricted:
+        theMoves= [pointToCoords(p) for p in restricted]
+        #print("ALLOW MOVES: ", theMoves)
+        theDict = {
+                'player': toplay,
+                'moves' : theMoves,
+                'untilDepth': 1,
+                }
+
+        query['allowMoves'] = [theDict]
+
+    if len(moves) == 0:
+        query["initialPlayer"] = toplay
+    else:
+        # KataGo tries to "guess" which perspective I want (black or white's).
+        # This leads to nonsense results when moves[] available. So, force a pass
+        # if needed to keep the side to play correct
+        #print(toplay, opponent(toplay))
+        if toplay[0].upper() == (moves[-1][0])[0].upper():
+            moves.append([opponent(toplay)[0].upper(), "pass"])
+        #print(f"MOVES: {moves}")
+    #print(f"TO PLAY: {self.getBoardToPlay()}")
+    return query
