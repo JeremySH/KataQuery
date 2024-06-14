@@ -199,6 +199,7 @@ class KataAnswer:
 
     @cached_property
     def allowed_moves(self) -> T.List['dotdict']:
+        "list of intersection data for currently allowed moves"
         if self._allowedMoves == None: # means full-board analysis
             return self.legal_moves
         else:

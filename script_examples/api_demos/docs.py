@@ -2,6 +2,12 @@
 # etc. for kata analysis information
 # so you can get an idea of what's
 # available (see terminal output)
+import pydoc
+
+def doc(thing):
+	return(pydoc.plain(pydoc.render_doc(thing)))
+
+print(doc(k))
 
 clearStatus()
 
@@ -28,18 +34,32 @@ for key,val in k.moves[0].items():
 
 # functions and stuff for the global 'k'
 print("\n#### dir(k) ####")
+callables = []
+primitive = []
+other = []
+
 for x in dir(k):
 	if x[0] != "_":
 		if callable(getattr(k,x)):
-			print(x + "()")
+			callables.append(f"{x}()")
 		else:
 			if type(getattr(k,x)) in [int, float, bool]:
-				print(x, ": ", getattr(k,x))
+				primitive.append(f"{x}: {getattr(k,x)}")
+				#print(x, ": ", getattr(k,x))
 			else:
 				if type(getattr(k,x)) is str:
-					print(x, ": ", f"'{getattr(k,x)}'")
+					primitive.append(f"{x}: '{getattr(k,x)}'")
 				else:
-					print(x, ": ", type(getattr(k,x)))
+					other.append(f"{x}: {type(getattr(k,x))}")
+
+for c in callables:
+	print(c)
+
+for p in primitive:
+	print(p)
+
+for o in other:
+	print(o)
 
 # k.answer is a raw answer dict
 # with the basic json stuff
