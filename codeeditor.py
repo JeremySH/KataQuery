@@ -10,8 +10,12 @@ import traceback
 import time
 
 from goutils import pointToCoords, coordsToPoint, goban2Query
-from kataproxy import KataAnswer, GlobalKata
+from kataproxy import KataAnswer, GlobalKata, KataGoQueryError
 from io import StringIO
+
+# localize the line number to the code editor during error reports.
+# Actually it's only useful the day that kataquery internal code never throws, heh
+_LOCALIZE_LINE_NUMBER = False
 
 # built in functions for the code editor to use
 
@@ -273,7 +277,8 @@ extrafuncs = {
     "bail": bail,
     "dist": dist,
     "snooze": snooze,
-    "bookmark": bookmark
+    "bookmark": bookmark,
+    "KataGoQueryError": KataGoQueryError
 }
 
 # the GUI functions have to be compiled
@@ -421,7 +426,16 @@ def persist(variable: str, val) -> None:
             except Exception as e:
                 traceback.print_exc()
                 tb_info = traceback.extract_tb(e.__traceback__)
+
+                # focus the line & file on the code editor rather than internal code
                 name, line, func, code = tb_info[-1]
+                if _LOCALIZE_LINE_NUMBER:
+                    for tup in tb_info:
+                        n = tup[0]
+                        if n == '<code editor>':
+                            name, line, func, code = tup
+
+
                 status(f"{type(e).__name__} : {str(e)}, '{name}' line {line}")
 
     def getSavedVars(self, glob: dict, loc: dict) -> tuple[dict, dict]:

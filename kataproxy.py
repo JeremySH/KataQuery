@@ -101,10 +101,35 @@ class dotdict(dict):
         except KeyError:
             raise AttributeError(key)
 
+class KataGoQueryError(Exception):
+    "An error occured with the provided query to KataGo. Attributes provided: e.message, e.field, e.contents, e.originalQuery"
+    def __init__(self, kata_response:dict) -> None:
+        self.contents = kata_response
+        self.message = kata_response['error']
+        if 'field' in kata_response:
+            self.message = kata_response['field'] + " -- " + self.message
+            self.field = kata_response['field']
+        else:
+            self.field = None
+
+        if 'originalQuery' in kata_response:
+            self.originalQuery = kata_response['originalQuery']
+        else:
+            self.originalQuery = None
+
+        super().__init__(self.message)
+
 class KataAnswer:
     "a class to make using katago analysis data easier"
     from functools import cached_property
     def __init__(self, rawAnswer: dict) -> None:
+        
+        if 'error' in rawAnswer:
+            if 'field' in rawAnswer:
+                raise KataGoQueryError(rawAnswer)
+            else:
+                raise KataGoQueryError(rawAnswer)
+
         self.answer = moreKataData(rawAnswer)
         self._buildIntersections()
         self._moves = sorted([m for m in self.intersections if m.isMove], key=lambda m: m['order'], reverse=False)
