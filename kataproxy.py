@@ -14,6 +14,8 @@ KATAMODEL_B15 = os.path.join(BIN_PATH, "kata1-b15c192-s1672170752-d466197061.txt
 KATAMODEL = KATAMODEL_B15
 
 KATACONFIG = os.path.join(BIN_PATH, "analysis.cfg")
+KATACONFIG_ZERO = os.path.join(BIN_PATH, "analysis-zero.cfg")
+
 KATATHREADS = "2" # this is for mutli-position processing. Small helps lower latency b/c threads are working hard analyzing current position
 
 import traceback

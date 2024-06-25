@@ -142,18 +142,23 @@ class Window(QMainWindow, Ui_MainWindow):
         clickedNBT = lambda v, o=ui.groupBox_B15: o.setChecked(not v)
         
         network = settings.value("nn/active_network", "B15")
+
+        ui.B15_QuickVisits.setValue(settings.value("nn/B15/quick_visits", 2))
+        ui.B15_FullVisits.setValue(settings.value("nn/B15/full_visits", 100))
+        ui.B15_StepVisits.setValue(settings.value("nn/B15/step_visits", 500))
+
+        ui.NBT_QuickVisits.setValue(settings.value(f"nn/NBT/quick_visits", 2))
+        ui.NBT_FullVisits.setValue(settings.value(f"nn/NBT/full_visits", 50))
+        ui.NBT_StepVisits.setValue(settings.value(f"nn/NBT/step_visits", 100))
+
+        ui.pure.setChecked(settings.value(f"nn/pure", False))
+
         if network == "B15":
             ui.groupBox_B15.setChecked(True)
             ui.groupBox_NBT.setChecked(False)
-            ui.B15_QuickVisits.setValue(settings.value("nn/B15/quick_visits", 2))
-            ui.B15_FullVisits.setValue(settings.value("nn/B15/full_visits", 100))
-            ui.B15_StepVisits.setValue(settings.value("nn/B15/step_visits", 500))
         else:
             ui.groupBox_B15.setChecked(False)
             ui.groupBox_NBT.setChecked(True)
-            ui.NBT_QuickVisits.setValue(settings.value(f"nn/NBT/quick_visits", 2))
-            ui.NBT_FullVisits.setValue(settings.value(f"nn/NBT/full_visits", 50))
-            ui.NBT_StepVisits.setValue(settings.value(f"nn/NBT/step_visits", 100))
 
         ui.groupBox_NBT.clicked.connect(clickedNBT)
         ui.groupBox_B15.clicked.connect(clickedB15)
@@ -163,21 +168,25 @@ class Window(QMainWindow, Ui_MainWindow):
         d = {}
         if accepted:
             if ui.groupBox_B15.isChecked():
+                net = "B15"
                 settings.setValue("nn/active_network", "B15")
-                d['network'] = "B15"
                 d['quick_visits'] = ui.B15_QuickVisits.value()
                 d['full_visits'] = ui.B15_FullVisits.value()
                 d['step_visits'] = ui.B15_StepVisits.value()
             else:
+                net = "NBT"
                 settings.setValue("nn/active_network", "NBT")
-                d['network'] = "NBT"
                 d['quick_visits'] = ui.NBT_QuickVisits.value()
                 d['full_visits'] = ui.NBT_FullVisits.value()
                 d['step_visits'] = ui.NBT_StepVisits.value()
 
 
             for key, val in d.items():
-                settings.setValue(f"nn/{d['network']}/{key}", val)
+                settings.setValue(f"nn/{net}/{key}", val)
+
+            d['network'] = net
+            d['pure'] = ui.pure.isChecked()
+            settings.setValue(f"nn/pure", d['pure'])
 
             GS.SetNeuralNetSettings.emit(d)
 

@@ -669,12 +669,11 @@ class BoardController(QObject):
         try:
             if KP.GlobalKata() != None:
                 self.kata = KP.GlobalKata()
-                if self.kata.model != model:
-                    prog.setText("Re-launching KataGo...")
-                    self.kata.restart(KP.KATACMD, model, KP.KATACONFIG)
+                prog.setText("Re-launching KataGo...")
+                self.kata.restart(KP.KATACMD, model, config)
 
             else:
-                self.kata = KP.GlobalKataInit(KP.KATACMD, model, KP.KATACONFIG)
+                self.kata = KP.GlobalKataInit(KP.KATACMD, model, config)
             
             # run another analysis with new engine settings
             self.askForFullAnalysis()
@@ -709,8 +708,14 @@ class BoardController(QObject):
         self.quickVisits = settings.value(f"nn/{network}/quick_visits", 2)
         self.defaultVisits = settings.value(f"nn/{network}/full_visits", 100)
         self.moreVisitsIncrement= settings.value(f"nn/{network}/step_visits", 500)
+        self.pureAnalysis = settings.value(f"nn/pure", False)
 
-        self.relaunchKataGo(KP.KATACMD, model, KP.KATACONFIG)
+        if self.pureAnalysis:
+            config = KP.KATACONFIG_ZERO
+        else:
+            config = KP.KATACONFIG
+
+        self.relaunchKataGo(KP.KATACMD, model, config)
 
         KP.KataSignals.answerFinished.connect(self.handleAnswerFinished)
         self.boardChanged() # trigger analysis on empty board
@@ -817,19 +822,27 @@ class BoardController(QObject):
     def nnSettingsChanged(self, info: dict) -> None:
         "Neural net settings changed, so restart KataGo if necessary"
         restart = False
-        if self.neural_net != info['network']:
+        if self.neural_net != info['network'] or self.pureAnalysis != info['pure']:
             restart = True
         
+        print("Pure: ", info['pure'], self.pureAnalysis, restart)
+
         self.neural_net = info['network']
         self.quickVisits = info['quick_visits']
         self.defaultVisits = info['full_visits']
         self.moreVisitsIncrement = info['step_visits']
+        self.pureAnalysis = info['pure']
+
+        if self.pureAnalysis:
+            config = KP.KATACONFIG_ZERO
+        else:
+            config = KP.KATACONFIG
 
         if restart:
             if self.neural_net == "NBT":
-                self.relaunchKataGo(KP.KATACMD, KP.KATAMODEL_NBT, KP.KATACONFIG)
+                self.relaunchKataGo(KP.KATACMD, KP.KATAMODEL_NBT, config)
             else:
-                self.relaunchKataGo(KP.KATACMD, KP.KATAMODEL_B15, KP.KATACONFIG)
+                self.relaunchKataGo(KP.KATACMD, KP.KATAMODEL_B15, config)
 
     def handleLoadBoard(self, boardinfo: dict) -> None:
         "a list of gobans in the dict are ready to be loaded into the interface"

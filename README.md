@@ -123,6 +123,11 @@ To change networks, select "Neural Nets" from the "Board" menu.
 
 > I may add a third network < 15 blocks for users with slow gpus.
 
+#### Analysis "Purity"
+When you choose "pure" in the Neural Net dialog box, KataGo is launched with a special config "analysis-zero.cfg", which eliminates all human-curated biases and randomness. In short, "pure" KataGo will play the exact same moves even if you generate 100 of them.
+
+It's nice for inspecting the network itself, or when you find move suggestions too noisy. However, it's of limited value when exploring go, since moves are repetitious.
+
 ### Scripting
 
 > WARNING: The API wil change drastically as I attempt to K.I.S.S. during alpha.
