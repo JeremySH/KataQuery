@@ -589,7 +589,7 @@ class BoardController(QObject):
         # goban is a board that keeps track of caps, moves etc.
         # activeGoban is the current position while stone-dragging
         # and should be treated as a temporary IMMUTABLE
-        self.goban = Goban(19,19)
+        self.goban = Goban(x,y)
         self.activeGoban = self.goban.copy()
 
         # snapshots are a list of "saved" goban positions
