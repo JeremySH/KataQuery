@@ -548,6 +548,7 @@ class CodeEditor(CodeEdit):
 
         self.slots = []
         self.currentSlot = None # let main window set me up, as it holds the actions
+        self.previousSlot = None
 
     def afterStartup(self) -> None:
         settings = QSettings()
@@ -569,6 +570,14 @@ class CodeEditor(CodeEdit):
         is the same. This will remove undo history, but is
         useful on startup
         """
+
+        # let user repeat the number to alternate
+        if slotNum == self.currentSlot and self.previousSlot:
+            slotNum = self.previousSlot
+        else:
+            self.previousSlot = self.currentSlot
+
+        # have to do nothing otherwise undo history is lost
         if not force and self.currentSlot == slotNum: return
 
         settings = QSettings()

@@ -146,11 +146,14 @@ for m in k.moves:
 
 Scripts are typical python, so you have all the python facilities at hand.
 
-Included importables are `pandas`, `numpy`, and a few other I forget at the moment. Of course, you can import all the
+Included importables are `pandas`, `numpy`, `matplotlib` and a few other I forget at the moment. Of course, you can import all the
 standard python things you want.
 
+#### Script Slots
 Scripts are automatically saved in "slots," which you can activate via shortcut or the "code" menu. This allows you to
 have diverse scripts at hand for different perspectives on the position.
+
+To toggle between two slots, tap the same shortcut twice or more (e.g. CMD-1, CMD-1 )
 
 If you need advanced editing capabilities, right now you'll have to copy and paste from an external editor.
 
