@@ -408,9 +408,9 @@ def persist(variable: str, val) -> None:
             self.code = None
 
 
-    def run(self, kataResults: dict = None, extraGlobals=None, explicit=False) -> None:
+    def run(self, kataResults: dict = None, extraGlobals=None, explicit=False, gui_run=False) -> None:
         if kataResults != None:
-            self.createContexts(kataResults, extraGlobals=extraGlobals, manual_run=explicit)
+            self.createContexts(kataResults, extraGlobals=extraGlobals, manual_run=explicit, gui_run=gui_run)
 
         #print("EXPLICIT IS ", explicit)
         if self.code != None:
@@ -455,7 +455,7 @@ def persist(variable: str, val) -> None:
     def getGlobals(self) -> dict:
         return self.context_global
     
-    def createContexts(self, kataResults: dict, extraGlobals: dict = None, manual_run=False) -> None:
+    def createContexts(self, kataResults: dict, extraGlobals: dict = None, manual_run=False, gui_run=False) -> None:
 
         global k
         #print("CREATE CONTEXTS: explicit: ", manual_run)
@@ -467,6 +467,7 @@ def persist(variable: str, val) -> None:
 
         setattr(k, "depth", kataResults['depth'])
         setattr(k, "manual_run", manual_run)
+        setattr(k, "gui_run", gui_run)
 
         saved_globals, saved_locals = self.getSavedVars(self.context_global, self.context_global)
 
@@ -620,7 +621,7 @@ class CodeEditor(CodeEdit):
     def markDirty(self) -> None:
         self._dirty = True
 
-    def runit(self, explicit:bool =False) -> None:
+    def runit(self, explicit:bool =False, gui_run=False) -> None:
         "run against the analysis in self.lastAnswer. If explicit is true, treat this as a manual run by user."
         if self.lastAnswer != None:
             if "error" in self.lastAnswer:
@@ -632,7 +633,7 @@ class CodeEditor(CodeEdit):
                 self._dirty = False
                 self.saveCurrentSlot()
 
-            self.codeRunner.run(self.lastAnswer, extraGlobals = {"__GUI__": self.GUI_Saved}, explicit=explicit)
+            self.codeRunner.run(self.lastAnswer, extraGlobals = {"__GUI__": self.GUI_Saved}, explicit=explicit, gui_run=gui_run)
             self.updateGUIVars()
         else:
             GS.statusBarPrint.emit("No KataGo Analysis to run against.")
@@ -680,47 +681,7 @@ class CodeEditor(CodeEdit):
                 self.GUI_Saved[thing].update(info[thing])
                 changed = True
         if changed and not self.disabled:
-            self.runit(explicit=False)
-
-class CodeEditorBasic(QPlainTextEdit):
-    "older version, but kept in case pyqode goes wacky"
-    def __init__(self, parent=None) -> None:
-        super().__init__(parent)
-        self.codeRunner = CodeRunner()
-        self.lastAnswer = None
-        self.textChanged.connect(self.markDirty)
-        self._dirty = True
-        
-        GS.fullAnalysisReady.connect(self.rerun)
-        GS.quickAnalysisReady.connect(self.rerunQuick) #FIXME Code should support quick & in-depth views
-
-    def markDirty(self) -> None:
-        self._dirty = True
-
-    def runRequested(self) -> None:
-        print("RUN REQUESTED.")
-        if self.lastAnswer != None:
-            if self._dirty:
-                self.codeRunner.setCode(self.document().toPlainText())
-                self._dirty = False
-            self.codeRunner.run(self.lastAnswer, explicit=True)
-        else:
-            GS.statusBarPrint.emit("No Kata Analysis to run against.")
-    def rerunQuick(self, signalData: dict) -> None:
-        self.rerun(signalData, kind='quick')
-
-    def rerun(self, signalData:dict, kind:str ='full') -> None:
-        signalData['payload']['depth'] = kind
-        self.lastAnswer = signalData['payload']
-        if "error" in self.lastAnswer:
-            print(f"KATAGO ERROR: {self.lastAnswer['error']}", file=sys.stderr)
-            return
-        if self._dirty:
-            self.codeRunner.setCode(self.document().toPlainText())
-            self._dirty = False
-        self.codeRunner.createContexts(signalData["payload"], kind)
-        self.codeRunner.run()
-
+            self.runit(explicit=False, gui_run=True)
 
 from PyQt5 import QtWidgets
 class CodeGUISwitchboard(QObject):
