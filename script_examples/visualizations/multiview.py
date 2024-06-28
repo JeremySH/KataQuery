@@ -159,7 +159,7 @@ def strong_moves():
 				# better than policy rank, make it huge
 				mark(m, m.order+1, scale=1.5)
 
-	status(f"MOVE SRENGTH VIEW | {k.toPlay} to play | {k.visits} visits")
+	status(f"MOVE STRENGTH VIEW | {k.toPlay} to play | {k.visits} visits")
 
 # Rotate through the above functions
 persist("COUNT", 0)
@@ -170,5 +170,7 @@ if k.manual_run: # only True on CTRL-R
 clearAll()
 
 # use the COUNT variable as an index to our functions and call it
-[nothin, strong_moves, terri, nearby, vitals][COUNT]()
+[strong_moves, terri, nearby, vitals, nothin][COUNT]()
 
+if k.lastMove:
+	mark(k.lastMove, "square")
