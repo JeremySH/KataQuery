@@ -333,7 +333,7 @@ class HoverText(QObject):
             maxline = ""
             for l in lines:
                 if len(l) > len(maxline):
-                    maxline = l
+                    maxline = l + "M" # extra M to be safe as QFontMetrics is vexxed by some glyphs
             
             fm = QFontMetrics(self.hoverFont)
             rect = fm.boundingRect(maxline)
