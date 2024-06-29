@@ -197,18 +197,25 @@ class StonePool:
         setattr(s, "stoneColor", color)
         x,y = self.bc.goPointToMouse(gopoint)
         s.setPos(x,y)
+        if hasattr(s, "shadow"):
+            s.shadow.setPos(x,y)
 
     def createStone(self, color: str, gopoint: T.Tuple[int,int]) -> 'QGraphicsItem':
         "create a stone graphic and return it, use a cached one if possible"
         if len(self.stones[color]) > 0:
             s = self.stones[color].pop()
             s.show()
+            if hasattr(s, "shadow"):
+                s.shadow.show()
+            
             self._setStoneData(s, color, gopoint)
             return s
         else:
             s = self._createNewStone(color, gopoint)
             self._setStoneData(s, color, gopoint)
             self.bc.scene.addItem(s)
+            if hasattr(s, "shadow"):
+                self.bc.scene.addItem(s.shadow)
             return s    
 
     def _createNewStoneBasic(self, color: str, gopoint: T.Tuple[int,int]) -> 'QGraphicsItem':
@@ -245,20 +252,39 @@ class StonePool:
 
         brect = shadow.boundingRect()
         shadow.setTransformOriginPoint(-self.bc.increment/2, -self.bc.increment/2)
-        shadow.setOffset(QPointF(brect.width()*-0.03, brect.height()*-0.02))
+        if color == "black":
+            shadow.setOffset(QPointF(brect.width()*-0.03, brect.height()*-0.02))
+        else:
+            shadow.setOffset(QPointF(brect.width()*-0.02, brect.height()*-0.01))
+
         shadow.setScale(2.03*self.bc.increment/brect.width())
         
-        group = QGraphicsItemGroup()
-        group.addToGroup(shadow)
-        group.addToGroup(stone)
-        if color == "white":
-            group.setScale(0.96)
+        # shadow and stone need to act separately to honor z value
+        # which prevents using QGraphicsItemGroup (meh)
+        setattr(stone, "shadow", shadow)
 
-        return group
+        if color == "white":
+            stone.setScale(stone.scale()*0.96)
+            stone.shadow.setScale(stone.shadow.scale()*0.96)
+
+        return stone
+
+    def hide(self, graphicsItem) -> None:
+        "hide the stone but keep it around"
+        graphicsItem.hide()
+        if hasattr(graphicsItem, "shadow"):
+            graphicsItem.shadow.hide()
+
+    def show(self, graphicsItem) -> None:
+        graphicsItem.show()
+        if hasattr(graphicsItem, "shadow"):
+            graphicsItem.shadow.show()
 
     def remove(self, graphicsItem) -> None:
         "hide this graphics item and return it to the pool"
         graphicsItem.hide()
+        if hasattr(graphicsItem, "shadow"):
+            graphicsItem.shadow.hide()
 
         self.stones[graphicsItem.stoneColor].append(graphicsItem)
 
@@ -267,6 +293,9 @@ class StonePool:
         for key in self.stones.keys():
             for s in self.stones[key]:
                 self.bc.scene.removeItem(s)
+                if hasattr(s, "shadow"):
+                    self.bc.scene.removeItem(s.shadow)
+
         self.stones = {'black': [], 'white': []}
 
 class GhostStonePool(StonePool):
@@ -1098,7 +1127,7 @@ class BoardController(QObject):
         elif self.mouseState == "Dragging":
             self.clearStoneInHand()
             self.stoneInHand = self.stonePool.createStone(self.stones[gopoint].stoneColor, gopoint)
-            self.stones[gopoint].hide()
+            self.stonePool.hide(self.stones[gopoint])
             setattr(self.stoneInHand, "origPoint", gopoint)
             setattr(self.stoneInHand, "location", gopoint)
             self.activeGoban = self.goban.copy()
@@ -1117,7 +1146,7 @@ class BoardController(QObject):
         if len(stones):
             for s in stones:
                 if s in self.stones:
-                    self.scene.removeItem(self.stones[s])
+                    self.stonePool.remove(self.stones[s])
                     del self.stones[s]
 
     def endDrag(self, event) -> None:
@@ -1132,13 +1161,13 @@ class BoardController(QObject):
             #print("TRASH IT")
             if self.mouseState == "Dragging":
                 self.goban.remove(self.stoneInHand.origPoint)
-                self.scene.removeItem(self.stones[self.stoneInHand.origPoint])
+                self.stonePool.remove(self.stones[self.stoneInHand.origPoint])
                 del self.stones[self.stoneInHand.origPoint]
             self.clearStoneInHand()
             self.activeGoban = self.goban.copy()
         else:
             if self.stoneInHand.location == self.stoneInHand.origPoint:
-                self.stones[self.stoneInHand.origPoint].show()
+                self.stonePool.show(self.stones[self.stoneInHand.origPoint])
                 self.clearStoneInHand()
             else:
                 if gopoint in self.stones:
@@ -1147,7 +1176,7 @@ class BoardController(QObject):
                     self.goban.remove(gopoint)
                     self.goban.place(self.stoneInHand.stoneColor, gopoint)
                     self.activeGoban = self.goban.copy()
-                    self.scene.removeItem(self.stones[gopoint])
+                    self.stonePool.remove(self.stones[gopoint])
                     self.stones[gopoint] = self.stoneInHand
                     self.capture_capturable(self.stoneInHand.stoneColor)
                     self.stoneInHand = None
@@ -1224,6 +1253,8 @@ class BoardController(QObject):
 
             x,y = self.snapPoint(event.pos())
             self.stoneInHand.setPos(x,y)
+            if hasattr(self.stoneInHand, "shadow"):
+                self.stoneInHand.shadow.setPos(x,y)
             self.stoneInHand.location = gopoint
             
             #FIXME: try to rate limit these quick analyses as it can lag quite a bit
