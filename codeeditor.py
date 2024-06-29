@@ -215,6 +215,23 @@ def msgBox(msg: str, buttons:list[str] or None = None) -> str:
     else:
         return "OK"
 
+def chooseFile(prompt:str or None =None, save:bool =False, default:str="", extension:str="") -> str:
+
+    "present an open file dialog box using 'prompt' and return filename (or None if canceled)"
+    from PyQt5.QtWidgets import QFileDialog
+
+    options = QFileDialog.Options()
+    options |= QFileDialog.DontUseNativeDialog
+    
+    if save:
+        if prompt == None: prompt = "Save File:"
+        fileName, _ = QFileDialog.getSaveFileName(None, prompt, default, options=options)
+    else:
+        if prompt == None: prompt = "Open File:"
+        fileName, _ = QFileDialog.getOpenFileName(None, prompt, default, options=options)
+    return fileName
+
+
 def hover(gopoint: tuple[int,int], text:str ) -> None:
     p = _getGoPoint(gopoint)
     GS.setHoverText.emit(p, str(text))
@@ -270,6 +287,7 @@ extrafuncs = {
     "log": log,
     "clearLog": clearLog,
     "msgBox": msgBox,
+    "chooseFile": chooseFile,
     "_buttonX": _buttonX,
     "_checkX": _checkX,
     "_sliderX": _sliderX,
