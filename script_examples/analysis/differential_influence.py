@@ -28,11 +28,11 @@ def ownership():
 	blackSum = 0
 	for i in k.intersections:
 		if i.ownershipWhite > 0.05:
-			hover(i, f"W owns by {i.ownershipWhite:.2f}%")
+			hover(i, f"W owns by {100*i.ownershipWhite:.2f}%")
 			heat(i, 0.2)
 			whiteSum  += i.ownershipWhite
 		elif i.ownershipBlack > 0.05:
-			hover(i, f"B owns by {i.ownershipBlack:.2f}%")
+			hover(i, f"B owns by {100*i.ownershipBlack:.2f}%")
 			heat(i, 0.75)
 			blackSum += i.ownershipBlack
 	
