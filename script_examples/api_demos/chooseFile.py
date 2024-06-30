@@ -4,9 +4,9 @@
 # you must use python's open() for that
 
 # example uses, doesn't open or save
-LOAD = button1("LOAD")
-SAVE = button2("SAVE")
-QUICKIE = button3("QUICKIE")
+QUICKIE = button1("QUICKIE")
+LOAD = button2("LOAD")
+SAVE = button3("SAVE")
 
 # this button will actually save an SGF
 SAVE_SGF = button4("Save SGF")
@@ -19,8 +19,18 @@ persist("defaultName", "")
 name = None
 
 clearLog()
+if QUICKIE:
+	# quick and simple
+	name = chooseFile() 
+	
+	if name:
+		log("you opened ", name)
+	else:
+		log("you canceled.")
+		
 if LOAD:
-	name = chooseFile("Open What?", default=defaultName)
+	# `multi` enables multiple selection and returns a list
+	name = chooseFile("Open What?", default=defaultName, multi=True)
 
 	if name:
 		log("you opened ", name)
@@ -28,6 +38,7 @@ if LOAD:
 		log("you canceled.")
 			
 if SAVE:
+	# `save` presents a save dialog
 	name = chooseFile("Save What?", save=True, default=defaultName)
 
 	if name:
@@ -35,21 +46,15 @@ if SAVE:
 	else:
 		log("you canceled.")
 
-if QUICKIE:
-	# short version opens file
-	name = chooseFile() 
-	
-	if name:
-		log("you opened ", name)
-	else:
-		log("you canceled.")
-
 if SAVE_SGF:
-	name = chooseFile("Save To:", save=True)
-	sgf = k.goban.asSGF()
+	# `extension` appends the given extension
+	name = chooseFile("Save To:", save=True, extension="sgf")
 	
-	with open(name, "w") as file:
-		file.write(sgf)
+	if name: 
+		sgf = k.goban.asSGF()
+	
+		with open(name, "w") as file:
+			file.write(sgf)
 
 if name:
 	defaultName = name

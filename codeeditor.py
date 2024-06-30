@@ -215,22 +215,43 @@ def msgBox(msg: str, buttons:list[str] or None = None) -> str:
     else:
         return "OK"
 
-def chooseFile(prompt:str or None =None, save:bool =False, default:str="", extension:str="") -> str:
-
-    "present an open file dialog box using 'prompt' and return filename (or None if canceled)"
+def chooseFile(prompt:str or None =None, save:bool =False, default:str="", extension:str="", multi=False) -> str:
+    """
+    present an open/save file dialog box using 'prompt' and return filename(s) (or None if canceled)
+    prompt:    show this prompt string (if possible)
+    save:      show save file dialog
+    default:   the default file/directory to navigate to
+    extension: the extension to automatically apply 
+    multi:     allow multiple file selection (returns a list)
+    """
     from PyQt5.QtWidgets import QFileDialog
+    from PyQt5.QtCore import QDir
 
-    options = QFileDialog.Options()
-    options |= QFileDialog.DontUseNativeDialog
-    
+    dialog = QFileDialog(None)
+    dialog.setViewMode(QFileDialog.Detail)
+    dialog.setDefaultSuffix(extension)
+
+    if multi:
+        dialog.setFileMode(QFileDialog.ExistingFiles)
+
     if save:
-        if prompt == None: prompt = "Save File:"
-        fileName, _ = QFileDialog.getSaveFileName(None, prompt, default, options=options)
-    else:
-        if prompt == None: prompt = "Open File:"
-        fileName, _ = QFileDialog.getOpenFileName(None, prompt, default, options=options)
-    return fileName
+        dialog.setFileMode(QFileDialog.AnyFile)
+        dialog.setAcceptMode(QFileDialog.AcceptSave)
 
+    if default != "":
+        if type(default) == list:
+            dialog.selectFile(default[0])
+        else:
+            dialog.selectFile(default)
+
+    filenames = None
+    if dialog.exec_():
+        filenames = dialog.selectedFiles()
+
+    if filenames and not multi:
+        return filenames[0]
+    else:
+        return filenames
 
 def hover(gopoint: tuple[int,int], text:str ) -> None:
     p = _getGoPoint(gopoint)
