@@ -1109,7 +1109,7 @@ class BoardController(QObject):
     def clearStoneInHand(self) -> None:
         "clean up the stone in hand, probably after a drag"
         if self.stoneInHand:
-            self.scene.removeItem(self.stoneInHand)
+            self.stonePool.remove(self.stoneInHand)
             self.stoneInHand = None
 
     def startDrag(self, event, gopoint: T.Tuple[int,int]) -> None:
@@ -1188,7 +1188,7 @@ class BoardController(QObject):
                         caps = self.goban.play(self.stoneInHand.stoneColor, gopoint)
                         for c in caps:
                             if c in self.stones:
-                                self.scene.removeItem(self.stones[c])
+                                self.stonePool.remove(self.stones[c])
                                 del self.stones[c]
                         if self.toplay == self.stoneInHand.stoneColor:
                             self.toplay = opponent(self.stoneInHand.stoneColor)
