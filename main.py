@@ -225,7 +225,7 @@ class Window(QMainWindow, Ui_MainWindow):
                 if len(gobans) == 0:
                     whoops("no positions found.") ; return
 
-                komi, size = (gobans[0].komi, (gobans[0].xsize, gobans[1].ysize,))
+                komi, size = (gobans[0].komi, (gobans[0].xsize, gobans[0].ysize,))
 
                 for g in gobans:
                     if g.komi != komi:
