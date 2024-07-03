@@ -9,7 +9,7 @@ import sys
 import traceback
 import time
 
-from goutils import pointToCoords, coordsToPoint, goban2Query
+from goutils import pointToCoords, coordsToPoint, goban2Query, getGoPoint
 from kataproxy import KataAnswer, GlobalKata, KataGoQueryError
 from io import StringIO
 
@@ -43,18 +43,6 @@ def status(info: str, **kwargs):
     "change status line to provided text"
     GS.statusBarPrint.emit(str(info))
 
-def _getGoPoint(gopoint: str or dict or tuple[int, int]) -> tuple[int, int]:
-    "try to parse gopoint and return tuple[int,int]"
-    pos = gopoint
-
-    if type(gopoint) == str:
-        if k.answer != None:
-            pos = coordsToPoint(gopoint)
-    elif hasattr(gopoint, 'pos'): # accomodate move info object
-        pos = gopoint.pos
-
-    return pos
-
 def mark(gopoint: tuple or str or dict, label="triangle", halign='center', valign='center', scale=1.0) -> None:
     """
     Mark a gopoint [e.g. (3,3)] with a symbol or
@@ -64,7 +52,7 @@ def mark(gopoint: tuple or str or dict, label="triangle", halign='center', valig
     """
     global k
 
-    pos = _getGoPoint(gopoint)
+    pos = getGoPoint(gopoint)
 
     if type(pos) != tuple:
         return # FIXME: exception might be more appropriate, though annoying.
@@ -75,7 +63,7 @@ def mark(gopoint: tuple or str or dict, label="triangle", halign='center', valig
 
 def ghost(gopoint: tuple or str or dict, color: str, scale=1.0) -> None:
     "make a translucent stone at this go point"
-    pos = _getGoPoint(gopoint)
+    pos = getGoPoint(gopoint)
     if type(pos) != tuple:
         return # FIXME: exception might be more appropriate, though annoying.
     options = {'scale': scale}    
@@ -111,7 +99,7 @@ def heat(gopoint: tuple or str, value: float) -> None:
     """
     set the heat value for gopoint [e.g. (3,3)] from 0 to 1
     """
-    pos = _getGoPoint(gopoint)
+    pos = getGoPoint(gopoint)
 
     GS.heatValueChanged.emit(pos, value)
 
@@ -164,8 +152,8 @@ def opponent(color: str) -> str:
 
 def dist(pos1: tuple[int, int] or str or dict, pos2: tuple[int, int] or str or dict,) -> int:
     "return the manhattan distance between 2 go points"
-    p1 = _getGoPoint(pos1)
-    p2 = _getGoPoint(pos2)
+    p1 = getGoPoint(pos1)
+    p2 = getGoPoint(pos2)
     return abs(p1[0]-p2[0]) + abs(p1[1] - p2[1])
 
 def set_clipboard(stuff: str) -> None:
@@ -254,7 +242,7 @@ def chooseFile(prompt:str or None =None, save:bool =False, default:str="", exten
         return filenames
 
 def hover(gopoint: tuple[int,int], text:str ) -> None:
-    p = _getGoPoint(gopoint)
+    p = getGoPoint(gopoint)
     GS.setHoverText.emit(p, str(text))
 
 def clearHovers() -> None:

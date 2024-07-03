@@ -7,7 +7,7 @@
 # track ko, captures, etc. Also, it's kinder to katago's caching
 
 import numpy as np
-from goutils import pointToCoords, isPass
+from goutils import pointToCoords, getGoPoint, isPass
 import typing as T
 
 color2int = {"E": 0, "B": 1, "W": 3, "K": 4, 0: 0, 1: 1, 3: 3, 4: 4} # empty black white ko
@@ -395,10 +395,11 @@ class Goban:
 
     def play(self, color: str, gopoint: T.Tuple[int,int]):
         "play a move"
+        point = getGoPoint(gopoint)
         #print("Playing ", gopoint)
-        if isPass(gopoint): return []
+        if isPass(point): return []
 
-        removed =  self.bifurcator.play(color, gopoint)
+        removed =  self.bifurcator.play(color, point)
 
         self.board[self.board == 4] = 0 # remove ko
         
@@ -410,8 +411,9 @@ class Goban:
 
     def place (self, color:str, gopoint: T.Tuple[int,int]) -> None:
         "place a stone of color at gopoint"
-        if isPass(gopoint): return
-        res = self.bifurcator.place(color, gopoint)
+        point = getGoPoint(gopoint)
+        if isPass(point): return
+        res = self.bifurcator.place(color, point)
         
         # a "place" resets ko
         self.board[self.board == 4] = 0
@@ -420,9 +422,9 @@ class Goban:
     def place_many(self, blackpoints: T.List[T.Tuple[int,int]] = [], whitepoints: T.List[T.Tuple[int,int]] =[]) -> None:
         "place many stones, ignoring legality and captures"
         for p in blackpoints:
-            self.place("black", p)
+            self.place("black", getGoPoint(p))
         for p in whitepoints:
-            self.place("white", p)
+            self.place("white", getGoPoint(p))
 
     def play_many(self, toPlay: str, moves: T.List[T.Tuple[int,int]]) -> T.Tuple[list, list]:
         "play list of moves, alternating players between"
@@ -431,7 +433,7 @@ class Goban:
         white_caps = []
 
         for p in moves:
-            caps = self.play(c, p)                
+            caps = self.play(c, getGoPoint(p))
             if c == "white": 
                 c = "black"
                 black_caps = black_caps + caps
@@ -506,18 +508,19 @@ class Goban:
 
     def legal(self, color:str, gopoint: T.Tuple[int,int]) -> bool:
         "is this play legal for this color?"
-        if self.board[gopoint] & 1 != 0:
+        point = getGoPoint(gopoint)
+        if self.board[point] & 1 != 0:
             return False
 
-        if self.board[gopoint] == 4:
+        if self.board[point] == 4:
             return False
 
         legal = False
 
-        caps = self._play(color, gopoint)
+        caps = self._play(color, point)
 
         #eprint(f"play: {color} {gopoint}, caps: {caps}")
-        if self.haslibs(gopoint):
+        if self.haslibs(point):
             #eprint(f"play: {color} {gopoint} haslibs: True")
             legal = True
 
@@ -526,7 +529,7 @@ class Goban:
         else:
             self._place_many(blackpoints=caps)
 
-        self._remove(gopoint)
+        self._remove(point)
 
         return legal
     
@@ -553,7 +556,7 @@ class Goban:
         if thesePoints == None:
             thesePoints = self.black_stones() + self.white_stones()
         
-        points = set(thesePoints)
+        points = set(getGoPoint(p) for p in thesePoints)
         for p in thesePoints:
             for neighbor in self.adjacent(p):
                 #if self.board[neighbor] & 1 == 0:
@@ -562,12 +565,13 @@ class Goban:
     
     def remove(self, gopoint: T.Tuple[int,int]) -> None:
         "remove the stone at this go point"
-        if not self.bifurcator.try_remove(gopoint):
-            self._remove(gopoint)
+        point = getGoPoint(gopoint)
+        if not self.bifurcator.try_remove(point):
+            self._remove(point)
             self.bifurcator.collect()
 
     def relocate(self, srcPoint: T.Tuple[int,int], destPoint: T.Tuple[int,int]) -> None:
-        "Try to relocate a move/stone from srcPoint to destPoint"
+        "Try to relocate a move/stone from srcPoint to destPoint, requires a tuple"
 
         if self.bifurcator.try_relocate(srcPoint, destPoint) : return
 
@@ -600,11 +604,12 @@ class Goban:
 
     def get(self, gopoint: T.Tuple[int,int]) -> str: # "black" "white", "empty"
         "get the color of the stone at this point"
-        if self.board[gopoint] & 1 == 0:
+        point = getGoPoint(gopoint)
+        if self.board[point] & 1 == 0:
             return "empty"
-        if self.board[gopoint] == 1:
+        if self.board[point] == 1:
             return "black"
-        if self.board[gopoint] == 3:
+        if self.board[point] == 3:
             return "white"
 
     def getI(self, gopoint:T.Tuple[int,int]) -> np.ubyte:
@@ -674,19 +679,21 @@ class Goban:
 
     def adjacent(self, gopoint: T.Tuple[int,int]) -> T.List[T.Tuple[int,int]]:
         "return list of gopoints adjacent to this point"
+        point = getGoPoint(gopoint)
         res = []
         for d in [(1,0), (-1, 0), (0, 1), (0, -1)]:
-            res.append((gopoint[0] + d[0], gopoint[1] + d[1]))
+            res.append((point[0] + d[0], point[1] + d[1]))
 
         return [i for i in res if i[0] >= 0 and i[0] < self.xsize and i[1] >= 0 and i[1] < self.ysize]
 
     def connected(self, gopoint: T.Tuple[int,int]) -> T.List[T.Tuple[int,int]]:
         "return the stones connected to this gopoint, given they are the same color"
+        point = getGoPoint(gopoint)
         visited = {}
         grouped = {}
-        col = self.board[gopoint]
+        col = self.board[point]
 
-        self._connectedRec(col, [gopoint], visited, grouped)
+        self._connectedRec(col, [point], visited, grouped)
         #eprint(f"grouped: {grouped.keys()}")
         return list(grouped.keys())
 
@@ -701,7 +708,8 @@ class Goban:
 
     def libs(self, gopoint: T.Tuple[int,int]) -> T.List[T.Tuple[int,int]]:
         "return list of empty gopoints that count as this group's liberties"
-        group = self.connected(gopoint)
+        point = getGoPoint(gopoint)
+        group = self.connected(point)
         empties = {}
         for i in group:
             surrounding = [p for p in self.adjacent(i) if self.board[p] & 1 == 0]
@@ -712,7 +720,8 @@ class Goban:
 
     def haslibs(self, gopoint: T.Tuple[int,int]) -> bool:
         "a quick check for capture"
-        group = self.connected(gopoint)
+        point = getGoPoint(gopoint)
+        group = self.connected(point)
         for i in group:
             for a in self.adjacent(i):
                 if self.board[a] & 1 == 0:

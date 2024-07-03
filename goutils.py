@@ -42,6 +42,19 @@ def coordsToPoint(coords: str) -> tuple[int, int]:
 
     return (letter2go[xStr], int(yStr.strip())-1)
 
+def getGoPoint(gopoint: str or dict or tuple[int,int]) -> tuple[int,int]:
+    "try to return a gopoint from any compatible type provided"
+    if type(gopoint) == tuple:
+        return gopoint
+    elif type(gopoint) == str:
+        return coordsToPoint(gopoint)
+    elif hasattr(gopoint, 'pos'): # accomodate move info object
+        return gopoint.pos
+    elif issubclass(gopoint.__class__, dict) and 'pos' in gopoint:
+        return gopoint['pos']
+
+    return gopoint # don't really want to return None
+
 def isPass(point: tuple[int, int]) -> bool:
     return point[1] < 0 or point[0] < 0
 
