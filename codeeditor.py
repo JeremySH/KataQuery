@@ -23,6 +23,11 @@ class Bail(Exception):
     "an excption to allow bailing out of a script"
     pass
 
+def khelp(thing):
+    "custom help because builtin help() doesn't work in GUI app"
+    import pydoc
+    print(pydoc.plain(pydoc.render_doc(thing)))
+
 def bail() -> None:
     "exit the script immediately"
     raise Bail
@@ -276,6 +281,7 @@ def _sliderX(id: str, title: str, default_value:float = 0.0, min_value:float =0.
     return d
 
 extrafuncs = {
+    "help": khelp,
     "status": status,
     "mark": mark,
     "ghost": ghost,
