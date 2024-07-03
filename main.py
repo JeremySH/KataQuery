@@ -242,9 +242,6 @@ class Window(QMainWindow, Ui_MainWindow):
 
                 GS.loadBoard.emit(d)
 
-        else:
-            print("Not OK!")
-
     def showEvent(self, whatever):
         if not self.firstShow:return
         self.firstShow = False
