@@ -28,8 +28,7 @@ if GENERATE_FAST:
 		ghost(ans.bestMove, goban.toPlay)
 		snooze() # update display
 
-		# make sure you use .pos to play a gopoint
-		goban.play(goban.toPlay, ans.bestMove.pos)
+		goban.play(goban.toPlay, ans.bestMove)
 		goban.toPlay = opponent(goban.toPlay)
 
 	status("DONE.")
@@ -42,11 +41,10 @@ if GENERATE_NEAR:
 	for i in range(1,10):
 		ans = analyze(goban, nearby=2, visits=20)
 		
-		best = ans.bestMove.pos
-		ghost(best, goban.toPlay)
+		ghost(ans.bestMove, goban.toPlay)
 		snooze()
 		
-		goban.play(goban.toPlay, best)
+		goban.play(goban.toPlay, ans.bestMove)
 		goban.toPlay = opponent(goban.toPlay)
 
 	status("DONE.")
@@ -61,25 +59,24 @@ if GENERATE_LOCAL:
 	ans = k
 	latest = None
 	if k.lastMove:
-		latest = k.lastMove.pos
+		latest = k.lastMove
 	
 	for i in range(1,20):
 		near = None
 		if latest:
 			# generate moves 3 hops near last played
-			points = set([latest])
+			points = [latest]
 			for x in range(3):
-				points = points.union(goban.nearby_these(points))
+				points = goban.nearby_these(points)
 			near = list(points)
 
 		ans = analyze(goban, allowedMoves=near, visits=5)
 		
-		best = ans.bestMove.pos
-		latest = best
-		ghost(best, goban.toPlay)
+		latest = ans.bestMove
+		ghost(ans.bestMove, goban.toPlay)
 		snooze() # update
 		
-		goban.play(goban.toPlay, best)
+		goban.play(goban.toPlay, ans.bestMove)
 		goban.toPlay = opponent(goban.toPlay)
 
 	status("DONE.")

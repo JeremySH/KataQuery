@@ -6,7 +6,7 @@
 
 COPY_SGF = button1("Copy SGF")
 COPY_DIAGRAM = button2("Copy Diag")
-HELP = button3("Dump Help")
+HELP = button3("HELP")
 
 g = k.goban.copy() # copy() just in case
 
@@ -16,10 +16,13 @@ print(g.asSGF())
 clearLog(); clearAll()
 
 if HELP:
-	from goban import Goban
-	import pydoc
-	print(pydoc.plain(pydoc.render_doc(Goban)))
+	help(k.goban)
 	log("HELP DUMPED TO CONSOLE...")
+
+# coords can be tuple, string, or moveInfo object,
+# although tuple is preferred
+for coord in [(3,3), 'd4',  k.bestMove]:
+	print(type(coord), "legal?", g.legal(k.toPlay, coord))
 
 # groups are lists of tuples (e.g. "[ (3,3), (3,4) ]")
 # of the directly connected stones of black and white:
@@ -54,3 +57,8 @@ if COPY_DIAGRAM:
 	g.collapse() # no moves, just stone placements
 	set_clipboard(g.asSGF())
 	status("SGF diagram copied.")
+
+# an example of using the play() method:
+
+# make a play
+g.play(k.toPlay, k.bestMove)
