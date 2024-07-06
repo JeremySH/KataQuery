@@ -8,6 +8,7 @@
 
 # other products & artifacts
 katago-bin/katago
+resources/bin
 __pycache__/
 *.py[cod]
 *$py.class

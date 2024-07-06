@@ -37,6 +37,8 @@ class _GS(QObject):
     loadBoard = pyqtSignal(dict) # dict is xsize, ysize, komi, and list of gobans
     addBookmark = pyqtSignal(dict) # see BoardController.py
 
+    queryPoints = pyqtSignal(list) # gopoint tuple
+
     Code_SetSlotName = pyqtSignal(int, str) # int, text
     Code_SlotActivated = pyqtSignal(int)
 

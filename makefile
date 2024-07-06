@@ -43,7 +43,8 @@ app: build_receipts/app_built
 
 command-line: build_receipts/command-line_built
 
-build_receipts/command-line_built: build_receipts/receipts_ready build_receipts/venv_built build_receipts/ui_built katago-bin/katago $(CYTHONIC) 
+build_receipts/command-line_built: build_receipts/receipts_ready build_receipts/venv_built \
+	build_receipts/ui_built katago-bin/katago resources/bin/completion_server $(CYTHONIC) 
 	touch build_receipts/command-line_built
 
 
@@ -78,6 +79,12 @@ build_receipts/ui_built: build_receipts/venv_built $(UI_FILES)
 	. venv/bin/activate && pyuic5 -o GameSettingsDialog_ui.py GameSettingsDialog.ui ; deactivate
 	. venv/bin/activate && pyuic5 -o NeuralNetSettingsDialog_ui.py NeuralNetSettingsDialog.ui ; deactivate
 	touch build_receipts/ui_built
+
+resources/bin/completion_server: completion_server_src/completion_server.py build_receipts/venv_built
+	mkdir -p resources/bin
+	sh -c "python3.9 -m venv venv && . venv/bin/activate && cd completion_server_src && pyinstaller -F --console completion_server.py"
+	/bin/cp -f completion_server_src/dist/completion_server resources/bin
+	/bin/cp -f completion_server_src/completion_server.py resources/bin
 
 # cython is a bit of added complexity for small benefit
 # so for the moment allow building for testing

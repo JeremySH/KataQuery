@@ -23,10 +23,15 @@ class Bail(Exception):
     "an excption to allow bailing out of a script"
     pass
 
+def helptext(thing):
+    "return the documentation text for a thing"
+    import pydoc
+    return pydoc.plain(pydoc.render_doc(thing))
+
 def khelp(thing):
     "custom help because builtin help() doesn't work in GUI app"
     import pydoc
-    print(pydoc.plain(pydoc.render_doc(thing)))
+    print(helptext(thing))
 
 def bail() -> None:
     "exit the script immediately"
@@ -282,6 +287,7 @@ def _sliderX(id: str, title: str, default_value:float = 0.0, min_value:float =0.
 
 extrafuncs = {
     "help": khelp,
+    "helptext": helptext,
     "status": status,
     "mark": mark,
     "ghost": ghost,
@@ -441,9 +447,9 @@ def persist(variable: str, val) -> None:
             self.code = None
 
 
-    def run(self, kataResults: dict = None, extraGlobals=None, explicit=False, gui_run=False) -> None:
+    def run(self, kataResults: dict = None, extraGlobals=None, explicit=False, gui_run=False, query_points=None) -> None:
         if kataResults != None:
-            self.createContexts(kataResults, extraGlobals=extraGlobals, manual_run=explicit, gui_run=gui_run)
+            self.createContexts(kataResults, extraGlobals=extraGlobals, manual_run=explicit, gui_run=gui_run, query_points=query_points)
 
         #print("EXPLICIT IS ", explicit)
         if self.code != None:
@@ -488,7 +494,7 @@ def persist(variable: str, val) -> None:
     def getGlobals(self) -> dict:
         return self.context_global
     
-    def createContexts(self, kataResults: dict, extraGlobals: dict = None, manual_run=False, gui_run=False) -> None:
+    def createContexts(self, kataResults: dict, extraGlobals: dict = None, manual_run=False, gui_run=False, query_points=None) -> None:
 
         global k
         #print("CREATE CONTEXTS: explicit: ", manual_run)
@@ -501,6 +507,10 @@ def persist(variable: str, val) -> None:
         setattr(k, "depth", kataResults['depth'])
         setattr(k, "manual_run", manual_run)
         setattr(k, "gui_run", gui_run)
+        qp = []
+        if query_points:
+            qp = [k.get_point(q) for q in query_points]
+        setattr(k, "query_points", qp)
 
         saved_globals, saved_locals = self.getSavedVars(self.context_global, self.context_global)
 
@@ -517,6 +527,16 @@ from pyqode.core.api import CodeEdit, ColorScheme
 from pyqode.core import modes, panels
 from pyqode.python import modes as pymodes
 from pyqode.python.backend import server as pyserver
+from pyqode.python import backend as pybackend
+import os
+import project_globals
+class CompletionProvider(object):
+    def __init__(self):
+        pass
+    def complete(self, code, line, column, path, encoding, prefix):
+        print("COMP PREFIX:", prefix, file=sys.stderr)
+        return [{'name': "chewyChunk"}]
+
 class CodeEditor(CodeEdit):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
@@ -525,14 +545,17 @@ class CodeEditor(CodeEdit):
         self.textChanged.connect(self.markDirty)
         self._dirty = True
         self.GUI_Saved = {} # saved gui info by the script
+        self.queryPoints = None
         self.disabled = False
 
-        # code completion is pretty basic and annoying
-        # so don't use it. 
-        
-        # self.backend.start(pyserver.__file__)
-        # self.modes.append(modes.CodeCompletionMode())
-        
+        # code completion server with kataquery additions
+        if project_globals.appIsFrozen():
+            self.backend.start(os.path.join(project_globals.resource_directory, "bin", "completion_server"))
+        else:
+            self.backend.start(os.path.join(project_globals.resource_directory, "bin", "completion_server.py"))
+
+        self.modes.append(modes.CodeCompletionMode())
+
         # determine if environment is dark or light
         # and select an appropriate theme
         pal = QApplication.instance().palette()
@@ -570,9 +593,9 @@ class CodeEditor(CodeEdit):
         
         GS.fullAnalysisReady.connect(self.handleFullAnalysis)
         GS.quickAnalysisReady.connect(self.handleQuickAnalysis) 
+        GS.queryPoints.connect(self.handleQueryPoint)
         GS.CodeGUI_Changed.connect(self.newGUIInfo)
         GS.MainWindowReadyAndWilling.connect(self.afterStartup)
-        
         # FIXME: QSettings is not a great choice for persisting the scripts
         # because the user can't easily access them like they could if they
         # were simply files
@@ -663,7 +686,7 @@ class CodeEditor(CodeEdit):
     def markDirty(self) -> None:
         self._dirty = True
 
-    def runit(self, explicit:bool =False, gui_run=False) -> None:
+    def runit(self, explicit:bool =False, gui_run=False, query_points=None) -> None:
         "run against the analysis in self.lastAnswer. If explicit is true, treat this as a manual run by user."
         if self.lastAnswer != None:
             if "error" in self.lastAnswer:
@@ -675,7 +698,7 @@ class CodeEditor(CodeEdit):
                 self._dirty = False
                 self.saveCurrentSlot()
 
-            self.codeRunner.run(self.lastAnswer, extraGlobals = {"__GUI__": self.GUI_Saved}, explicit=explicit, gui_run=gui_run)
+            self.codeRunner.run(self.lastAnswer, extraGlobals = {"__GUI__": self.GUI_Saved}, explicit=explicit, gui_run=gui_run, query_points=self.queryPoints)
             self.updateGUIVars()
         else:
             GS.statusBarPrint.emit("No KataGo Analysis to run against.")
@@ -715,6 +738,11 @@ class CodeEditor(CodeEdit):
         self.lastAnswer = signalData['payload']
         if not self.disabled:
             self.runit()
+
+    def handleQueryPoint(self, qpoints: list[tuple[int, int]]) -> None:
+        self.queryPoints = qpoints
+        self.runit(gui_run=True, query_points=self.queryPoints) # FIXME: not sure if appropriate
+        self.queryPoints = None
 
     def newGUIInfo(self, info: dict) -> None:
         changed = False

@@ -56,18 +56,29 @@ class Window(QMainWindow, Ui_MainWindow):
         self.actionAnalyze_More.triggered.connect(self.board.handleAnalyzeMore)
         self.actionClearBoard.triggered.connect(self.board.handleClearBoard)
         self.actionToggleDraw.triggered.connect(self.board.handleToggleDraw)
-        GS.statusBarPrint.connect(self.statusbar.showMessage)
+
+        self.actionPlay_Mode.triggered.connect(self.handleSetPlayMode)
+        self.actionDraw_Mode.triggered.connect(self.handleSetDrawMode)
+        self.actionQuery_Mode.triggered.connect(self.handleSetQueryMode)
+        
         self.actionAbout_2.triggered.connect(self.about)
 
         self.actionGame_Settings.triggered.connect(self.board.doGameSettings)        
         self.actionNeural_Nets.triggered.connect(self.doNeuralNetSettings)
 
         self.actionBookmark.triggered.connect(self.board.handleBookmark)
+        self.actionNext_Bookmark.triggered.connect(self.board.nextBookmark)
+        self.actionPrevious_Bookmark.triggered.connect(self.board.previousBookmark)
+        self.actionLast_Bookmark.triggered.connect(self.board.lastBookmark)
+        self.actionFirst_Bookmark.triggered.connect(self.board.firstBookmark)
+
         self.actionClear_All_Bookmarks.triggered.connect(self.board.clearAllBookmarks)
         self.actionClear_Current_Bookmark.triggered.connect(self.board.clearBookmark)
         
         self.actionClear_Cache.triggered.connect(self.board.clearKataGoCache)
         
+        GS.statusBarPrint.connect(self.statusbar.showMessage)
+
         # have to build the submenu, meh
 
         localizeGroup = QActionGroup(self.menuLocalize)
@@ -257,6 +268,24 @@ class Window(QMainWindow, Ui_MainWindow):
 
         sing = lambda : GS.MainWindowReadyAndWilling.emit()
         QTimer.singleShot(10, sing)
+
+    def handleSetPlayMode(self, on: bool):
+        self.actionPlay_Mode.setChecked(True)
+        self.actionDraw_Mode.setChecked(False)
+        self.actionQuery_Mode.setChecked(False)
+        self.board.handleSetPlayMode()
+
+    def handleSetDrawMode(self, on: bool):
+        self.actionPlay_Mode.setChecked(False)
+        self.actionDraw_Mode.setChecked(True)
+        self.actionQuery_Mode.setChecked(False)
+        self.board.handleSetDrawMode()
+
+    def handleSetQueryMode(self, on: bool):
+        self.actionPlay_Mode.setChecked(False)
+        self.actionDraw_Mode.setChecked(False)
+        self.actionQuery_Mode.setChecked(True)
+        self.board.handleSetQueryMode()
 
 class ConsoleWindow(QWidget):
     def __init__(self, parent=None):

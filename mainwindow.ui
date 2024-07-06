@@ -707,13 +707,17 @@
       <string>Bookmarks</string>
      </property>
      <addaction name="actionBookmark"/>
+     <addaction name="actionNext_Bookmark"/>
+     <addaction name="actionPrevious_Bookmark"/>
      <addaction name="actionClear_Current_Bookmark"/>
      <addaction name="actionClear_All_Bookmarks"/>
     </widget>
     <addaction name="actionFlip_Player"/>
     <addaction name="actionAnalyze_More"/>
     <addaction name="actionClearBoard"/>
-    <addaction name="actionToggleDraw"/>
+    <addaction name="actionDraw_Mode"/>
+    <addaction name="actionPlay_Mode"/>
+    <addaction name="actionQuery_Mode"/>
     <addaction name="menuLocalize"/>
     <addaction name="menuBookmark"/>
     <addaction name="separator"/>
@@ -728,6 +732,30 @@
    <addaction name="menuCode"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
+  <widget class="QToolBar" name="toolBar">
+   <property name="windowTitle">
+    <string>toolBar</string>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="actionFlip_Player"/>
+   <addaction name="actionPlay_Mode"/>
+   <addaction name="actionDraw_Mode"/>
+   <addaction name="actionQuery_Mode"/>
+   <addaction name="separator"/>
+   <addaction name="actionAnalyze_More"/>
+   <addaction name="actionRun"/>
+   <addaction name="separator"/>
+   <addaction name="actionFirst_Bookmark"/>
+   <addaction name="actionPrevious_Bookmark"/>
+   <addaction name="actionBookmark"/>
+   <addaction name="actionNext_Bookmark"/>
+   <addaction name="actionLast_Bookmark"/>
+  </widget>
   <action name="actionQuit">
    <property name="text">
     <string>Quit</string>
@@ -761,6 +789,9 @@
    <property name="text">
     <string>Run</string>
    </property>
+   <property name="toolTip">
+    <string>Manually run the active script</string>
+   </property>
    <property name="shortcut">
     <string>Ctrl+R</string>
    </property>
@@ -768,6 +799,9 @@
   <action name="actionFlip_Player">
    <property name="text">
     <string>Flip Player</string>
+   </property>
+   <property name="toolTip">
+    <string>Change who is to play</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+F</string>
@@ -777,6 +811,9 @@
    <property name="text">
     <string>Analyze More</string>
    </property>
+   <property name="toolTip">
+    <string>Add more visits and analyze</string>
+   </property>
    <property name="shortcut">
     <string>Ctrl+Shift+A</string>
    </property>
@@ -784,6 +821,9 @@
   <action name="actionClearBoard">
    <property name="text">
     <string>Clear Board</string>
+   </property>
+   <property name="toolTip">
+    <string>Remove all stones</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+Backspace</string>
@@ -890,6 +930,9 @@
    <property name="text">
     <string>Import SGF…</string>
    </property>
+   <property name="toolTip">
+    <string>Make bookmarks for each position in the main line of an SGF file</string>
+   </property>
   </action>
   <action name="actionDisable_Code">
    <property name="checkable">
@@ -897,6 +940,92 @@
    </property>
    <property name="text">
     <string>Disable</string>
+   </property>
+   <property name="toolTip">
+    <string>Don't run the script automatically</string>
+   </property>
+  </action>
+  <action name="actionQuery_Mode">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Query Mode</string>
+   </property>
+   <property name="toolTip">
+    <string>Ask script about an intersection</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+/</string>
+   </property>
+  </action>
+  <action name="actionDraw_Mode">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Draw Mode</string>
+   </property>
+   <property name="toolTip">
+    <string>Draw stones on the board</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+D</string>
+   </property>
+  </action>
+  <action name="actionPlay_Mode">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Play Mode</string>
+   </property>
+   <property name="toolTip">
+    <string>Play stones on the board</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+P</string>
+   </property>
+  </action>
+  <action name="actionNext_Bookmark">
+   <property name="text">
+    <string>&gt;</string>
+   </property>
+   <property name="toolTip">
+    <string>Go to next bookmark</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+]</string>
+   </property>
+   <property name="autoRepeat">
+    <bool>true</bool>
+   </property>
+  </action>
+  <action name="actionPrevious_Bookmark">
+   <property name="text">
+    <string>&lt;</string>
+   </property>
+   <property name="toolTip">
+    <string>Go to previous bookmark</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+[</string>
+   </property>
+  </action>
+  <action name="actionLast_Bookmark">
+   <property name="text">
+    <string>&gt;&gt;</string>
+   </property>
+   <property name="toolTip">
+    <string>Go to last bookmark</string>
+   </property>
+  </action>
+  <action name="actionFirst_Bookmark">
+   <property name="text">
+    <string>&lt;&lt;</string>
+   </property>
+   <property name="toolTip">
+    <string>Go to first bookmark</string>
    </property>
   </action>
  </widget>

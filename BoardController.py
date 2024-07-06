@@ -658,6 +658,7 @@ class BoardController(QObject):
         # variables for dragging stones with mouse
         self.mouseButtons = None
         self.mouseMode = "play" # "play", "paint"
+        self.mouseQueryMode = None
         self.mouseState = None # "Dragging" "Painting" 
         self.mouseLastEvents = []
         self.paintColor = "black" # "black" "white" "empty"
@@ -1035,15 +1036,27 @@ class BoardController(QObject):
     def handleToggleDraw(self, onOff: bool) -> None:
         "user chose to toggle paint mode"
         if onOff:
-            self.mouseMode = "paint"
-            self.boardView.setCursor(self.cursors.paint_black)
+            self.handleSetDrawMode()
         else:
-            self.mouseMode = "play"
-            if self.toplay == "white":
-                self.boardView.setCursor(self.cursors.white_toplay)
-            else:
-                self.boardView.setCursor(self.cursors.black_toplay)
+            self.handleSetPlayMode()
 
+    def handleSetDrawMode(self) -> None:
+        self.mouseMode = "paint"
+        self.mouseQueryMode = None
+        self.boardView.setCursor(self.cursors.paint_black)
+
+    def handleSetPlayMode(self) -> None:
+        self.mouseMode = "play"
+        self.mouseQueryMode = None
+        if self.toplay == "white":
+            self.boardView.setCursor(self.cursors.white_toplay)
+        else:
+            self.boardView.setCursor(self.cursors.black_toplay)
+
+    def handleSetQueryMode(self) -> None:
+        self.boardView.setCursor(Qt.WhatsThisCursor)
+        self.mouseQueryMode = "hover"
+        
     def addBookmark(self, params:dict) ->  None:
         loc = "current"
         if 'location' in params:
@@ -1210,6 +1223,22 @@ class BoardController(QObject):
         "detect the current mouse operation mode and begin drag/paint if necessary"
         self.mouseButtons = event.buttons()
         point = self.mouseToGoPoint(self.boardView.mapToScene(event.pos()))
+        
+        if self.mouseButtons and self.mouseButtons & Qt.MiddleButton:
+            # quick query click
+            if isOnBoard(point, self.boardsize[0], self.boardsize[1]):
+                GS.queryPoints.emit([point])
+            return
+        
+        if self.mouseQueryMode:
+            if event.modifiers() & Qt.ShiftModifier:
+                self.mouseQueryMode = "add"
+            else:
+                self.mouseQueryMode = "replace"
+            
+            self.handleMouseMove(event, firstClick=True)
+            return
+
         if self.mouseMode == "play":
             if self.mouseButtons and self.mouseButtons & Qt.LeftButton:
                 if point in self.stones:
@@ -1244,6 +1273,26 @@ class BoardController(QObject):
         import time
         self.mouseLastEvents.append({"x": event.x(), "y": event.y(), "t": time.time()})
         self.hoverThing.mouseMove(event.pos())
+        
+        if self.mouseQueryMode:
+            self.boardView.setCursor(Qt.WhatsThisCursor)
+            if self.mouseQueryMode  != "hover":
+                gopoint = self.mouseToGoPoint2(event.pos())
+                if not isOnBoard(gopoint, self.boardsize[0], self.boardsize[1]):
+                    return
+
+                if self.mouseButtons & Qt.RightButton:
+                    if gopoint in self.queryPoints:
+                        self.queryPoints.remove(gopoint)
+                        GS.queryPoints.emit(list(self.queryPoints))
+                elif self.mouseQueryMode == "add":
+                    if gopoint not in self.queryPoints:
+                        self.queryPoints.add(gopoint)
+                        GS.queryPoints.emit(list(self.queryPoints))
+                else:
+                    self.queryPoints = set([gopoint])
+                    GS.queryPoints.emit(list(self.queryPoints))
+            return
 
         if self.mouseState in ["Dragging", "Dragging Copy", "Dragging Play"]:
             gopoint = self.mouseToGoPoint2(event.pos())
@@ -1278,6 +1327,10 @@ class BoardController(QObject):
 
     def handleMouseUp(self, event) -> None:
         "end the drag state if any and update the board/analysis"
+        if self.mouseQueryMode:
+            self.mouseQueryMode = "hover"
+            return  # handled in mousemove
+
         if self.mouseState in ["Dragging", "Dragging Copy", "Dragging Play"]:
             self.endDrag(event)
         elif self.mouseState == "Painting":
@@ -1300,7 +1353,7 @@ class BoardController(QObject):
     def handleMouseLeave(self, event) -> None:
         self.hoverThing.mouseLeave()
 
-    def historyBack(self) -> None:
+    def previousBookmark(self) -> None:
         theSnap = self.gobanSnapshots.getCurrentSnap()
         if not theSnap: return
 
@@ -1317,11 +1370,21 @@ class BoardController(QObject):
             self.changeGoban(newGoban)
             self.navigationTimer.start()
 
-    def historyForward(self) -> None:
+    def nextBookmark(self) -> None:
         if not self.gobanSnapshots.atEnd():
             newGoban = self.gobanSnapshots.goForward()
             self.changeGoban(newGoban)
             self.navigationTimer.start()
+
+    def firstBookmark(self) -> None:
+        newGoban = self.gobanSnapshots.goToBeginning()
+        self.changeGoban(newGoban)
+        self.navigationTimer.start()
+
+    def lastBookmark(self) -> None:
+        newGoban = self.gobanSnapshots.goToEnd()
+        self.changeGoban(newGoban)
+        self.navigationTimer.start()
 
     def handleMouseWheel(self, event) -> None:
         # have to be careful, ignore if inside a drag or paint
@@ -1344,9 +1407,9 @@ class BoardController(QObject):
             newGoban = None
             if len(self.gobanSnapshots.snaps):
                 if forward < 0:
-                    self.historyBack()
+                    self.previousBookmark()
                 else:
-                    self.historyForward()
+                    self.nextBookmark()
 
     def analyzeAfterNavigate(self) -> None:
         "Called through a timer signal so as not to lag during history navigation"
