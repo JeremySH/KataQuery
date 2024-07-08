@@ -233,25 +233,20 @@ class KataQueryProvider(object):
         self.word2word = {}
         self.word2word_k = {}
 
-        # build a rudimentary tree of partial words
         for w in _kataqueryWords:
-            for x in range(1,len(w)+1):
-                pref = w[:x].lower()
-                if pref in self.word2word:
-                    self.word2word[pref].append({"name": w})
-                else:
-                    self.word2word[pref] = [{"name": w}]
-    
-        for w in _kataqueryWords_k:
-            for x in range(1,len(w)+1):
-                pref = w[:x].lower()
-                if pref in self.word2word_k:
-                    self.word2word_k[pref].append({"name": w})
-                else:
-                    self.word2word_k[pref] = [{"name": w}]
+            self.addWord(w, self.word2word)
 
-    def addWord(self, word):
-        self.mywords.append({'name': word})
+        for w in _kataqueryWords_k:
+            self.addWord(w, self.word2word_k)
+
+    def addWord(self, word, dictionary):
+        # build a rudimentary tree of partial words
+        for x in range(1, len(word)+1):
+            prefix = word[:x].lower()
+            if prefix in dictionary:
+                dictionary[prefix].append({"name": word})
+            else:
+                dictionary[prefix] = [{"name": word}]
 
     def complete(self, code, line, column, path, encoding, prefix, wtf):
 
