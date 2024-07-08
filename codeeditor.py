@@ -205,7 +205,7 @@ def msgBox(msg: str, buttons:list[str] or None = None) -> str:
             buttonObject = mb.addButton(b, QtWidgets.QMessageBox.AcceptRole)
             buttonDict[buttonObject] = b
 
-    mb.setText(msg)
+    mb.setText(str(msg))
     mb.exec_()
 
     if mb.clickedButton() in buttonDict:
@@ -224,8 +224,9 @@ def chooseFile(prompt:str or None =None, save:bool =False, default:str="", exten
     """
     from PyQt5.QtWidgets import QFileDialog
     from PyQt5.QtCore import QDir
+    from project_globals import getMainWindow
 
-    dialog = QFileDialog(None)
+    dialog = QFileDialog(parent=getMainWindow())
     dialog.setViewMode(QFileDialog.Detail)
     dialog.setDefaultSuffix(extension)
 

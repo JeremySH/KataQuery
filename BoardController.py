@@ -836,7 +836,8 @@ class BoardController(QObject):
 
     def doGameSettings(self, _=None) -> None:
         "present the game settings dialog box"
-        dlg = GameSettingsDialog(settings = (self.boardsize[0], self.boardsize[1], self.komi))
+        dlg = GameSettingsDialog(parent=project_globals.getMainWindow(), 
+            settings = (self.boardsize[0], self.boardsize[1], self.komi))
         #dlg.setWindowTitle("Game Settings")
         #print(dir(dlg))
         if dlg.exec():

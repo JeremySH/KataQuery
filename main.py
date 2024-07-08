@@ -144,7 +144,7 @@ class Window(QMainWindow, Ui_MainWindow):
         from NeuralNetSettingsDialog_ui import Ui_Dialog as nnDialogUI
         settings = QtCore.QSettings()
 
-        dlg = QtWidgets.QDialog()
+        dlg = QtWidgets.QDialog(self)
         ui = nnDialogUI()
         ui.setupUi(dlg)
         #print(dir(ui))
@@ -220,8 +220,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
         if b == QMessageBox.Ok:
             options = QFileDialog.Options()
-            options |= QFileDialog.DontUseNativeDialog
-            fileName, _ = QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileName()", "","SGF Files (*.sgf)", options=options)
+            fileName, _ = QFileDialog.getOpenFileName(self,"Import SGF", "","SGF Files (*.sgf)", options=options)
             if fileName:
                 try:
                     sgf = SgfParser.fromFile(fileName)
