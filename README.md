@@ -19,10 +19,21 @@ While you can certainly review a game in KataQuery, there is limited SGF import,
 
 ## Requirements
 
-* python3.9
+* python >= 3.9
+* make
 * cmake >= 3.18.2
+* libzip
 * c++ compiler for KataGo
 * Pretty good GPU for interactivity
+
+For arch linux, you can install library dependencies like so:
+```
+sudo pacman -S yay
+yay -S patch make cmake opencl opencl-clhpp eigen libzip
+```
+
+Of course, don't install opencl/eigen if you don't need it or want it.
+
 
 ### Libraries:
 

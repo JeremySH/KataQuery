@@ -382,7 +382,7 @@ class HoverText(QObject):
             if y + rect.height() > self.bc.scene.sceneRect().height():
                 y = y - rect.height() - 10
 
-            self.hoverGroup.setPos(QPoint(x,y))
+            self.hoverGroup.setPos(QPointF(x,y))
             self.hoverGroup.show()
         else:
             self.hoverGroup.hide()
@@ -438,7 +438,7 @@ class QueueSubmitter(QObject):
         self.timer = QTimer()
         self.timer.setSingleShot(True)
         self.timer.timeout.connect(self.processQueue)
-        self.timer.setInterval(self.delay*500)
+        self.timer.setInterval(int(self.delay*500))
 
         KP.KataSignals.answerFinished.connect(self.adjustRate)
 
@@ -473,7 +473,7 @@ class QueueSubmitter(QObject):
 
             #print("delay: ", self.delay)
 
-            self.timer.setInterval(self.delay*500) # 1/2 to keep it snappy
+            self.timer.setInterval(int(self.delay*500)) # 1/2 to keep it snappy
 
 class GobanSnapshots:
     "Class to manage position snapshots"
@@ -608,8 +608,8 @@ class BoardController(QObject):
         self.neural_net = settings.value("nn/active_network", "B15") 
         settings.setValue("nn/active_network", self.neural_net)
 
-        x = settings.value("GameSettings/board/xsize", 19)
-        y = settings.value("GameSettings/board/ysize", 19)
+        x = settings.value("GameSettings/board/xsize", 19, type=int)
+        y = settings.value("GameSettings/board/ysize", 19, type=int)
         self.boardsize = (x,y)
 
         self.boardView = viewWidget
@@ -672,7 +672,7 @@ class BoardController(QObject):
         self.cursors = Cursors()
         self.boardView.setCursor(self.cursors.black_toplay)
 
-        self.komi = settings.value("GameSettings/komi", 6.5)
+        self.komi = settings.value("GameSettings/komi", 6.5, type=float)
 
         # visits and analysis settings
         self.moreVisits = 0 # currently added visits via AnalyzeMore command
@@ -735,10 +735,10 @@ class BoardController(QObject):
             model = KP.KATAMODEL_NBT
 
 
-        self.quickVisits = settings.value(f"nn/{network}/quick_visits", 2)
-        self.defaultVisits = settings.value(f"nn/{network}/full_visits", 100)
-        self.moreVisitsIncrement= settings.value(f"nn/{network}/step_visits", 500)
-        self.pureAnalysis = settings.value(f"nn/pure", False)
+        self.quickVisits = settings.value(f"nn/{network}/quick_visits", 2, type=int)
+        self.defaultVisits = settings.value(f"nn/{network}/full_visits", 100, type=int)
+        self.moreVisitsIncrement= settings.value(f"nn/{network}/step_visits", 500, type=int)
+        self.pureAnalysis = settings.value(f"nn/pure", False, type=bool)
 
         if self.pureAnalysis:
             config = KP.KATACONFIG_ZERO
@@ -779,9 +779,9 @@ class BoardController(QObject):
         self.board_pixmap = QPixmap(self.board_image)
         
         if hPixels > vPixels:
-            scaleSize = QSize(self.board_pixmap.rect().width(), self.board_pixmap.rect().height()*vPixels/hPixels)
+            scaleSize = QSize(self.board_pixmap.rect().width(), int(self.board_pixmap.rect().height()*vPixels/hPixels))
         else:
-            scaleSize = QSize(self.board_pixmap.rect().width()*hPixels/vPixels, self.board_pixmap.rect().height())
+            scaleSize = QSize(int(self.board_pixmap.rect().width()*hPixels/vPixels), self.board_pixmap.rect().height())
         
         pg = QGraphicsPixmapItem(self.board_pixmap.scaled(scaleSize, transformMode=Qt.SmoothTransformation))
 

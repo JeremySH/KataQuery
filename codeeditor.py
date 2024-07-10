@@ -609,10 +609,10 @@ class CodeEditor(CodeEdit):
 
     def afterStartup(self) -> None:
         settings = QSettings()
-        self.disabled = settings.value("codeeditor/disabled", False)
+        self.disabled = settings.value("codeeditor/disabled", False, type=bool)
         
         self.nameAllSlots()
-        self.activateSlot(settings.value("codeeditor/current_slot", 1), force=True)
+        self.activateSlot(settings.value("codeeditor/current_slot", 1, type=int), force=True)
 
     def saveCurrentSlot(self) -> None:
         settings = QSettings()

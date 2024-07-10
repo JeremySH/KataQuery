@@ -1,5 +1,8 @@
 import sys, math, time
 
+# work around a pyinstaller bug on linux:
+import pkg_resources.extern
+
 from kataproxy import KataProxyQ, KataSignals, GlobalKata, GlobalKataInit
 from goutils import coordsToPoint, pointToCoords, opponent
 from goban import Goban
@@ -42,7 +45,7 @@ class Window(QMainWindow, Ui_MainWindow):
             self.actionDisable_Code.setChecked(True)
         else:
             settings = QSettings()
-            dis = settings.value("codeeditor/disabled", False)
+            dis = settings.value("codeeditor/disabled", False, type=bool)
             self.actionDisable_Code.setChecked(dis)
 
 
@@ -154,15 +157,15 @@ class Window(QMainWindow, Ui_MainWindow):
         
         network = settings.value("nn/active_network", "B15")
 
-        ui.B15_QuickVisits.setValue(settings.value("nn/B15/quick_visits", 2))
-        ui.B15_FullVisits.setValue(settings.value("nn/B15/full_visits", 100))
-        ui.B15_StepVisits.setValue(settings.value("nn/B15/step_visits", 500))
+        ui.B15_QuickVisits.setValue(settings.value("nn/B15/quick_visits", 2, type=int))
+        ui.B15_FullVisits.setValue(settings.value("nn/B15/full_visits", 100, type=int))
+        ui.B15_StepVisits.setValue(settings.value("nn/B15/step_visits", 500, type=int))
 
-        ui.NBT_QuickVisits.setValue(settings.value(f"nn/NBT/quick_visits", 2))
-        ui.NBT_FullVisits.setValue(settings.value(f"nn/NBT/full_visits", 50))
-        ui.NBT_StepVisits.setValue(settings.value(f"nn/NBT/step_visits", 100))
+        ui.NBT_QuickVisits.setValue(settings.value(f"nn/NBT/quick_visits", 2, type=int))
+        ui.NBT_FullVisits.setValue(settings.value(f"nn/NBT/full_visits", 50, type=int))
+        ui.NBT_StepVisits.setValue(settings.value(f"nn/NBT/step_visits", 100, type=int))
 
-        ui.pure.setChecked(settings.value(f"nn/pure", False))
+        ui.pure.setChecked(settings.value(f"nn/pure", False, type=bool))
 
         if network == "B15":
             ui.groupBox_B15.setChecked(True)

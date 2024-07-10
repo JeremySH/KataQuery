@@ -51,7 +51,7 @@ build_receipts/command-line_built: build_receipts/receipts_ready build_receipts/
 KataGo/cpp/katago:
 	# cmake scatters files everywhere but build isn't easy out-of-source
 	# so don't worry & be happy
-	cd KataGo/cpp && cmake . $(KATAGO_SWITCHES) && make -j
+	cd KataGo/cpp && cmake . $(KATAGO_SWITCHES) && make -j 2
 
 katago-bin/katago: KataGo/cpp/katago
 	mkdir -p katago-bin
@@ -62,7 +62,7 @@ build_receipts/receipts_ready:
 	touch build_receipts/receipts_ready
 
 build_receipts/venv_built: build_receipts/receipts_ready
-	sh -c "python3.9 -m venv venv && . venv/bin/activate && pip install \
+	sh -c "python3 -m venv venv && . venv/bin/activate && pip install \
 	pyqt5==5.15.10 \
 	pandas==2.2.2 \
 	matplotlib==3.9.0 \
@@ -82,7 +82,7 @@ build_receipts/ui_built: build_receipts/venv_built $(UI_FILES)
 
 resources/bin/completion_server: completion_server_src/completion_server.py build_receipts/venv_built
 	mkdir -p resources/bin
-	sh -c "python3.9 -m venv venv && . venv/bin/activate && cd completion_server_src && pyinstaller -F --console completion_server.py"
+	sh -c "python3 -m venv venv && . venv/bin/activate && cd completion_server_src && pyinstaller -F --console completion_server.py"
 	/bin/cp -f completion_server_src/dist/completion_server resources/bin
 	/bin/cp -f completion_server_src/completion_server.py resources/bin
 
@@ -111,5 +111,5 @@ clean:
 	rm -f GameSettingsDialog_ui.py NeuralNetSettingsDialog_ui.py mainwindow_ui.py
 	rm -rf build
 	rm -rf dist
-	rm *.so
+	rm -f *.so
 
