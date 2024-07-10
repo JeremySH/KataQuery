@@ -527,16 +527,8 @@ def persist(variable: str, val) -> None:
 from pyqode.core.api import CodeEdit, ColorScheme
 from pyqode.core import modes, panels
 from pyqode.python import modes as pymodes
-from pyqode.python.backend import server as pyserver
-from pyqode.python import backend as pybackend
 import os
 import project_globals
-class CompletionProvider(object):
-    def __init__(self):
-        pass
-    def complete(self, code, line, column, path, encoding, prefix):
-        print("COMP PREFIX:", prefix, file=sys.stderr)
-        return [{'name': "chewyChunk"}]
 
 class CodeEditor(CodeEdit):
     def __init__(self, parent=None) -> None:
