@@ -40,22 +40,12 @@ class GameSettingsDialog(QDialog, Ui_GameSettingsDialog):
     
     def setKomi(self, val: float) -> None:
         import math
-        broken: bool  = False
-        dec: int      = int(math.floor(val*10))
-        modd: int     =  dec % 5
-        newval: float = val
-
-        if dec != math.floor(val*10): # no micro points
-            broken = True
-
-        if modd != 0: # katago only allows half integers, bleh
-            broken = True
-
-        if broken:
-            newval = (dec - modd)/10.0
+        newval = math.floor(val*2)/2.0
+        
+        self.komi = newval        
+        
+        if newval != val:
             self.komiBox.setValue(newval)
-
-        self.komi = newval
 
     def checkChanged(self, value: bool ) -> None:
         if not value:
