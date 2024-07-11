@@ -150,6 +150,11 @@ class KataAnswer:
             x['mergedOrder'] = i
 
     @property
+    def all(self) -> T.List['dotdict']:
+        "intersection data for all intersections + pass move"
+        return self._intersections
+
+    @property
     def moves(self) -> T.List['dotdict']:
         "intersection data of KataGo suggested moves"
         return self._moves
@@ -297,6 +302,214 @@ class KataAnswer:
     def point(self, x:int, y:int) -> dotdict:
         "easier to type in a script. Get intersection info by coordinates"
         return self.get_point((x,y,))
+
+    def _func_or_lambda(self, eval_string) -> T.Callable:
+        "convert eval_string into a lambda or just return it if it's already a callable"
+        return eval_string if callable(eval_string) else lambda m: eval(eval_string)
+
+    def filter(self, eval_string: str, vector=None) -> T.List['dotdict']:
+        """
+        filter all intersections or provided 'vector' of moveInfos
+        using eval_string.
+        
+        eval_string is a string that uses 'm' to refer to the current 
+        element, e.g.:
+
+        winners = k.filter('m.winrate > 0.5')
+        """
+        if vector == None:
+            vector = self.all
+        
+        f = self._func_or_lambda(eval_string)
+        
+        return list(filter(f, vector))
+
+    def filterv(self, *eval_strings, vector=None) -> T.List['dotdict']:
+        """
+        filter all intersections or provided 'vector' of moveInfos
+        using a list of eval_strings, which are applied sucessively.
+        
+        each eval_string is a string that uses 'm' to refer
+        to the current element, e.g.:
+
+        high_confidence = k.filterv('m.isMove', 'm.policy > .1')
+        """
+        if vector == None:
+            vector = self.all
+
+        for eval_string in eval_strings:
+            f = self._func_or_lambda(eval_string)
+            vector =  filter(f, vector)
+        return list(vector)
+
+    def sorted(self, eval_string: str, vector=None) -> T.List['dotdict']:
+        """
+        return a sorted list of all intersections (or of provided 
+        'vector' of intersections) using eval_string, which must 
+        evaluate to a comparable.
+        
+        eval_string is a string that uses 'm' to refer to the 
+        current element, e.g.:
+
+        by_policy = k.sorted('-m.policy')
+        """
+        if vector == None:
+            vector = self.all
+        
+        f = self._func_or_lambda(eval_string)
+        
+        return sorted(vector, key=f)
+
+    def reduce(self, starter, eval_string: str, vector=None) -> T.List['dotdict']:
+        """
+        reduce all the intersection infos (or vector if provided)
+        using the eval_string.
+
+        'starter' is the initial value of the accumulator
+        which can be referred to as acc in the eval_string.
+
+        'm' refers to the intersection info object
+
+        E.g.:
+
+        move_policy_sum = k.reduce(0, "m.policy + acc if m.isMove else acc")
+        """
+        if vector == None:
+            vector = self.all
+
+        a = starter
+        f = eval_string if callable(eval_string) else lambda m, acc: eval(eval_string)
+
+        for m in vector:
+            a = f(m, a) 
+        return a        
+
+    def map(self, eval_string: str, vector=None) -> T.List['dotdict']:
+        """
+        map all intersection infos (or vector if provided)
+        to a value computed using eval_string, e.g.:
+
+        winrates_percent = k.map('m.winrate*100')
+        """
+        if vector == None:
+            vector = self.all
+
+        f = self._func_or_lambda(eval_string)
+        return list(map(f, vector))
+
+    def max(self, eval_string: str, vector=None) -> dotdict:
+        """
+        get the intersection info item that has the maximum
+        value computed by eval_string
+        e.g.:
+
+        best_score_move = k.max("m.scoreLead")
+        """
+        if vector == None:
+            vector = self.all
+
+        f = self._func_or_lambda(eval_string)
+
+        res = None
+        item = None
+        for m in vector:
+            if res == None or f(m) > res:
+                res = f(m)
+                item = m
+
+        return item
+
+    def min(self, eval_string: str, vector=None) -> dotdict:
+        """
+        get the intersection info item that has the maximum
+        value computed by eval_string
+        e.g.:
+
+        worst_on_the_board = k.min("m.policy", k.moves_by_policy)
+        """        
+        if vector == None:
+            vector = self.all
+
+        f = self._func_or_lambda(eval_string)
+        
+        res = None
+        item = None
+        for m in vector:
+            if res == None or f(m) < res:
+                res = f(m)
+                item = m
+
+        return item
+
+    def avg(self, eval_string: str, vector=None) -> float:
+        """
+        get the average of values computed by eval_string
+        against all intersections (or vector if provided),
+        e.g.:
+
+        avg_policy = k.avg("m.policy")
+        """        
+        from statistics import mean
+        if vector == None:
+            vector = self.all
+        
+        f = self._func_or_lambda(eval_string)
+
+        return mean(f(m) for m in vector)
+    
+    def sum(self, eval_string: str, vector=None) -> float:
+        """
+        get the sum of values computed by eval_string
+        against all intersections (or vector if provided),
+        e.g.:
+
+        should_be_1 = k.sum("m.policy")
+        """        
+        if vector == None:
+            vector = self.all
+
+        f = self._func_or_lambda(eval_string)
+        
+        return sum(f(m) for m in vector)
+
+    def takeUntil(self, eval_string: str, vector=None) -> T.List['dotdict']:
+        """
+        take items from all intersections or vector if
+        provided until eval_string evaluates
+        to True. The item that evaluates to True is not included.
+
+        ok_moves = k.takeUntil("m.policy < .01", k.moves_by_policy)
+        """
+        if vector == None:
+            vector = self.all
+
+        f = self._func_or_lambda(eval_string)
+
+        res  = []
+        for m in vector:
+            if f(m):
+                break
+            res.append(m)
+        return res
+
+    def takeWhile(self, eval_string: str, vector=None) -> T.List['dotdict']:
+        """
+        take items from all intersections or vector if
+        provided until eval_string evaluates to False.
+
+        point_losers = k.takeWhile("k.scoreLead - m.scoreLead > 0", k.moves[1:])
+        """
+        if vector == None:
+            vector = self.all
+
+        f = self._func_or_lambda(eval_string)
+
+        res = []
+        for m in vector:
+            if not f(m):
+                break
+            res.append(m)
+        return res
 
     def _buildIntersections(self) -> None:
         "build much intersection data from the analysis dict"
