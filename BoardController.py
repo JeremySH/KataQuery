@@ -557,11 +557,11 @@ class Cursors:
         # FIXME this silently fails if bad path:
         black_arrow = QImage(os.path.join(d, "black_arrow.png"))
         white_arrow = QImage(os.path.join(d, "white_arrow.png"))
-        circle = QImage(os.path.join(d, "circle_cursor.png"))
+        pencil = QImage(os.path.join(d, "pencil_cursor.png"))
 
         self.black_toplay = self.image2cursor(black_arrow, 1, 1)
         self.white_toplay = self.image2cursor(white_arrow, 1, 1)
-        self.paint_white = self.image2cursor(circle, -1, -1)
+        self.paint_white = self.image2cursor(pencil, 1, 1)
         self.paint_black = self.paint_white 
 
     def image2cursor(self, img:'QImage', x, y) -> 'QCursor':
