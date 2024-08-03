@@ -6,13 +6,16 @@ KataQuery is a freeform, scriptable analysis goban for interactively exploring G
 Code your own analyses, markup, and visualizations at will.
 
 ![Tracking Influence Shifts with GUI](screenshots/explore_joseki_gui.jpg)
-Hook your script up to the provided GUI controls if you like.
+Hook into to the provided GUI controls if you like.
+
+![Plotting With Mathplotlib](screenshots/plots.jpg)
+Create plots with matplotlib and pandas.
 
 * * *
 
 ## How It Works
 
-Each time the position changes, your Python script is run, which marks up the board in any way it likes. Scripts have
+Whenever the position changes, your Python script is run, which marks up the board in any way it likes. Scripts have
 full access to KataGo's analysis, and display their results in real time.
 
 ## What Might Surprise You
@@ -54,16 +57,18 @@ KataQuery is meant for normal users. For the moment, however, you have to build 
 
 ```
 cd KataQuery
-make
+make command-line
 ```
 
 This will build the KataGo engine and create a virtual environment necessary for running KataQuery.
 
-If the default build doesn't work for you (pyinstaller tries to build a clickable app) you can try:
+To build a "frozen" app bundle, just
 
 ```
-make command-line
+make
 ```
+
+Note: the utility of frozen apps on linux is questionable, but they're very nice on MacOS.
 
 To run KataQuery, type:
 
@@ -110,9 +115,9 @@ These shortcuts are subject to change as I continue tweak it to have the most "f
 Bookmarks are created "On Request." That means: your edits aren't automatically remembered in the history, *you must
 save a position to return to it.* This is to keep things from getting hella confusing when dragging about stones, etc.
 
-To create a positional bookmark, use the "Bookmarks" menu or CMD-SHIFT-B
+To create a positional bookmark, use the "Bookmarks" menu or `CMD-SHIFT-B`
 
-To navigate through your bookmarked positions, use the mouse wheel.
+To navigate through your bookmarked positions, use the mouse wheel. or `SHIFT-CMD-[` and `SHIFT-CMD-]`
 
 When you change board sizes, all bookmarks are deleted.
 
@@ -172,13 +177,15 @@ standard python things you want.
 Scripts are automatically saved in "slots," which you can activate via shortcut or the "code" menu. This allows you to
 have diverse scripts at hand for different perspectives on the position.
 
-To toggle between two slots, tap the same shortcut twice or more (e.g. CMD-1, CMD-1 )
+To toggle between two slots, tap the same shortcut twice or more (e.g.`CMD-1`, `CMD-1` )
 
 If you need advanced editing capabilities, right now you'll have to copy and paste from an external editor.
 
 ### Analyze More
 
-The "Analyze More" feature (Board->Analyze More) is different from other frontends. Instead of analyzing forever and
+The "Analyze More" feature (Board->Analyze More) is different from other frontends. 
+
+Instead of analyzing forever and
 updating as results come in, you "feed" KataGo more visits when you want a deeper analysis. This keeps the interface
 snappy and furthermore allows you to investigate the effect of visits on analysis.
 
