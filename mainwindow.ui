@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1280</width>
-    <height>720</height>
+    <height>731</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -672,8 +672,20 @@
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QToolBar" name="toolBar">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
    <property name="windowTitle">
     <string>toolBar</string>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>16</width>
+     <height>16</height>
+    </size>
    </property>
    <attribute name="toolBarArea">
     <enum>TopToolBarArea</enum>
@@ -843,6 +855,10 @@
    </property>
   </action>
   <action name="actionBookmark">
+   <property name="icon">
+    <iconset>
+     <normaloff>resources/images/icon_bookmark.png</normaloff>resources/images/icon_bookmark.png</iconset>
+   </property>
    <property name="text">
     <string>Bookmark</string>
    </property>
@@ -939,6 +955,10 @@
    </property>
   </action>
   <action name="actionNext_Bookmark">
+   <property name="icon">
+    <iconset>
+     <normaloff>resources/images/icon_next_bookmark.png</normaloff>resources/images/icon_next_bookmark.png</iconset>
+   </property>
    <property name="text">
     <string>&gt;</string>
    </property>
@@ -953,6 +973,10 @@
    </property>
   </action>
   <action name="actionPrevious_Bookmark">
+   <property name="icon">
+    <iconset>
+     <normaloff>resources/images/icon_previous_bookmark.png</normaloff>resources/images/icon_previous_bookmark.png</iconset>
+   </property>
    <property name="text">
     <string>&lt;</string>
    </property>
@@ -964,6 +988,10 @@
    </property>
   </action>
   <action name="actionLast_Bookmark">
+   <property name="icon">
+    <iconset>
+     <normaloff>resources/images/icon_last_bookmark.png</normaloff>resources/images/icon_last_bookmark.png</iconset>
+   </property>
    <property name="text">
     <string>&gt;&gt;</string>
    </property>
@@ -972,6 +1000,10 @@
    </property>
   </action>
   <action name="actionFirst_Bookmark">
+   <property name="icon">
+    <iconset>
+     <normaloff>resources/images/icon_first_bookmark.png</normaloff>resources/images/icon_first_bookmark.png</iconset>
+   </property>
    <property name="text">
     <string>&lt;&lt;</string>
    </property>

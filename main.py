@@ -14,7 +14,7 @@ from BoardController import BoardController
 from PyQt5 import QtGui, QtCore, QtWidgets
 from PyQt5.QtGui import QGuiApplication
 
-from PyQt5.QtCore import Qt, QPoint, QObject, QStandardPaths, QSettings, QTimer
+from PyQt5.QtCore import Qt, QPoint, QSize, QObject, QStandardPaths, QSettings, QTimer
 
 from PyQt5.QtWidgets import (
 
@@ -48,6 +48,8 @@ class Window(QMainWindow, Ui_MainWindow):
             dis = settings.value("codeeditor/disabled", False, type=bool)
             self.actionDisable_Code.setChecked(dis)
 
+        # because QT resizes it for unknown reasons
+        QtCore.QTimer.singleShot(20, lambda : self.toolBar.setIconSize(QSize(16,16)))
 
     def connectSignalsSlots(self) -> None:
         self.actionQuit.triggered.connect(self.close)
