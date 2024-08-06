@@ -860,13 +860,16 @@
      <normaloff>resources/images/icon_bookmark.png</normaloff>resources/images/icon_bookmark.png</iconset>
    </property>
    <property name="text">
-    <string>Bookmark</string>
+    <string>Create bookmark</string>
    </property>
    <property name="toolTip">
     <string>Create a bookmark for current position</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+B</string>
+   </property>
+   <property name="iconVisibleInMenu">
+    <bool>false</bool>
    </property>
   </action>
   <action name="actionClear_Current_Bookmark">
@@ -960,7 +963,7 @@
      <normaloff>resources/images/icon_next_bookmark.png</normaloff>resources/images/icon_next_bookmark.png</iconset>
    </property>
    <property name="text">
-    <string>&gt;</string>
+    <string>Next Bookmark</string>
    </property>
    <property name="toolTip">
     <string>Go to next bookmark</string>
@@ -971,6 +974,9 @@
    <property name="autoRepeat">
     <bool>true</bool>
    </property>
+   <property name="iconVisibleInMenu">
+    <bool>false</bool>
+   </property>
   </action>
   <action name="actionPrevious_Bookmark">
    <property name="icon">
@@ -978,13 +984,16 @@
      <normaloff>resources/images/icon_previous_bookmark.png</normaloff>resources/images/icon_previous_bookmark.png</iconset>
    </property>
    <property name="text">
-    <string>&lt;</string>
+    <string>Previous Bookmark</string>
    </property>
    <property name="toolTip">
     <string>Go to previous bookmark</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+[</string>
+   </property>
+   <property name="iconVisibleInMenu">
+    <bool>false</bool>
    </property>
   </action>
   <action name="actionLast_Bookmark">
@@ -993,10 +1002,13 @@
      <normaloff>resources/images/icon_last_bookmark.png</normaloff>resources/images/icon_last_bookmark.png</iconset>
    </property>
    <property name="text">
-    <string>&gt;&gt;</string>
+    <string>Last Bookmark</string>
    </property>
    <property name="toolTip">
     <string>Go to last bookmark</string>
+   </property>
+   <property name="iconVisibleInMenu">
+    <bool>false</bool>
    </property>
   </action>
   <action name="actionFirst_Bookmark">
@@ -1005,10 +1017,16 @@
      <normaloff>resources/images/icon_first_bookmark.png</normaloff>resources/images/icon_first_bookmark.png</iconset>
    </property>
    <property name="text">
-    <string>&lt;&lt;</string>
+    <string>First Bookmark</string>
+   </property>
+   <property name="iconText">
+    <string>First Bookmark</string>
    </property>
    <property name="toolTip">
     <string>Go to first bookmark</string>
+   </property>
+   <property name="iconVisibleInMenu">
+    <bool>false</bool>
    </property>
   </action>
  </widget>
