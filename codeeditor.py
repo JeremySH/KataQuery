@@ -9,8 +9,8 @@ import sys
 import traceback
 import time
 
-from goutils import pointToCoords, coordsToPoint, goban2Query, getGoPoint
-from kataproxy import KataAnswer, GlobalKata, KataGoQueryError
+from goutils import pointToCoords, coordsToPoint, getGoPoint
+from kataproxy import KataAnswer, GlobalKata, KataGoQueryError, goban2query
 from io import StringIO
 
 # localize the line number to the code editor during error reports.
@@ -149,7 +149,7 @@ def analyze(goban: 'Goban', visits=2, allowedMoves: list[tuple[int, int]] =  Non
 
     kata = GlobalKata() # if this doesn't succeed it's a KataQuery bug
 
-    q = goban2Query(goban, "codeAnalysis", maxVisits=visits, allowedMoves = allowed)
+    q = goban2query(goban, "codeAnalysis", maxVisits=visits, allowedMoves = allowed)
     response = kata.analyze(q)
     return KataAnswer(response)
 

@@ -1650,7 +1650,10 @@ class BoardController(QObject):
         self.activeGoban.toPlay = self.getBoardToPlay()[0].upper()
         self.activeGoban.komi = self.komi # FIXME: overrides goban snapshot, not sure if it should?
 
-        return goban2Query(self.activeGoban, idname, maxVisits = maxVisits, flipPlayer = flipPlayer, allowedMoves = restricted)
+        id = idname + "_" + str(time.time_ns())
+        
+        return KP.goban2query(self.activeGoban, id, maxVisits = maxVisits, 
+            flipPlayer = flipPlayer, allowedMoves = restricted, allowedDepth=1)
         
         return query
 
