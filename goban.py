@@ -100,9 +100,9 @@ class Bifurcator:
         plays = self._plays
         blacks, whites = self._placements
 
-        for i, p in enumerate(plays):
+        for i, p in enumerate(reversed(plays)):
             if p[1] == location:
-                return "play", i
+                return "play", len(plays) - i - 1
 
         for i, b in enumerate(blacks):
             if b == location:
@@ -569,6 +569,17 @@ class Goban:
         if not self.bifurcator.try_remove(point):
             self._remove(point)
             self.bifurcator.collect()
+
+    def undo(self, count: int = 1) -> None:
+        "undo count moves"
+        stones, moves = self.stones_n_moves()
+        self.clear()
+
+        for col, stone in stones:
+            self.place(col, stone)
+
+        for col, move in moves[:-count]:
+            self.play(col, move)
 
     def relocate(self, srcPoint: T.Tuple[int,int], destPoint: T.Tuple[int,int]) -> None:
         "Try to relocate a move/stone from srcPoint to destPoint, requires a tuple"
