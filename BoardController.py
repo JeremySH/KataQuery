@@ -401,7 +401,13 @@ class HoverText(QObject):
         self.hoverTextItem.setPen(QPen(Qt.NoPen))
         self.hoverTextItem.setBrush(QBrush(Qt.black))
         
-        self.hoverFont = QFont(self.bc.markFont)
+        self.hoverFont = QtGui.QFont("Roboto Mono", 12)
+        self.hoverFont.insertSubstitutions("Roboto Mono", 
+            ["Hack", "Lucida Console",  "DejaVu Sans Mono", "Droid Sans Mono", 
+             "Liberation Mono", "Consolas", "Monospace"])
+        self.hoverFont.setStyleHint(QtGui.QFont.Monospace)
+        self.hoverFont.setBold(True)
+
         size = int(self.bc.markFont.pointSize()*0.75)
         if size <= 0:
             size = 1
@@ -415,7 +421,7 @@ class HoverText(QObject):
         self.hoverRectItem.setPen(p)
         
         b = QBrush(Qt.white)
-        b.setColor(QtGui.QColor.fromRgb(255,255,255,153))
+        b.setColor(QtGui.QColor.fromRgb(255,255,255,180))
         self.hoverRectItem.setBrush(QBrush(b))
 
         self.hoverGroup = QGraphicsItemGroup()
