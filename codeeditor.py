@@ -148,8 +148,10 @@ def analyze(goban: 'Goban', visits=2, allowedMoves: list[tuple[int, int]] =  Non
         allowed = allowedMoves
 
     kata = GlobalKata() # if this doesn't succeed it's a KataQuery bug
-
-    q = goban2query(goban, "codeAnalysis", maxVisits=visits, allowedMoves = allowed)
+    
+    id = "codeAnalysis" + "_" + str(time.time_ns())
+    
+    q = goban2query(goban, id, maxVisits=visits, allowedMoves = allowed)
     response = kata.analyze(q)
     return KataAnswer(response)
 
