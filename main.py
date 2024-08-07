@@ -364,6 +364,7 @@ if __name__ == "__main__":
     resource_directory = os.path.join(app_directory, "resources")
 
     def main():
+        os.chdir(app_directory) # needed to fix Qt/pyinstaller disagreement on where we're working from
         app = QApplication(sys.argv)
 
         console = ConsoleWindow()
