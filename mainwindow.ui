@@ -737,6 +737,10 @@
    </property>
   </action>
   <action name="actionRun">
+   <property name="icon">
+    <iconset>
+     <normaloff>resources/images/icon_run.png</normaloff>resources/images/icon_run.png</iconset>
+   </property>
    <property name="text">
     <string>Run</string>
    </property>
@@ -748,6 +752,10 @@
    </property>
   </action>
   <action name="actionFlip_Player">
+   <property name="icon">
+    <iconset>
+     <normaloff>resources/images/icon_flip_player.png</normaloff>resources/images/icon_flip_player.png</iconset>
+   </property>
    <property name="text">
     <string>Flip Player</string>
    </property>
@@ -759,6 +767,10 @@
    </property>
   </action>
   <action name="actionAnalyze_More">
+   <property name="icon">
+    <iconset>
+     <normaloff>resources/images/icon_analyze_more.png</normaloff>resources/images/icon_analyze_more.png</iconset>
+   </property>
    <property name="text">
     <string>Analyze More</string>
    </property>
@@ -919,6 +931,10 @@
    <property name="checkable">
     <bool>true</bool>
    </property>
+   <property name="icon">
+    <iconset>
+     <normaloff>resources/images/icon_query.png</normaloff>resources/images/icon_query.png</iconset>
+   </property>
    <property name="text">
     <string>Query Mode</string>
    </property>
@@ -928,10 +944,17 @@
    <property name="shortcut">
     <string>Ctrl+/</string>
    </property>
+   <property name="iconVisibleInMenu">
+    <bool>false</bool>
+   </property>
   </action>
   <action name="actionDraw_Mode">
    <property name="checkable">
     <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset>
+     <normaloff>resources/images/icon_draw_mode.png</normaloff>resources/images/icon_draw_mode.png</iconset>
    </property>
    <property name="text">
     <string>Draw Mode</string>
@@ -942,10 +965,17 @@
    <property name="shortcut">
     <string>Ctrl+Shift+D</string>
    </property>
+   <property name="iconVisibleInMenu">
+    <bool>false</bool>
+   </property>
   </action>
   <action name="actionPlay_Mode">
    <property name="checkable">
     <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset>
+     <normaloff>resources/images/icon_play_mode.png</normaloff>resources/images/icon_play_mode.png</iconset>
    </property>
    <property name="text">
     <string>Play Mode</string>
@@ -955,6 +985,9 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+P</string>
+   </property>
+   <property name="iconVisibleInMenu">
+    <bool>false</bool>
    </property>
   </action>
   <action name="actionNext_Bookmark">
