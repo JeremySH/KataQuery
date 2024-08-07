@@ -750,6 +750,9 @@
    <property name="shortcut">
     <string>Ctrl+R</string>
    </property>
+   <property name="iconVisibleInMenu">
+    <bool>false</bool>
+   </property>
   </action>
   <action name="actionFlip_Player">
    <property name="icon">
@@ -765,6 +768,9 @@
    <property name="shortcut">
     <string>Ctrl+Shift+F</string>
    </property>
+   <property name="iconVisibleInMenu">
+    <bool>false</bool>
+   </property>
   </action>
   <action name="actionAnalyze_More">
    <property name="icon">
@@ -779,6 +785,9 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+A</string>
+   </property>
+   <property name="iconVisibleInMenu">
+    <bool>false</bool>
    </property>
   </action>
   <action name="actionClearBoard">
