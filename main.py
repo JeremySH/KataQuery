@@ -106,9 +106,9 @@ class Window(QMainWindow, Ui_MainWindow):
             localizeGroup.addAction(a)
             self.menuLocalize.addAction(a)
 
-
+        # build slots menu
         codeSlotGroup = QActionGroup(self.menuCodeSlot)
-        for i in range(10):
+        for i in range(20):
             a = QAction(self)
             a.setData(i+1)
             a.setCheckable(True)
@@ -119,10 +119,17 @@ class Window(QMainWindow, Ui_MainWindow):
             self.menuCodeSlot.addAction(a)
 
             a.triggered.connect(self.codeEdit.slotSelected)
+
+            #Hotkeys: Ctrl-slotnum for slots 1-10, ctrl-alt-slotnum%10 for slots 11-20
             if i == 9:
                 a.setShortcut(QtGui.QKeySequence(f"Ctrl+0"))
+            elif i == 19:
+                a.setShortcut(QtGui.QKeySequence(f"Ctrl+Alt+0"))
+            elif i > 9:
+                a.setShortcut(QtGui.QKeySequence(f"Ctrl+Alt+{i%10+1}"))
             else:
                 a.setShortcut(QtGui.QKeySequence(f"Ctrl+{i+1}"))
+
             titleset = lambda v, s, o=a: o.setText(f"{v} {s}") if o.data() == v else None
             selectset = lambda v, o=a: o.setChecked(True) if o.data() == v else None
             GS.Code_SetSlotName.connect(titleset)

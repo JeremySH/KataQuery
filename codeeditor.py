@@ -669,7 +669,7 @@ class CodeEditor(CodeEdit):
         GS.Code_SetSlotName.emit(slotnum, name)
 
     def nameAllSlots(self) -> None:
-        for s in range(1,11):
+        for s in range(1,21):
             self.nameASlot(s)
 
     def appWillClose(self) -> None:
