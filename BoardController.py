@@ -781,7 +781,7 @@ class BoardController(QObject):
 
         # create the base board graphics
         # TODO: this will eventually be moved to themes
-        self.board_image = QImage(os.path.join(project_globals.resource_directory, "images", "board.png"))
+        self.board_image = QImage(os.path.join(project_globals.resource_directory, "images", "board_mild.png"))
         self.board_pixmap = QPixmap(self.board_image)
         
         if hPixels > vPixels:
