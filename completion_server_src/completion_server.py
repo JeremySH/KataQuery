@@ -18,6 +18,11 @@ for writing your own server.
 """
 
 from pyqode.core import backend
+import pyqode.python.backend.workers
+
+# patch a bug, where in some cases ICON_TYPE is "unimplemented" and ejects
+# a zillion warnings that I don't care about
+pyqode.python.backend.workers.icon_from_typename = lambda x,y: None
 from pyqode.python.backend.workers import JediCompletionProvider
 
 class MultiProvider(object):
