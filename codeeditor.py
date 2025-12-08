@@ -527,7 +527,7 @@ def persist(variable: str, val) -> None:
         self.context_global["k"] = k
 
 from pyqode.core.api import CodeEdit, ColorScheme
-from pyqode.core import modes, panels
+from pyqode.core import modes, panels, api
 from pyqode.python import modes as pymodes
 import os
 import project_globals
@@ -550,7 +550,8 @@ class CodeEditor(CodeEdit):
             self.backend.start(os.path.join(project_globals.resource_directory, "bin", "completion_server.py"))
 
         self.modes.append(modes.CodeCompletionMode())
-
+        self.panels.append(panels.SearchAndReplacePanel(), api.Panel.Position.BOTTOM)
+        
         # determine if environment is dark or light
         # and select an appropriate theme
         pal = QApplication.instance().palette()
