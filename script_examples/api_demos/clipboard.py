@@ -6,6 +6,6 @@
 clearStatus()
 
 if k.manual_run:
-	sgf = k.goban.asSGF()
+	sgf = k.goban.as_sgf()
 	set_clipboard(sgf)
 	status("SGF copied to clipboard")

@@ -15,7 +15,7 @@ for l in _letters:
 
 # unfortunately a pass in katago policy net is nondeterministically (boardsizeX-1) * (boardsizeY-1) + 1
 # so dispense with that and instead use (-1, -1) for a pass, which can never be mistaken for an index
-def pointToCoords(point: tuple) -> str:
+def gopoint_to_str(point: tuple) -> str:
     "convert 0-indexed point tuple to go coordinates like 'D4', where (-1,-1) is pass" 
     if point[0] >= 0 and point[1] >= 0:
         letter = go2letter[point[0]]
@@ -25,7 +25,7 @@ def pointToCoords(point: tuple) -> str:
 
     return letter + str(coord)
 
-def coordsToPoint(coords: str) -> tuple[int, int]:
+def str_to_gopoint(coords: str) -> tuple[int, int]:
     "convert go goordinate like 'D4' into tuple of 0-indexed point, where 'PASS' becomes (-1, -1)"
     letters = "ABCDEFGHJKLMNOPQRSTUVWXYZ"
     digits = "0123456789"
@@ -42,12 +42,12 @@ def coordsToPoint(coords: str) -> tuple[int, int]:
 
     return (letter2go[xStr], int(yStr.strip())-1)
 
-def getGoPoint(gopoint: str or dict or tuple[int,int]) -> tuple[int,int]:
-    "try to return a gopoint from any compatible type provided"
+def to_gopoint(gopoint: str or dict or tuple[int,int]) -> tuple[int,int]:
+    "try to return a gopoint tuple from any compatible type provided"
     if type(gopoint) == tuple:
         return gopoint
     elif type(gopoint) == str:
-        return coordsToPoint(gopoint)
+        return str_to_gopoint(gopoint)
     elif hasattr(gopoint, 'pos'): # accomodate move info object
         return gopoint.pos
     elif issubclass(gopoint.__class__, dict) and 'pos' in gopoint:
@@ -55,7 +55,7 @@ def getGoPoint(gopoint: str or dict or tuple[int,int]) -> tuple[int,int]:
 
     return gopoint # don't really want to return None
 
-def isPass(point: tuple[int, int]) -> bool:
+def is_pass(point: tuple[int, int]) -> bool:
     return point[1] < 0 or point[0] < 0
 
 def opponent(color: str) -> str:
@@ -67,6 +67,6 @@ def opponent(color: str) -> str:
     else:
         raise ValueError("color string must start with either B or W")
 
-def isOnBoard(point, xsize: int, ysize: int) -> bool:
+def is_on_board(point, xsize: int, ysize: int) -> bool:
     "simple check to see if point is inside the board"
     return point[0] >= 0 and point[1] >= 0 and point[0] < xsize and point[1] < ysize

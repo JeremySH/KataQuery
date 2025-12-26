@@ -63,14 +63,14 @@ def nearby():
 
 	#print(near)
 	policies = []
-	policyMax = -1
-	policyMin = 10000
+	max_policy = -1
+	min_policy = 10000
 
 	for l in k.legal_moves:
 		if l.pos in near:
 			policies.append([l.pos, l.policy])
-			policyMax = max(l.policy, policyMax)
-			policyMin = min(l.policy, policyMin)
+			max_policy = max(l.policy, max_policy)
+			min_policy = min(l.policy, min_policy)
 
 	policies = sorted(policies, key=lambda x: x[1], reverse=True)
 
@@ -80,7 +80,7 @@ def nearby():
 	# mark the policy values by rank
 	for i, p in enumerate(policies [:limit]):
 		mark(p[0], i+1)
-		heat(p[0], (p[1] + policyMin)/(policyMax-policyMin))
+		heat(p[0], (p[1] + min_policy)/(max_policy-min_policy))
 
 	# mark the vitality of stones
 	for i in k.stones:
@@ -172,5 +172,5 @@ clearAll()
 # use the COUNT variable as an index to our functions and call it
 [strong_moves, terri, nearby, vitals, nothin][COUNT]()
 
-if k.lastMove:
-	mark(k.lastMove, "square")
+if k.last_move:
+	mark(k.last_move, "square")

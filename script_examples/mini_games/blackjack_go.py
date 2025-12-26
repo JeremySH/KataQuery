@@ -106,11 +106,11 @@ if previousK == None:
 # when board changes, check if the last
 # move is correct
 if previousK.thisHash != k.thisHash:
-	if not k.lastMove: # can happen on board clear
+	if not k.last_move: # can happen on board clear
 		pass
 	# player selected the move offered?
-	elif prevChoice and prevChoice.pos == k.lastMove.pos:
-		p = previousK.get_point(k.lastMove.pos)
+	elif prevChoice and prevChoice.pos == k.last_move.pos:
+		p = previousK.get_point(k.last_move.pos)
 		if bustFlag:
 			anim(" ")
 		elif not p.isMove:

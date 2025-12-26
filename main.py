@@ -4,7 +4,6 @@ import sys, math, time
 import pkg_resources.extern
 
 from kataproxy import KataProxyQ, KataSignals, GlobalKata, GlobalKataInit
-from goutils import coordsToPoint, pointToCoords, opponent
 from goban import Goban
 from GlobalSignals import GS
 from SgfParser import SgfParser

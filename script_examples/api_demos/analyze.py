@@ -58,8 +58,8 @@ if GENERATE_LOCAL:
 	goban = k.goban
 	ans = k
 	latest = None
-	if k.lastMove:
-		latest = k.lastMove
+	if k.last_move:
+		latest = k.last_move
 	
 	for i in range(1,20):
 		near = None

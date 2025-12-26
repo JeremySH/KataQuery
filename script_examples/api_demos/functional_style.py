@@ -27,8 +27,8 @@ EXTRA_HELP = False # True dumps docs to console
 
 def by_dist(m):
 	"example function to pass to k.min()"
-	if k.lastMove:
-		return dist(m, k.lastMove)
+	if k.last_move:
+		return dist(m, k.last_move)
 	else:
 		return 0
 
@@ -77,7 +77,7 @@ if len(inv):
 
 # other functional style functions:
 if EXTRA_HELP:
-	for func in [k.takeWhile, k.takeUntil, k.min, k.avg, k.sum]:
+	for func in [k.takewhile, k.takeuntil, k.min, k.avg, k.sum]:
 		help(func)
 
 

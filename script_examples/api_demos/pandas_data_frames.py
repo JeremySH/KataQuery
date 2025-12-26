@@ -3,14 +3,14 @@
 # people who like it.
 
 # There are two dataframes: 
-# k.dfInfos -- all information for both legal and illegal plays
-# k.dfRoot -- general position information, single row
+# k.dataframe -- all information for both legal and illegal plays
+# k.rootInfo_dataframe -- general position information, single row
 
-# You probably want k.dfInfos, which is dataframe version
+# You probably want k.dataframe, which is dataframe version
 # of (k.pass_move + k.intersections)
 
 # in addition to the standard columns (policy, etc.)
-# k.dfInfos also provides these columns:
+# k.dataframe also provides these columns:
 # 'x', 'y', 'info' 
 
 # The 'info' column contains the original moveInfo python object,
@@ -31,7 +31,7 @@ log(f"Peril: {PERIL}")
 log(f"Move Count: {MOVE_COUNT}")
 
 clearAll()
-df = k.dfInfos
+df = k.dataframe
 df = df.query("legal")
 df = df.query("ownershipOpponent > @PERIL")
 df = df.sort_values("mergedOrder")

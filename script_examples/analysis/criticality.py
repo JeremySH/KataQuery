@@ -54,7 +54,7 @@ def rescale(thisAnswer):
 
 def graphWinrates(ans):
 	"graph all winrates of visited moves in ans"
-	df = ans.dfInfos
+	df = ans.dataframe
 	df = df.query("isMove").sort_values('winrate', ascending=False)
 	df = df.head(20)
 	df['rank'] = range(1, len(df)+1)

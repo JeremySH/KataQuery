@@ -51,7 +51,7 @@ if SAVE_SGF:
 	name = chooseFile("Save To:", save=True, extension="sgf")
 	
 	if name: 
-		sgf = k.goban.asSGF()
+		sgf = k.goban.as_sgf()
 	
 		with open(name, "w") as file:
 			file.write(sgf)

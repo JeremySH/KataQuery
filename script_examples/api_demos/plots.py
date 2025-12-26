@@ -24,7 +24,7 @@ if SHOW_SCATTER:
 	# this is easier, but plt.show() creates new windows,
 	# so we protect it with a GUI Button
 	clearAll()
-	df = k.dfInfos
+	df = k.dataframe
 	df = df.query('isMove')
 	df = df[['winrate', 'scoreLead']]
 	df.plot.scatter(y='winrate', x='scoreLead')
@@ -49,7 +49,7 @@ else:
 axis.clear()
 
 # munge some data
-df = k.dfInfos
+df = k.dataframe
 df = df.query('legal')
 df = df.sort_values('policy', ascending=False)
 df = df[['policy', 'coords', 'info']]

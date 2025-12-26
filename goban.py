@@ -7,7 +7,7 @@
 # track ko, captures, etc. Also, it's kinder to katago's caching
 
 import numpy as np
-from goutils import pointToCoords, getGoPoint, isPass
+from goutils import to_gopoint, is_pass, gopoint_to_str
 import typing as T
 
 color2int = {"E": 0, "B": 1, "W": 3, "K": 4, 0: 0, 1: 1, 3: 3, 4: 4} # empty black white ko
@@ -25,6 +25,15 @@ def opposite(col: np.ubyte):
     else: return col # should be value error
 
 
+def same_color(col: str):
+    "normalize e.g 'black' 'Black' 'B' and 'bLaCk' to just 'black' "
+    if col[0].upper() == "W":
+        return "white"
+    elif col[0].upper() == "B":
+        return "black"
+    else:
+        return "empty"
+
 class Bifurcator:
     "An observer that separates moves into established stones and played stones. This is to help Katago keep track of ko"
     def __init__(self, board: 'Goban'):
@@ -37,7 +46,7 @@ class Bifurcator:
         play, return list of captured stone coords. If "as_new" is True,
         collect first
         """
-        if isPass(location): return []
+        if is_pass(location): return []
         if as_new:
             self.collect()
         self._plays.append([color, location])
@@ -52,7 +61,7 @@ class Bifurcator:
 
     def place_equals_play(self, color: str, location: T.Tuple[int,int]) -> bool:
         "is this place of a stone equivalent to playing a stone?"
-        if isPass(location): return True
+        if is_pass(location): return True
         g1 = self._board.copy()
         g2 = self._board.copy()
         g1.play(color, location)
@@ -227,7 +236,7 @@ class Bifurcator:
                 return True
 
     def place(self, color: str, location: T.Tuple[int,int]):
-        if isPass(location): return
+        if is_pass(location): return
         
         modified = self.place_modifies_plays(color, location)
         res = self._board._place(color, location)
@@ -268,13 +277,13 @@ class Bifurcator:
         "just like stones_n_moves except the coordinates are GTP style (e.g. 'D4'). Useful for sending to KataGo"
         #print("placements ", self._placements)
         #print("plays", self._plays)
-        blacks = [['B', pointToCoords(p)] for p in self._placements[0]]
-        whites = [['W', pointToCoords(p)] for p in self._placements[1]]
+        blacks = [['B', gopoint_to_str(p)] for p in self._placements[0]]
+        whites = [['W', gopoint_to_str(p)] for p in self._placements[1]]
 
         whites.extend(blacks)
         stones = whites        
         
-        plays = [[p[0][0].upper(), pointToCoords(p[1])] for p in self._plays]
+        plays = [[p[0][0].upper(), gopoint_to_str(p[1])] for p in self._plays]
 
         #print(stones, plays)
         return stones, plays
@@ -308,7 +317,16 @@ class Goban:
         return self._toPlay
 
     @toPlay.setter
-    def toPlay(self, value): self._toPlay = value
+    def toPlay(self, value): self._toPlay = same_color(value)
+
+    @property
+    def player(self): # to get rid of camelCase eventually
+        "who's move is it? 'black' or 'white'?"
+        return self.toPlay()
+    
+    @player.setter
+    def player(who: str):
+        self.toPlay = who
 
     def copy(self) -> 'Goban':
         "return a duplicate of myself"
@@ -319,7 +337,7 @@ class Goban:
         c.toPlay = self.toPlay
         return c
 
-    def asASCII(self) -> str:
+    def as_ascii(self) -> str:
         "return an ASCII text rendering of the board"
         res = "\n   "
         for x in range(self.board.shape[0]):
@@ -344,7 +362,7 @@ class Goban:
         res += "\n"
         return res
 
-    def asSGF(self) -> str:
+    def as_sgf(self) -> str:
         "Convert to SGF text suitable for importing into an SGF editor"
         # sgf format inverts the y axis 
         letters = 'abcdefghijklmnopqrstuvwxyz'
@@ -384,7 +402,7 @@ class Goban:
 
     def print(self) -> None:
         "print the ASCII board to stderr"
-        res = self.asASCII()
+        res = self.as_ascii()
         eprint(res, end='')
 
 
@@ -395,9 +413,9 @@ class Goban:
 
     def play(self, color: str, gopoint: T.Tuple[int,int]):
         "play a move"
-        point = getGoPoint(gopoint)
+        point = to_gopoint(gopoint)
         #print("Playing ", gopoint)
-        if isPass(point): return []
+        if is_pass(point): return []
 
         removed =  self.bifurcator.play(color, point)
 
@@ -411,8 +429,8 @@ class Goban:
 
     def place (self, color:str, gopoint: T.Tuple[int,int]) -> None:
         "place a stone of color at gopoint"
-        point = getGoPoint(gopoint)
-        if isPass(point): return
+        point = to_gopoint(gopoint)
+        if is_pass(point): return
         res = self.bifurcator.place(color, point)
         
         # a "place" resets ko
@@ -422,9 +440,9 @@ class Goban:
     def place_many(self, blackpoints: T.List[T.Tuple[int,int]] = [], whitepoints: T.List[T.Tuple[int,int]] =[]) -> None:
         "place many stones, ignoring legality and captures"
         for p in blackpoints:
-            self.place("black", getGoPoint(p))
+            self.place("black", to_gopoint(p))
         for p in whitepoints:
-            self.place("white", getGoPoint(p))
+            self.place("white", to_gopoint(p))
 
     def play_many(self, toPlay: str, moves: T.List[T.Tuple[int,int]]) -> T.Tuple[list, list]:
         "play list of moves, alternating players between"
@@ -433,7 +451,7 @@ class Goban:
         white_caps = []
 
         for p in moves:
-            caps = self.play(c, getGoPoint(p))
+            caps = self.play(c, to_gopoint(p))
             if c == "white": 
                 c = "black"
                 black_caps = black_caps + caps
@@ -508,7 +526,7 @@ class Goban:
 
     def legal(self, color:str, gopoint: T.Tuple[int,int]) -> bool:
         "is this play legal for this color?"
-        point = getGoPoint(gopoint)
+        point = to_gopoint(gopoint)
         if self.board[point] & 1 != 0:
             return False
 
@@ -556,7 +574,7 @@ class Goban:
         if thesePoints == None:
             thesePoints = self.black_stones() + self.white_stones()
         
-        points = set(getGoPoint(p) for p in thesePoints)
+        points = set(to_gopoint(p) for p in thesePoints)
         for p in thesePoints:
             for neighbor in self.adjacent(p):
                 #if self.board[neighbor] & 1 == 0:
@@ -565,7 +583,7 @@ class Goban:
     
     def remove(self, gopoint: T.Tuple[int,int]) -> None:
         "remove the stone at this go point"
-        point = getGoPoint(gopoint)
+        point = to_gopoint(gopoint)
         if not self.bifurcator.try_remove(point):
             self._remove(point)
             self.bifurcator.collect()
@@ -615,7 +633,7 @@ class Goban:
 
     def get(self, gopoint: T.Tuple[int,int]) -> str: # "black" "white", "empty"
         "get the color of the stone at this point"
-        point = getGoPoint(gopoint)
+        point = to_gopoint(gopoint)
         if self.board[point] & 1 == 0:
             return "empty"
         if self.board[point] == 1:
@@ -640,7 +658,7 @@ class Goban:
         s = zip(*np.where(self.board & 1 == 1))
         return self._recast(s)
 
-    def stones_byCol(self, color:str) -> T.List[T.Tuple[int,int]]:
+    def stones_by_color(self, color:str) -> T.List[T.Tuple[int,int]]:
         "like stones() but only of specified color (e.g. 'white')"
         c = color2int[color[0].upper()]
         #return list(zip(*np.where(self.board == c)))
@@ -650,11 +668,11 @@ class Goban:
 
     def white_stones(self) -> T.List[T.Tuple[int,int]]:
         "return list of gopoints of all white stones on board"
-        return self.stones_byCol("white")
+        return self.stones_by_color("white")
 
     def black_stones(self) -> T.List[T.Tuple[int,int]]:
         "return list of gopoints of all black stones on board"
-        return self.stones_byCol("black")
+        return self.stones_by_color("black")
 
     def groups(self)-> T.Tuple[T.List[T.Tuple[int,int]], T.List[T.Tuple[int,int]]]:
         "return black_groups, white_groups on the board"
@@ -663,7 +681,7 @@ class Goban:
         result = {"black": [], "white": []}
 
         for col in ["black", "white"]:
-            for s in self.stones_byCol(col):
+            for s in self.stones_by_color(col):
                 if s not in v:
                     v[s] = True
                     group = self.connected(s)
@@ -690,7 +708,7 @@ class Goban:
 
     def adjacent(self, gopoint: T.Tuple[int,int]) -> T.List[T.Tuple[int,int]]:
         "return list of gopoints adjacent to this point"
-        point = getGoPoint(gopoint)
+        point = to_gopoint(gopoint)
         res = []
         for d in [(1,0), (-1, 0), (0, 1), (0, -1)]:
             res.append((point[0] + d[0], point[1] + d[1]))
@@ -699,7 +717,7 @@ class Goban:
 
     def connected(self, gopoint: T.Tuple[int,int]) -> T.List[T.Tuple[int,int]]:
         "return the stones connected to this gopoint, given they are the same color"
-        point = getGoPoint(gopoint)
+        point = to_gopoint(gopoint)
         visited = {}
         grouped = {}
         col = self.board[point]
@@ -719,7 +737,7 @@ class Goban:
 
     def libs(self, gopoint: T.Tuple[int,int]) -> T.List[T.Tuple[int,int]]:
         "return list of empty gopoints that count as this group's liberties"
-        point = getGoPoint(gopoint)
+        point = to_gopoint(gopoint)
         group = self.connected(point)
         empties = {}
         for i in group:
@@ -731,7 +749,7 @@ class Goban:
 
     def haslibs(self, gopoint: T.Tuple[int,int]) -> bool:
         "a quick check for capture"
-        point = getGoPoint(gopoint)
+        point = to_gopoint(gopoint)
         group = self.connected(point)
         for i in group:
             for a in self.adjacent(i):
@@ -748,7 +766,7 @@ class Goban:
         "collapse all plays into placements"
         self.bifurcator.collect()
 
-    def _randomLegal(self, color = None) -> T.Tuple[str, T.Tuple[int,int]]:
+    def _random_legal(self, color = None) -> T.Tuple[str, T.Tuple[int,int]]:
         "generate a random legal move and return (color, move tuple)"
         import random
 
@@ -771,16 +789,16 @@ class Goban:
         return col, move
 
     # some terrible bots to test the board
-    def _randomPlay(self, color = None) -> T.Tuple[str, T.Tuple[int,int], list]:
+    def _random_play(self, color = None) -> T.Tuple[str, T.Tuple[int,int], list]:
         "play a random move and return the move as (color, intersection, resulting_captures)"
         import random
 
-        col, move = self._randomLegal(color)
+        col, move = self._random_legal(color)
         caps = self.play(col, move)
 
         return col, move, caps
 
-    def _captureGo(self, col) -> T.Tuple[str, T.Tuple[int,int], list]:
+    def _capture_go(self, col) -> T.Tuple[str, T.Tuple[int,int], list]:
         "randomly pick an opponent's liberty to fill"
         import random
         #col = random.choice(["white", "black"])
@@ -791,7 +809,7 @@ class Goban:
         if col == "white": othergroup = black_groups 
 
         if len(othergroup) == 0:
-            return self._randomPlay(color=col)
+            return self._random_play(color=col)
 
         libs = []
         
@@ -808,10 +826,10 @@ class Goban:
                 
                     return col, move, caps
         
-        return self._randomPlay(col)
+        return self._random_play(col)
 
 
-    def _leastLibGo(self, col) -> T.Tuple[str, T.Tuple[int,int], list]:
+    def _least_lib_go(self, col) -> T.Tuple[str, T.Tuple[int,int], list]:
         "pick a group with least liberties and play at one of them"
         import random
         #col = random.choice(["white", "black"])
@@ -822,7 +840,7 @@ class Goban:
         allgroups = black_groups
 
         if len(allgroups) == 0:
-            return self._randomPlay(color=col)
+            return self._random_play(color=col)
 
         libs = []
         minlibs = 8888
@@ -843,13 +861,13 @@ class Goban:
                 
                     return col, move, caps
         
-        return self._randomPlay(col)
+        return self._random_play(col)
 
 def test(length: int = 180) -> 'Goban':
     b = Goban(19)
     for m in range(length):
         #eprint("MOVE NUMBER:", m)
-        col, move, caps = b._leastLibGo(["black", "white"][m % 2])
+        col, move, caps = b._least_lib_go(["black", "white"][m % 2])
         if len(caps):
             pass #print(f"# captured: {caps}")
             #b.print()
@@ -890,7 +908,7 @@ if __name__ == "__main__":
     b2 = test(movecount)
     
     b2 = b.copy()
-    b2._randomPlay()
+    b2._random_play()
 
     print("DIFF: ")
     print(b2.diff(b))
@@ -903,10 +921,10 @@ if __name__ == "__main__":
     if True:
         p.start('randomlegal')
         for x in range(movecount):
-            b._randomLegal()
+            b._random_legal()
         p.show()
 
-        moves = list(map(b._randomLegal, [None]*movecount))
+        moves = list(map(b._random_legal, [None]*movecount))
 
         p.start('goban_when_play')
         for m in moves:
@@ -950,4 +968,4 @@ if __name__ == "__main__":
             blah = b.stones_n_moves_coords()
         p.show()
     
-    print(b.asSGF())
+    print(b.as_sgf())

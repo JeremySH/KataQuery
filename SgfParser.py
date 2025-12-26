@@ -201,7 +201,7 @@ class SgfNode:
 				showit = False
 
 			if testPrint and showit:
-				print(g.asASCII())
+				print(g.as_ascii())
 		
 		return boards
 
@@ -250,7 +250,7 @@ class SgfNode:
 				showit = False
 
 			if showit:
-				print(board.asASCII())
+				print(board.as_ascii())
 				if interactive:
 					self.pprint()
 					
@@ -396,7 +396,7 @@ if __name__ == "__main__":
 
 	for g in gl:
 		# print("### POSITION: ")
-		print(g.asASCII())
+		print(g.as_ascii())
 
 	thing.root.play(interactive=True)
 

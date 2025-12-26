@@ -10,8 +10,8 @@ HELP = button3("HELP")
 
 g = k.goban.copy() # copy() just in case
 
-print(g.asASCII())
-print(g.asSGF())
+print(g.as_ascii())
+print(g.as_sgf())
 
 clearLog(); clearAll()
 
@@ -49,13 +49,13 @@ status(f"Total liberties: {len(lib_set)}")
 
 # sgf will retain move order if possible:
 if COPY_SGF:
-	set_clipboard(g.asSGF())
+	set_clipboard(g.as_sgf())
 	status("SGF copied.")
 
 # collapse will convert into a single SGF node (diagram)
 if COPY_DIAGRAM:
 	g.collapse() # no moves, just stone placements
-	set_clipboard(g.asSGF())
+	set_clipboard(g.as_sgf())
 	status("SGF diagram copied.")
 
 # an example of using the play() method:

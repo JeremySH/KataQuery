@@ -241,8 +241,8 @@ log("Quadrant: ", QUADRANT+1)
 log(f"First Move Rank: {MOVERANK}")
 
 # show last move
-if k.lastMove:
-	mark(k.lastMove, "●")
+if k.last_move:
+	mark(k.last_move, "●")
 
 # rank moves with ABC...
 if k.depth == "quick":

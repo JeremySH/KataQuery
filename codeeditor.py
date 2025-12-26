@@ -9,7 +9,7 @@ import sys
 import traceback
 import time
 
-from goutils import pointToCoords, coordsToPoint, getGoPoint
+from goutils import to_gopoint
 from kataproxy import KataAnswer, GlobalKata, KataGoQueryError, goban2query
 from io import StringIO
 
@@ -62,7 +62,7 @@ def mark(gopoint: tuple or str or dict, label="triangle", halign='center', valig
     """
     global k
 
-    pos = getGoPoint(gopoint)
+    pos = to_gopoint(gopoint)
 
     if type(pos) != tuple:
         return # FIXME: exception might be more appropriate, though annoying.
@@ -73,7 +73,7 @@ def mark(gopoint: tuple or str or dict, label="triangle", halign='center', valig
 
 def ghost(gopoint: tuple or str or dict, color: str, scale=1.0) -> None:
     "make a translucent stone at this go point"
-    pos = getGoPoint(gopoint)
+    pos = to_gopoint(gopoint)
     if type(pos) != tuple:
         return # FIXME: exception might be more appropriate, though annoying.
     options = {'scale': scale}    
@@ -109,7 +109,7 @@ def heat(gopoint: tuple or str, value: float) -> None:
     """
     set the heat value for gopoint [e.g. (3,3)] from 0 to 1
     """
-    pos = getGoPoint(gopoint)
+    pos = to_gopoint(gopoint)
 
     GS.heatValueChanged.emit(pos, value)
 
@@ -131,7 +131,7 @@ def quickPlay(katainfo: 'KataAnswer', plays: list, visits=2) -> 'KataAnswer':
     if kata == None:
         return katainfo
     
-    orig = dict(katainfo.answer['originalQuery'])
+    orig = dict(katainfo.answer['original_query'])
     orig['moves'] = orig['moves'] + plays
     orig['id'] = "codeAnalysis_" + str(time.time_ns())
     orig['maxVisits'] = max(visits,2)
@@ -164,8 +164,8 @@ def opponent(color: str) -> str:
 
 def dist(pos1: tuple[int, int] or str or dict, pos2: tuple[int, int] or str or dict,) -> int:
     "return the manhattan distance between 2 go points"
-    p1 = getGoPoint(pos1)
-    p2 = getGoPoint(pos2)
+    p1 = to_gopoint(pos1)
+    p2 = to_gopoint(pos2)
     return abs(p1[0]-p2[0]) + abs(p1[1] - p2[1])
 
 def set_clipboard(stuff: str) -> None:
@@ -255,7 +255,7 @@ def chooseFile(prompt:str or None =None, save:bool =False, default:str="", exten
         return filenames
 
 def hover(gopoint: tuple[int,int], text:str ) -> None:
-    p = getGoPoint(gopoint)
+    p = to_gopoint(gopoint)
     GS.setHoverText.emit(p, str(text))
 
 def clearHovers() -> None:

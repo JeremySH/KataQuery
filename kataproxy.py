@@ -42,6 +42,7 @@ class _KataSignals(QObject):
     def __init__(self) -> None:
         super().__init__()
 
+
 KataSignals = _KataSignals()
 
 # it's quite impossible to ask for analysis in a blocking way
@@ -104,7 +105,7 @@ class dotdict(dict):
             raise AttributeError(key)
 
 class KataGoQueryError(Exception):
-    "An error occured with the provided query to KataGo. Attributes provided: e.message, e.field, e.contents, e.originalQuery"
+    "An error occured with the provided query to KataGo. Attributes provided: e.message, e.field, e.contents, e.original_query"
     def __init__(self, kata_response:dict) -> None:
         self.contents = kata_response
         self.message = kata_response['error']
@@ -114,10 +115,10 @@ class KataGoQueryError(Exception):
         else:
             self.field = None
 
-        if 'originalQuery' in kata_response:
-            self.originalQuery = kata_response['originalQuery']
+        if 'original_query' in kata_response:
+            self.original_query = kata_response['original_query']
         else:
-            self.originalQuery = None
+            self.original_query = None
 
         super().__init__(self.message)
 
@@ -149,6 +150,16 @@ class KataAnswer:
         for i, x in enumerate(self.merged_moves):
             x['mergedOrder'] = i
 
+    @property
+    def player(self):
+        "who's move is it? 'black', or 'white'"
+        return self.toPlay
+
+    @player.setter
+    def player(self, who):
+        " set the current player to play. `who` is either 'black' 'white'"
+        self.toPlay = same_color(who)
+    
     @property
     def all(self) -> T.List['dotdict']:
         "intersection data for all intersections + pass move"
@@ -202,7 +213,7 @@ class KataAnswer:
     @cached_property
     def intersections(self) -> T.List['dotdict']:
         "intersection data for every intersection on the board"
-        return [i for i in self._intersections if not isPass(i.pos)]
+        return [i for i in self._intersections if not is_pass(i.pos)]
 
     @cached_property
     def allowed_moves(self) -> T.List['dotdict']:
@@ -215,18 +226,18 @@ class KataAnswer:
     @cached_property
     def played_moves(self) -> T.List[T.Tuple[str,'dotdict']]:
         "list of (color, intersection info) corresponding to the moves made"
-        oq = self.answer['originalQuery']
+        oq = self.answer['original_query']
         if 'moves' in oq and len(oq['moves']) > 0:
-            return [ ( same_color(m[0]), self.get_point(coordsToPoint(m[1]))) for m in oq['moves']]
+            return [ ( same_color(m[0]), self.get_point(str_to_gopoint(m[1]))) for m in oq['moves']]
         else:
             return []
 
     @cached_property
     def initial_stones(self) -> T.List[T.Tuple[str, 'dotdict']]:
         "list of (color, intersectionInfo) placed on the board before moves were made"
-        oq = self.answer['originalQuery']
+        oq = self.answer['original_query']
         if 'initialStones' in oq and len(oq['initialStones']) > 0:
-            return [ (same_color(m[0]), self.get_point(coordsToPoint(m[1]))) for m in oq['initialStones']]
+            return [ (same_color(m[0]), self.get_point(str_to_gopoint(m[1]))) for m in oq['initialStones']]
         else:
             return []
 
@@ -245,30 +256,30 @@ class KataAnswer:
         return g
 
     @cached_property
-    def lastMove(self) -> 'dotdict':
-        "return the intersection info of the last move played"
+    def last_move(self) -> 'dotdict':
+        "return the intersection info of the last move played, could be None"
         #FIXME: decide whether tracking suicide moves is important, as suicide will remove stone color info
         p = self.played_moves
         if len(p):
             for m in reversed(p):
-                if not isPass(m[1].pos):
+                if not is_pass(m[1].pos):
                     return m[1]
         return None
 
     @cached_property
-    def policyMax(self) -> float:
+    def max_policy(self) -> float:
         "maximum policy value in this position"
         return max(p.policy for p in self.legal_moves)
     
     @cached_property
-    def policyMin(self) -> float:
+    def min_policy(self) -> float:
         "minimum legal policy value in this position"
         return min(p.policy for p in self.legal_moves)
 
     @cached_property
-    def policyRange(self) -> float:
-        "policyMax - policyMin"
-        return self.policyMax - self.policyMin
+    def policy_range(self) -> float:
+        "max_policy - min_policy"
+        return self.max_policy - self.min_policy
 
     @property
     def pass_move(self) -> 'dotdict':
@@ -276,7 +287,7 @@ class KataAnswer:
         return self.get_point ( (-1,-1,))
 
     @cached_property
-    def dfInfos(self) -> 'DataFrame':
+    def dataframe(self) -> 'DataFrame':
         "return a data frame of every move infos, legal and illegal"
         def convert(thing):
             d = dict(thing)
@@ -286,13 +297,13 @@ class KataAnswer:
         return pd.DataFrame(convert(m) for m in ([self.pass_move] + self.intersections))
 
     @cached_property
-    def dfRoot(self) -> 'DataFrame':
+    def rootInfo_dataframe(self) -> 'DataFrame':
         "return a single-row data frame that holds the rootInfo (general position info)"
         a = self.answer['rootInfo']
         a.update(self.answer['stats'])
-        a['policyMin'] = self.policyMin
-        a['policyMax'] = self.policyMax
-        a['policyRange'] = self.policyRange
+        a['min_policy'] = self.min_policy
+        a['max_policy'] = self.max_policy
+        a['policy_range'] = self.policy_range
         return pd.DataFrame([a]) # pandas needs a list to construct an index
 
     def get_point(self, gopoint: T.Tuple[int, int]) -> dotdict:
@@ -472,13 +483,13 @@ class KataAnswer:
         
         return sum(f(m) for m in vector)
 
-    def takeUntil(self, eval_string: str, vector=None) -> T.List['dotdict']:
+    def takeuntil(self, eval_string: str, vector=None) -> T.List['dotdict']:
         """
         take items from all intersections or vector if
         provided until eval_string evaluates
         to True. The item that evaluates to True is not included.
 
-        ok_moves = k.takeUntil("m.policy < .01", k.moves_by_policy)
+        ok_moves = k.takeuntil("m.policy < .01", k.moves_by_policy)
         """
         if vector == None:
             vector = self.all
@@ -492,12 +503,12 @@ class KataAnswer:
             res.append(m)
         return res
 
-    def takeWhile(self, eval_string: str, vector=None) -> T.List['dotdict']:
+    def takewhile(self, eval_string: str, vector=None) -> T.List['dotdict']:
         """
         take items from all intersections or vector if
         provided until eval_string evaluates to False.
 
-        point_losers = k.takeWhile("k.scoreLead - m.scoreLead > 0", k.moves[1:])
+        point_losers = k.takewhile("k.scoreLead - m.scoreLead > 0", k.moves[1:])
         """
         if vector == None:
             vector = self.all
@@ -519,8 +530,8 @@ class KataAnswer:
         self._intersections = []
         self._intersections_by_point = {}
 
-        xsize = self.answer['originalQuery']['boardXSize']
-        ysize = self.answer['originalQuery']['boardYSize']
+        xsize = self.answer['original_query']['boardXSize']
+        ysize = self.answer['original_query']['boardYSize']
         toPlay = self.answer['stats']['toPlay']
 
         self.xsize = xsize
@@ -529,21 +540,21 @@ class KataAnswer:
         allowedMoves = None
 
         #FIXME: the allowed moves are assumed to be for color to play and only first move
-        if 'allowMoves' in self.answer['originalQuery']:
+        if 'allowMoves' in self.answer['original_query']:
             # dig into the structure
             allowedMoves = set()
-            for m in self.answer['originalQuery']['allowMoves'][0]['moves']:
-                allowedMoves.add(coordsToPoint(m))
+            for m in self.answer['original_query']['allowMoves'][0]['moves']:
+                allowedMoves.add(str_to_gopoint(m))
 
             if len(allowedMoves) == 0: allowedMoves = None
 
         # note: this is a custom field so can cause probs
         blacks = [] ; whites = []
-        if 'black_stones' in self.answer['originalQuery']:
-            blacks = self.answer['originalQuery']['black_stones']
+        if 'black_stones' in self.answer['original_query']:
+            blacks = self.answer['original_query']['black_stones']
 
-        if 'white_stones' in self.answer['originalQuery']:
-            whites = self.answer['originalQuery']['white_stones']
+        if 'white_stones' in self.answer['original_query']:
+            whites = self.answer['original_query']['white_stones']
 
         intersectionsDict = {}
 
@@ -601,7 +612,7 @@ class KataAnswer:
 
             # coords is a go coordinate string, e.g. 'K10'
             if notpass:
-                info['coords'] = pointToCoords((x,y,))
+                info['coords'] = gopoint_to_str((x,y,))
             else:
                 info['coords'] = "pass"
 
@@ -621,14 +632,14 @@ class KataAnswer:
 
         # MUNGE MORE INFORMATION FOR SUGGESTED MOVES
         for m in self.answer['moveInfos']:
-            point = coordsToPoint(m['move'])
+            point = str_to_gopoint(m['move'])
             d = intersectionsDict[point]
             d['isMove'] = True
 
             # convert pv coordinates to numerical coords
             d['pvPos'] = []
             for coord in m['pv']:
-                d['pvPos'].append(coordsToPoint(coord))
+                d['pvPos'].append(str_to_gopoint(coord))
 
             # grab the moveInfos from Katago and
             # copy verbatim
@@ -672,8 +683,8 @@ def moreKataData(kataAnswer: dict) -> dict:
 
     morestuff['toPlay'] = "black"
 
-    if "originalQuery" in kataAnswer:
-        q = kataAnswer['originalQuery']
+    if "original_query" in kataAnswer:
+        q = kataAnswer['original_query']
         if 'komi' in q:
             morestuff['komi'] = q['komi']
 
@@ -867,7 +878,7 @@ class KataProxyQ(QObject):
             if id in self.answers:
                 result = dict(self.answers[id])
                 # add original query to result for later use
-                result.update({"originalQuery": dict(self.queries[id])})
+                result.update({"original_query": dict(self.queries[id])})
                 del self.answers[id]
                 del self.queries[id]
                 return result
@@ -895,7 +906,7 @@ class KataProxyQ(QObject):
         provides a many-columned flat df for all intersections.
         Global stuff (like rules & current move number) are repeated for each intersection
         """
-        oq = answer['originalQuery']
+        oq = answer['original_query']
         istones = oq['initialStones']
         #eprint(f"Initial stones: {istones}")
         initialStones = {}
@@ -945,8 +956,8 @@ class KataProxyQ(QObject):
             for y in range(ys):
                 columns['x'].append(x)
                 columns['y'].append(y)
-                columns['coord'].append(pointToCoords((x,y)))
-                move = pointToCoords((x,y))
+                columns['coord'].append(gopoint_to_str((x,y)))
+                move = gopoint_to_str((x,y))
 
                 if move in infosByCoord:
                     for c,v in infosByCoord[move].items():
@@ -1008,7 +1019,7 @@ class KataProxyQ(QObject):
         #eprint(f"KATAGO RESPONDED: {j['id']}")
         self.answers[j['id']] = j
         orig = self.queries[j['id']]
-        j['originalQuery'] = dict(orig)
+        j['original_query'] = dict(orig)
 
         if 'proxy_cached' in orig and not orig['proxy_cached']:
             del self.queries[j['id']]
@@ -1056,7 +1067,7 @@ def goban2query(goban: 'Goban', id: str, maxVisits=2, flipPlayer=False,
     if flipPlayer: toplay = opponent(toplay).upper()
 
     if restricted:
-        theMoves= [pointToCoords(p) for p in restricted]
+        theMoves= [gopoint_to_str(p) for p in restricted]
         #print("ALLOW MOVES: ", theMoves)
         theDict = {
                 'player': toplay,
@@ -1188,7 +1199,7 @@ if __name__ == "__main__":
 
     letters = 'abcdefghijklmnopqrstuvwxyz'
     for m in movelist:
-        pos = coordsToPoint(m[1])
+        pos = str_to_gopoint(m[1])
         coord = letters[pos[0]] + letters[pos[1]]
         if m[0] == "W":
             sgf += f";W[{coord}]"

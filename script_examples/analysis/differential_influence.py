@@ -116,8 +116,8 @@ if SUGGEST:
 	for m in k.moves[:5]:
 		mark(m, m.order+1)
 
-if k.lastMove:
-	mark(k.lastMove, "square")
+if k.last_move:
+	mark(k.last_move, "square")
 
 if k.gui_run:
 	# restore previous compareK because gui

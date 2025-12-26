@@ -1084,7 +1084,7 @@ class BoardController(QObject):
     def paintStone(self, point: T.Tuple[int,int], color: str) -> None:
         "place a stone of this color at this go point"
         changed = False
-        if not isOnBoard(point, self.boardsize[0], self.boardsize[1]):
+        if not is_on_board(point, self.boardsize[0], self.boardsize[1]):
             return
         
         if point in self.stones:
@@ -1114,7 +1114,7 @@ class BoardController(QObject):
     def tryMove(self, color: str, destPoint: T.Tuple[int,int], origPoint=None) -> None:
         "try the stoneInHand move and trigger a quick analysis"
         #print("QUEUE DEPTH: ", self.kata.queueDepth())
-        if not isOnBoard(destPoint, self.boardsize[0], self.boardsize[1]):
+        if not is_on_board(destPoint, self.boardsize[0], self.boardsize[1]):
             return
 
         g = self.goban.copy()
@@ -1174,7 +1174,7 @@ class BoardController(QObject):
         gopoint = self.mouseToGoPoint2(event.pos())
         trashIt = False
         #print("GOPOINT, ENDDRAG: ", gopoint)
-        if not isOnBoard(gopoint, self.boardsize[0], self.boardsize[1]):
+        if not is_on_board(gopoint, self.boardsize[0], self.boardsize[1]):
             trashIt = True
 
         if trashIt:
@@ -1233,7 +1233,7 @@ class BoardController(QObject):
         
         if self.mouseButtons and self.mouseButtons & Qt.MiddleButton:
             # quick query click
-            if isOnBoard(point, self.boardsize[0], self.boardsize[1]):
+            if is_on_board(point, self.boardsize[0], self.boardsize[1]):
                 GS.queryPoints.emit([point])
             return
         
@@ -1285,7 +1285,7 @@ class BoardController(QObject):
             self.boardView.setCursor(Qt.WhatsThisCursor)
             if self.mouseQueryMode  != "hover":
                 gopoint = self.mouseToGoPoint2(event.pos())
-                if not isOnBoard(gopoint, self.boardsize[0], self.boardsize[1]):
+                if not is_on_board(gopoint, self.boardsize[0], self.boardsize[1]):
                     return
 
                 if self.mouseButtons & Qt.RightButton:
@@ -1704,7 +1704,7 @@ class BoardController(QObject):
             self.kata.claimAnswer(id)
             if not out_of_date:
                 GS.fullAnalysisReady.emit({"t": t, "payload": ans})
-            self.moreVisits = ans['originalQuery']['maxVisits']
+            self.moreVisits = ans['original_query']['maxVisits']
 
         elif name == "quickAnalysis":
             self.kata.claimAnswer(id)

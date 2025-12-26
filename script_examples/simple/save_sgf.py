@@ -12,7 +12,7 @@ def save_goban_as_sgf(g: "Goban", collapse=False) -> bool:
 			g = g.copy()
 			g.collapse()
 		
-		sgf = g.asSGF()	
+		sgf = g.as_sgf()	
 
 		with open(filename, "w") as f:
 			f.write(sgf)

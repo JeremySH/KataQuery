@@ -38,7 +38,7 @@ if k.manual_run:
 		ans = analyze(g)
 		g = ans.goban.copy()
 	
-	set_clipboard(g.asSGF())
+	set_clipboard(g.as_sgf())
 	snooze(1.0)
 	clearAll()
 	status("SGF copied to clipboard")
