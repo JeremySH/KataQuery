@@ -1,6 +1,7 @@
 # for project-level information set in main
 import sys, os
 from PyQt5.QtWidgets import QApplication, QMainWindow
+from PyQt5.QtCore import QStandardPaths
 
 import sys, os
 def appIsFrozen() -> bool:
@@ -22,3 +23,6 @@ def getMainWindow() -> 'QMainWindow':
 	        w = t
 	        break
 	return w
+
+def getAppDataDir() -> str:
+	return QStandardPaths.writableLocation(QStandardPaths.AppDataLocation)
