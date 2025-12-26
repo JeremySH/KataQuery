@@ -107,8 +107,7 @@ class MarkPool:
     def color2qcolor(self, color: str):
         # color is the color of the board beneath the mark
         if color == "empty":
-            mycolor = QtGui.QColor.fromRgb(179,29,29, 255)
-            mycolor = QtGui.QColor.fromRgb(0,0,220, 255)
+            mycolor = QtGui.QColor.fromRgb(12,12,208, 255)
             
             myoutline = mycolor
         elif color == "white":
