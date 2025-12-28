@@ -14,6 +14,7 @@ Fight Me     -- prefer lots of local fighting
 Safety Level -- lower values mean weaker but more style
 
 """
+HUMAN_COLOR = "black" # "black" "white" or "none"
 
 persist("style", "Do Your Best")
 SHOW_HELP = check1("Show Help")
@@ -216,25 +217,26 @@ if k.depth == "quick":
 	if SHOW_HELP: log(STYLE_HELP)
 	bail()
 
-if style == "Do Your Best":
-	marky(k.bestMove)
-elif   style == "Invade Me":
-	marky(bestByFilter(k, "legal and ownershipOpponent > 0.4"))
-elif style == "Bully Me":
-	marky(bullyMove(k))
-elif style == "Be Greedy":
-	marky(bestByFilter(k, "legal and abs(ownership) < 0.4"))
-elif style == "Get Thick":
-	marky(bestByFilter(k, "legal and ownership > 0.099"))
-elif style == "Seek Peace":
-	marky(bullyMove(k, invert=True))
-elif style == "Be Weird":
-	marky(weirdMove(k))
-elif style == "Mr. Tenuki":
-	marky(weirdMove(k, 100))
-elif style == "Fight Me":
-	marky(fightMove(k))
-	
+if HUMAN_COLOR != k.player:
+	if style == "Do Your Best":
+		marky(k.bestMove)
+	elif   style == "Invade Me":
+		marky(bestByFilter(k, "legal and ownershipOpponent > 0.4"))
+	elif style == "Bully Me":
+		marky(bullyMove(k))
+	elif style == "Be Greedy":
+		marky(bestByFilter(k, "legal and abs(ownership) < 0.4"))
+	elif style == "Get Thick":
+		marky(bestByFilter(k, "legal and ownership > 0.099"))
+	elif style == "Seek Peace":
+		marky(bullyMove(k, invert=True))
+	elif style == "Be Weird":
+		marky(weirdMove(k))
+	elif style == "Mr. Tenuki":
+		marky(weirdMove(k, 100))
+	elif style == "Fight Me":
+		marky(fightMove(k))
+		
 # mark(k.bestMove, "square")
 
 if SHOW_HELP:
