@@ -322,11 +322,11 @@ class Goban:
     @property
     def player(self): # to get rid of camelCase eventually
         "who's move is it? 'black' or 'white'?"
-        return self.toPlay()
+        return self.toPlay
     
     @player.setter
-    def player(who: str):
-        self.toPlay = who
+    def player(self, who: str):
+        self.toPlay = same_color(who)
 
     def copy(self) -> 'Goban':
         "return a duplicate of myself"

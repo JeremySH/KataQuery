@@ -80,6 +80,7 @@ _kataqueryWords_k =[
 "max_policy",
 "min_policy",
 "policy_range",
+"player",
 "query_points",
 "rawStScoreError",
 "rawStWrError",
