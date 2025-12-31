@@ -402,6 +402,8 @@ def slider{n}(title: str="dial{n}", default_value:float =0.0, min_value:float =0
         return int(round(default_value))
     else:
         return default_value
+
+dial{n} = slider{n} # `dial1` becomes alias for `slider1`
 """
 
 # build it
