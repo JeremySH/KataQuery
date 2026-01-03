@@ -21,4 +21,4 @@ for i in k.stones:
 
 	mark(i.pos, round(val))
 
-status(f"{k.toPlay} to play | {k.visits} visits")
+status(f"{k.player} to play | {k.visits} visits")

@@ -20,7 +20,7 @@ persist("style", "Do Your Best")
 SHOW_HELP = check1("Show Help")
 SHOW_BEST = check2("Show Best")
 
-SAFETY  = slider1("Safety Level", default_value=0.8)
+SAFETY  = dial1("Safety Level", default_value=0.8)
 
 BEST    = button1("Do Your Best")
 BULLY   = button2("Bully Me")
@@ -43,7 +43,7 @@ if TENUKI:  style = "Mr. Tenuki"
 if FIGHT:   style = "Fight Me"
 
 def bestByFilter(ans, filt):
-	df = k.as_dataframe
+	df = k.dataframe
 	df = df.query("isMove")
 	df = df.query(filt)	
 	df = df.sort_values("mergedOrder")
@@ -139,8 +139,8 @@ def bullyMove(ans, max_depth=6, invert=False):
 	futures = []
 	for m in k.moves[:max_depth]:
 		g = k.goban.copy()
-		g.play(k.toPlay, m.coords);
-		g.toPlay = opponent(g.toPlay)
+		g.play(k.player, m.coords);
+		g.player = opponent(g.player)
 		analysis = analyze(g, visits=20)
 		#log(f"future length: {len(analysis.moves)}")			
 		futures.append((m, analysis))
@@ -206,7 +206,7 @@ def fightMove(ans):
 
 def marky(move):
 	mark(move, "square")
-	ghost(move, k.toPlay)
+	ghost(move, k.player)
 
 clearAll()
 clearLog()

@@ -10,10 +10,10 @@
 # use the checkbox and Localize... menu to observe effect
 
 LOCALIZE_POLICY = check1("localize pol", default_value=True)
-MOVES_PER_STONE = slider1("moves per stone", min_value=1, max_value=10, default_value=3, value_type="int")
+MOVES_PER_STONE = dial1("move limit", min_value=1, max_value=10, default_value=3, value_type="int")
 
 clearLog()
-log(f"Moves Per Stone: {MOVES_PER_STONE}")
+log(f"Moves Shown Per Stone: {MOVES_PER_STONE}")
 
 def normalizePolicy(ans):
 	"renormalize policy to allowed moves"
@@ -34,7 +34,7 @@ for m in ourMoves[:limit]:
 	p = round(len(k.legal_moves) * m.policy)
 	mark(m, p)
 
-status(f"{k.toPlay} to play")
+status(f"{k.player} to play")
 
 # note that we multiply by len(k.legal_moves) instead
 # of len(k.allowed_moves) for the simple reason

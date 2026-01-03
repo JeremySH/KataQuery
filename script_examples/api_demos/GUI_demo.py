@@ -1,10 +1,10 @@
 # Move Ranks & Territory
 # With some simple GUI controls
 
-limit = slider1("max moves", value_type="int", max_value=100, default_value=20)
+limit = dial1("max moves", value_type="int", max_value=100, default_value=20)
 use_policy = check1("use policy")
 show_terri = check2("Show Territory")
-terri_limit = slider2("Terri Border")
+terri_limit = dial2("Terri Border")
 
 clearAll()
 clearLog()
@@ -28,4 +28,4 @@ if show_terri:
 		if i.ownershipWhite >= terri_limit:
 				heat(i, .01)
 
-status(f"{k.toPlay} to play")
+status(f"{k.player} to play")

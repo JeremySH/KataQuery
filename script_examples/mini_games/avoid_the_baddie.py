@@ -8,7 +8,7 @@ CLEAR_SCORE = False
 
 persist("lastBest", None)
 persist("hash", None)
-persist("color", k.toPlay)
+persist("color", k.player)
 persist("score", [0,0])
 persist("OKMoves", [])
 
@@ -20,7 +20,7 @@ clearAll()
 msg = ""
 if k.depth == 'full':
 	if hash != k.thisHash:
-		if lastBest != None and color != k.toPlay:
+		if lastBest != None and color != k.player:
 			found = False
 			for m in OKMoves:
 				p = k.get_point(m)
@@ -39,7 +39,7 @@ if k.depth == 'full':
 
 	hash = k.thisHash
 	lastBest = k.moves[0]
-	color = k.toPlay
+	color = k.player
 
 	OKMoves = []
 	for m in k.moves[:2]:
@@ -52,4 +52,4 @@ if k.depth == 'full':
 			mark(by_policy[7], "?")
 			break
 
-status(f"{k.toPlay} to play | score: {score[0]}/{score[1]} {msg}")
+status(f"{k.player} to play | score: {score[0]}/{score[1]} {msg}")

@@ -2,12 +2,7 @@
 # etc. for kata analysis information
 # so you can get an idea of what's
 # available (see terminal output)
-import pydoc
-
-def doc(thing):
-	return(pydoc.plain(pydoc.render_doc(thing)))
-
-print(doc(k))
+help(k)
 
 clearStatus()
 

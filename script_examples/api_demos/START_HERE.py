@@ -19,7 +19,7 @@ clearLog() # log is cleared separately from clearAll()
 log("Welcome to the World of Go!")
 
 # set the status line:
-status(f"{k.toPlay} to play | scorleadBlack: {k.scoreLeadBlack}")
+status(f"{k.player} to play | scorleadBlack: {k.scoreLeadBlack}")
 
 # mark the board by gopoint tuple
 mark((9,9), "square") # "circle" "square", "triangle" or any text
@@ -45,7 +45,7 @@ if k.depth == 'full':
 	goban = k.goban
 
 	# play the best move on it
-	goban.play(k.toPlay, k.bestMove.pos)
+	goban.play(k.player, k.bestMove.pos)
 	
 	# analyze
 	future = analyze(goban, visits=2)
@@ -77,7 +77,7 @@ if k.depth == 'quick': # either 'quick' or 'full'
 	for i,m in enumerate(k.moves_by_policy[:10]):
 		mark(m, i+1)
 		# place a "ghost stone"
-		ghost(m, k.toPlay)
+		ghost(m, k.player)
 
 # set the clipboard:
 # NOTE: commented out to be nice
@@ -85,7 +85,7 @@ if k.depth == 'quick': # either 'quick' or 'full'
 # print(get_clipboard())
 
 # determining opponent:
-print(f"my opponent is {opponent(k.toPlay)}")
+print(f"my opponent is {opponent(k.player)}")
 
 # RUN REASONS
 if k.manual_run:

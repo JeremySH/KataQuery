@@ -29,12 +29,12 @@ if k.manual_run:
 		else:
 			next_move = ans.moves_by_policy[0]
 
-		ghost(next_move, g.toPlay)
+		ghost(next_move, g.player)
 		snooze() # update display
 	
-		g.play(g.toPlay, next_move.pos)
+		g.play(g.player, next_move.pos)
 		
-		g.toPlay = opponent(g.toPlay)
+		g.player = opponent(g.player)
 		ans = analyze(g)
 		g = ans.goban.copy()
 	

@@ -10,7 +10,7 @@ Choose a Board Coverage limit, and click "GENERATE"
 
 JOSTLE = 0.5
 
-COVERAGE = slider1("board coverage", default_value=0.15)
+COVERAGE = dial1("board coverage", default_value=0.15)
 GENERATE = button1("GENERATE")
 HELP = button2("HELP")
 
@@ -41,7 +41,7 @@ def gen_position(gob = None, jostle=0.5, coverage=0.5):
 	if not gob:
 		gob = k.goban.copy()
 		gob.clear()
-		gob.toPlay = "black"
+		gob.player = "black"
 	
 	ans = analyze(gob)
 	while len(ans.stones) < coverage*gob.xsize*gob.ysize:
@@ -54,10 +54,10 @@ def gen_position(gob = None, jostle=0.5, coverage=0.5):
 			m = attain_weirdness(ans)
 			#m = random.choice(ans.moves_by_policy[:5])
 		
-		gob.play(gob.toPlay, m)
-		ghost(m, gob.toPlay)
+		gob.play(gob.player, m)
+		ghost(m, gob.player)
 		snooze()
-		gob.toPlay = opponent(gob.toPlay)
+		gob.player = opponent(gob.player)
 		ans=analyze(gob)
 	
 	bookmark(gob, location="end")

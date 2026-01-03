@@ -15,7 +15,7 @@
 persist("HUMAN", "black")
 VISIT_LIMIT = 3000
 
-CERTAINTY = slider1("certainty", default_value=0.75)
+CERTAINTY = dial1("certainty", default_value=0.75)
 CHOOSE_HUMAN = button1("Player...")
 
 if CHOOSE_HUMAN:

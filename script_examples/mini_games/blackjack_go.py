@@ -52,7 +52,13 @@ def animPoint(point, theMark):
 	for x in range(10, 1, -1):
 		mark(point, theMark, scale=x)
 		snooze(.001)
-		
+
+def revealMoves(ans):
+	for i, m in enumerate(ans.moves):
+		if ans.bestMove.winrate - m.winrate < WINRATE_GAP:
+			mark(m, i+1)
+		mark(ans.bestMove, "square")
+			
 instructions = \
 """
 To start a round, press HIT ME.
@@ -82,10 +88,10 @@ if GEN_GAME:
 		m = ans.bestMove
 		if random.random() > 0.5:
 			m = random.choice(ans.moves_by_policy[:5])
-		g.play(g.toPlay, m)
-		ghost(m, g.toPlay)
+		g.play(g.player, m)
+		ghost(m, g.player)
 		snooze()
-		g.toPlay = opponent(g.toPlay)
+		g.player = opponent(g.player)
 		ans = analyze(g)
 	
 	bookmark(g)
@@ -115,7 +121,7 @@ if previousK.thisHash != k.thisHash:
 			anim(" ")
 		elif not p.isMove:
 			anim("LOSS")
-			mark(previousK.bestMove, "square")
+			revealMoves(previousK)
 		elif previousK.bestMove.pos == p.pos :
 			anim("WIN! BEST MOVE BONUS!")
 		elif previousK.bestMove.winrate - p.winrate < WINRATE_GAP and not bustFlag:
@@ -123,7 +129,7 @@ if previousK.thisHash != k.thisHash:
 			anim(f"WIN! (winrate gap: {round(wr*100)}%)")
 		else:
 			anim("LOSS")
-			mark(previousK.bestMove, "square")
+			revealMoves(previousK)
 	else: # player played elsewhere or something
 		pass
 	
@@ -134,7 +140,7 @@ if previousK.thisHash != k.thisHash:
 	bustFlag = False
 
 if HIT_ME:
-	busted = prevChoice == k.bestMove
+	busted = prevChoice and prevChoice.pos == k.bestMove.pos
 	if busted:
 		anim("BUST")
 		bustFlag = True
@@ -157,5 +163,5 @@ if HIT_ME:
 		policy_min = prevChoice.policy
 
 		# show next idea
-		ghost(prevChoice, k.toPlay)
+		ghost(prevChoice, k.player)
 		animPoint(prevChoice.pos, "?")

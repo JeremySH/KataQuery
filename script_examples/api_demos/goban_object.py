@@ -1,8 +1,8 @@
 # Goban Object
 # The "k.goban" object is a virtual board of the
 # current position which can be played on, 
-# converted to SGF/ascii, used to calculate 
-# liberties and so on.
+# converted to SGF/ascii, analyzed manually,
+# used to calculate liberties, and so on.
 
 COPY_SGF = button1("Copy SGF")
 COPY_DIAGRAM = button2("Copy Diag")
@@ -19,10 +19,9 @@ if HELP:
 	help(k.goban)
 	log("HELP DUMPED TO CONSOLE...")
 
-# coords can be tuple, string, or moveInfo object,
-# although tuple is preferred
+# coords can be tuple, string, or moveInfo object
 for coord in [(3,3), 'd4',  k.bestMove]:
-	print(type(coord), "legal?", g.legal(k.toPlay, coord))
+	print(type(coord), "legal?", g.legal(k.player, coord))
 
 # groups are lists of tuples (e.g. "[ (3,3), (3,4) ]")
 # of the directly connected stones of black and white:
@@ -60,5 +59,17 @@ if COPY_DIAGRAM:
 
 # an example of using the play() method:
 
-# make a play
-g.play(k.toPlay, k.bestMove)
+# make a play:
+g.play(k.player, k.bestMove)
+# update player:
+g.player = opponent(g.player)
+
+# you can set komi manually (e.g. for analysis/sgf reasons)
+g.komi = 12.5
+
+# lastly, you can use a goban for a manual analysis:
+ans = analyze(g)
+print(f"dream move: {g.player}: {ans.bestMove.coords}")
+
+# which produces a KataAnswer, ans, which is like having a new `k` analysis for
+# the goban you passed. see analyze.py for more info

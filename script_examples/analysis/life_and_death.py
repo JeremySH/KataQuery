@@ -19,4 +19,4 @@ for i in k.stones:
 
 #heat(i.pos, i.ownershipHeat)
 
-status(f"{k.toPlay} to play | {k.visits} visits")
+status(f"{k.player} to play | {k.visits} visits")

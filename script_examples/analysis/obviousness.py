@@ -14,7 +14,7 @@
 
 HIDE = check1("hide")
 HOVER = check2("hover text")
-MOVES_SHOWN = slider1("Moves Shown", default_value=10, min_value=1, max_value=50, value_type="int")
+MOVES_SHOWN = dial1("Moves Shown", default_value=10, min_value=1, max_value=50, value_type="int")
 
 clearAll() ; clearLog()
 
@@ -45,4 +45,4 @@ for m in considered[:MOVES_SHOWN]:
 		if HOVER:
 			hover(m, f"{m.coords}\nCommonality: {score:0.1f}")
 
-status(f"{k.toPlay} to play")
+status(f"{k.player} to play")

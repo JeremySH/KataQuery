@@ -15,4 +15,4 @@ def dmz():
 			heat(i.pos, 0.02/abs(i.ownership))
 
 dmz()
-status(f"{k.toPlay} to play | {k.visits} visits")
+status(f"{k.player} to play | {k.visits} visits")

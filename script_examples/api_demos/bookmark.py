@@ -29,12 +29,12 @@ if GENERATE:
 		if EXPLODE:
 			# location can be "current"(default) "start" or "end"
 			bookmark(ans.goban, location='end')
-		ans = quickPlay(ans, [[ans.toPlay, ans.bestMove.coords]])
+		ans = quickPlay(ans, [[ans.player, ans.bestMove.coords]])
 		
 		if ans.bestMove == ans.pass_move:
 			break
 
-		ghost(ans.bestMove, ans.toPlay)
+		ghost(ans.bestMove, ans.player)
 		snooze()
 	
 	# just bookmark once if not exploded

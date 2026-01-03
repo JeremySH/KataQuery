@@ -14,5 +14,5 @@ def worseThanPassing():
 for i, m in worseThanPassing():
 	mark(m, i)
 
-status(f"{k.toPlay} to play")
+status(f"{k.player} to play")
 

@@ -50,7 +50,7 @@ for color, move in moves:
 		elif col == "white":
 			image.putpixel((x,y,), 1)
 		elif col == "empty":
-			iimage.putpixel((x,y,), 2)
+			image.putpixel((x,y,), 2)
 			
 	images.append(image)
 		

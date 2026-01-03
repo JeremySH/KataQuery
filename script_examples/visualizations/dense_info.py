@@ -9,11 +9,11 @@ DO_HOVER = check5("hover text", default_value=True)
 DO_VITALS = check6("vitals", default_value=True)
 DO_PV = check7("PV")
 
-TERRI_THRESHOLD = slider1("Terri Thresh", default_value=0.02)
-VITAL_THRESHOLD = slider2("Vital Thresh", default_value=0.09)
-MOVE_COUNT = slider3("Moves Shown", default_value=5, min_value=0, max_value=20, value_type = 'int')
-PV_VARIATION = slider4("PV variation", default_value=0, max_value=8, value_type="int")
-DISPLAY_MODE = slider5("Display Mode",  default_value=0, max_value=4, value_type="int")
+TERRI_THRESHOLD = dial1("Terri Thresh", default_value=0.02)
+VITAL_THRESHOLD = dial2("Vital Thresh", default_value=0.09)
+MOVE_COUNT = dial3("Moves Shown", default_value=5, min_value=0, max_value=20, value_type = 'int')
+PV_VARIATION = dial4("PV variation", default_value=0, max_value=8, value_type="int")
+DISPLAY_MODE = dial5("Display Mode",  default_value=0, max_value=4, value_type="int")
 
 DISP_MODE = ["bubble", "move rank", "winrate", "points", "policy"][DISPLAY_MODE]
 
@@ -100,7 +100,7 @@ def vital_points(ans, threshold=9.0):
 
 def points_at_stake(ans):
 	"determine score change when I pass "
-	mePass = quickPlay(ans, [[ans.toPlay, "pass"]])
+	mePass = quickPlay(ans, [[ans.player, "pass"]])
 
 	board_value = abs(ans.scoreLeadWhite - mePass.scoreLeadWhite)/2
 	board_value = round(board_value*10)/10.0
@@ -181,11 +181,11 @@ def pvDisplay(ans, moveNum):
 	if moveNum > len(ans.moves):
 		return
 	
-	toPlay = ans.toPlay
+	player = ans.player
 	for i, m in enumerate(ans.moves[moveNum].pvPos):
-		ghost(m,toPlay)
+		ghost(m,player)
 		mark(m, i+1)
-		toPlay = opponent(toPlay)
+		player = opponent(player)
 
 def markSentes(ans):
 	"detect which available moves are also sente"
@@ -193,8 +193,8 @@ def markSentes(ans):
 	crit = criticality(ans)
 	for m in ans.moves[:8]:
 		g = ans.goban.copy()
-		g.play(g.toPlay,m)
-		g.toPlay = opponent(g.toPlay)
+		g.play(g.player,m)
+		g.player = opponent(g.player)
 		ans2 = analyze(g, visits=20)
 		crit2 = criticality(ans2)
 		#if crit2 > crit:
@@ -273,17 +273,17 @@ def button_stuff():
 		msgBox(f"Criticality: {100*criticality(k):.1f}")
 	
 	if DREAM_WHITE or DREAM_BLACK:
-		toplay = "black"
+		player = "black"
 		if DREAM_WHITE:
-			toplay = "white"
+			player = "white"
 	
 		g = k.goban.copy()
-		g.toPlay = toplay
+		g.player = player
 		ans = k
 		for x in range(5):
-			ghost(ans.bestMove, g.toPlay)
+			ghost(ans.bestMove, g.player)
 			mark(ans.bestMove, f"#{x+1}")
-			g.play(g.toPlay, ans.bestMove)
+			g.play(g.player, ans.bestMove)
 			ans = analyze(g)
 	
 	if COPY_SGF:
@@ -334,7 +334,7 @@ if estimate > 0:
 else:
 	scoreText = f"W+{-estimate:0.1f} ({(1-wr)*100:0.0f}%)"
 	
-status(f"{k.toPlay} to play | {k.visits} visits | points: B {blackScore}, W {whiteScore+k.komi} | final: {scoreText}")
+status(f"{k.player} to play | {k.visits} visits | points: B {blackScore}, W {whiteScore+k.komi} | final: {scoreText}")
 
 # GUI feedback
 log(f"Display Mode:    {DISP_MODE}")

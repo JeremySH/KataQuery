@@ -24,4 +24,4 @@ def bubbleRankMoves():
 clearAll()
 bubbleRankPolicy(20)
 bubbleRankMoves() # replace policy with winrate bubbles if available
-status(f"{k.toPlay} to play | {k.visits} visits")
+status(f"{k.player} to play | {k.visits} visits")

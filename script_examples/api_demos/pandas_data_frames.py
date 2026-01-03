@@ -23,8 +23,8 @@
 
 # Also, highlight the ideas that are also suggested moves.
 
-PERIL = slider1("Peril")
-MOVE_COUNT = slider2("Move Count", min_value=1, max_value=20, value_type="int", default_value=5)
+PERIL = dial1("Peril")
+MOVE_COUNT = dial2("Move Count", min_value=1, max_value=20, value_type="int", default_value=5)
 
 clearLog()
 log(f"Peril: {PERIL}")

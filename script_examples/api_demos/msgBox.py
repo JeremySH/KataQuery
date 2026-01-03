@@ -32,4 +32,4 @@ if len(found):
 	if buttonReturned == "Shut up":
 		IGNORE_ME = True
 
-status(f"{k.toPlay} to play")
+status(f"{k.player} to play")

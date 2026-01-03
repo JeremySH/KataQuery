@@ -148,7 +148,7 @@ def sequence_policy(ans, focus_on=None, rank=1, length=10):
 			best = candidates[i]
 		
 		g = res.goban
-		ghost(best, g.toPlay)
+		ghost(best, g.player)
 		mark(best, x+1)
 		if HOVER_TEXT:
 			hoverText(best)
@@ -156,8 +156,8 @@ def sequence_policy(ans, focus_on=None, rank=1, length=10):
 		plays.append(best.pos)
 
 		#snooze(0.2)
-		g.play(g.toPlay, best.pos)
-		g.toPlay = opponent(g.toPlay)		
+		g.play(g.player, best.pos)
+		g.player = opponent(g.player)		
 
 	return res
 
@@ -186,7 +186,7 @@ def sequence (ans, focus_on=None, rank=1):
 			best = candidates[i]
 		
 		g = res.goban
-		ghost(best, g.toPlay)
+		ghost(best, g.player)
 		mark(best, x+1)
 		if HOVER_TEXT:
 			hoverText(best)
@@ -194,8 +194,8 @@ def sequence (ans, focus_on=None, rank=1):
 		plays.append(best.pos)
 
 		#snooze(0.2)
-		g.play(g.toPlay, best.pos)
-		g.toPlay = opponent(g.toPlay)
+		g.play(g.player, best.pos)
+		g.player = opponent(g.player)
 
 	return res
 
@@ -260,8 +260,8 @@ if QUAD_ALLOWED and TENUKI_ALERTS:
 	tenuki = k.moves_by_policy[0].pos not in QUAD_ALLOWED
 							
 	if tenuki:
-		log(f"\n{k.toPlay.capitalize()} can tenuki.")
-		mark((k.xsize//2, -0.5), f"{k.toPlay.capitalize()} can tenuki.")
+		log(f"\n{k.player.capitalize()} can tenuki.")
+		mark((k.xsize//2, -0.5), f"{k.player.capitalize()} can tenuki.")
 
 
 # don't do deep analysis if quick

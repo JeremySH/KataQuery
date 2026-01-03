@@ -10,17 +10,17 @@
 if k.manual_run:
 	clearAll()
 
-	toplay = k.toPlay
+	player = k.player
 	q = k
 	
 	for x in range(10):
 		best = q.bestMove
 		
-		ghost(best, toplay)
+		ghost(best, player)
 		mark(best, x+1)
 
-		q = quickPlay(q, [[toplay, best.coords]])
-		toplay = opponent(toplay)
+		q = quickPlay(q, [[player, best.coords]])
+		player = opponent(player)
 		
 		snooze(0.25)
 	

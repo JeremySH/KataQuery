@@ -18,20 +18,20 @@ persist("threats", {})
 persist("lastHash", None)
 
 SHOW_RANKS = check1("Ranks")
-MAX_SHOWN = int(slider1("Max Shown", max_value=300, default_value=10))
+MAX_SHOWN = int(dial1("Max Shown", max_value=300, default_value=10))
 INIT_VISITS = 5
 STEP_VISITS = 50
 
 def calcBoardValue(ka):
 	"calculate points at stake on board for katanswer object"
-	mePass = quickPlay(ka, [[ka.toPlay, "pass"]])
+	mePass = quickPlay(ka, [[ka.player, "pass"]])
 
 	board_value = abs(ka.scoreLeadWhite - mePass.scoreLeadWhite)/2
 	return board_value
 
 
 def calcThreat(m):
-	future = quickPlay(k, [[k.toPlay, m.coords], [opponent(k.toPlay), "pass"]])
+	future = quickPlay(k, [[k.player, m.coords], [opponent(k.player), "pass"]])
 	return (future.scoreLead - k.scoreLead)/2	
 
 def grabThreats(visits):
@@ -73,6 +73,6 @@ if k.depth == "full":
 bv_rounded =	round(boardValue*10)/10
 bv_doubled = round(boardValue*20)/10
 
-status(f"{k.toPlay} to play \
+status(f"{k.player} to play \
 	| board value: {bv_rounded} ({bv_doubled}) \
 	| threats searched: {len(threats)}/{len(k.legal_moves)}")

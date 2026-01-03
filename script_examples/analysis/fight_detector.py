@@ -2,9 +2,9 @@
 # fighting moves marked with squares
 # uses gui to set thresholds
 
-FIGHT_THRESHOLD = slider1("Fight Thresh", default_value=0.2)
+FIGHT_THRESHOLD = dial1("Fight Thresh", default_value=0.2)
 SHOW_RANKS = check1("Show Ranks")
-MAX_MOVES = slider2("Max Moves", max_value=30, default_value=12.0)
+MAX_MOVES = dial2("Max Moves", max_value=30, default_value=12.0)
 MAX_MOVES= int(MAX_MOVES)
 
 clearLog()
@@ -37,5 +37,5 @@ for m in k.moves[:MAX_MOVES]:
 		mark(m, "square", scale=0.5+fightValue(m.pvPos))
 		maxfight = max(maxfight, fv)
 	
-status(f"{k.toPlay} to play | Fight Value: {maxfight}")
+status(f"{k.player} to play | Fight Value: {maxfight}")
 

@@ -9,4 +9,4 @@ for m in k.allowed_moves:
 	elif m.policy*len(k.legal_moves) > 80:
 		heat(m, 0.5)
 		
-status(f"{k.toPlay} to play")
+status(f"{k.player} to play")

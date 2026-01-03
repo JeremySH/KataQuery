@@ -40,12 +40,13 @@ if k.depth == 'full':
 			best_value = f
 	best_value = round(best_value*100)/100
 
-if BOTH_SIDES or k.toPlay != myColor:
+if BOTH_SIDES or k.player != myColor:
 	mark(best_move, "●")
+	ghost(best_move, k.player)
 elif cheat:
 	for m in k.moves: mark(m)
 
-if k.toPlay == myColor:
-	status(f"Your play ({k.toPlay})")
+if k.player == myColor:
+	status(f"Your play ({k.player})")
 else:
-	status(f"My play ({k.toPlay} | fight value = {best_value})")
+	status(f"My play ({k.player} | fight value = {best_value})")

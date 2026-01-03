@@ -3,7 +3,7 @@
 # (see bottom for how this is actually done)
 
 def nothin(): 
-	status(f"EMPTY VIEW | {k.toPlay} to play")
+	status(f"EMPTY VIEW | {k.player} to play")
 
 def terri():
 	"show KataGo's guess of territory"
@@ -26,7 +26,7 @@ def terri():
 			mark(m.pos, "circle")
 
 	b_winrate = round(k.winrateBlack* 100)
-	status(f"TERRI VIEW | {k.toPlay} to play | white: {terriWhite} | black: {terriBlack} | black winrate: {b_winrate}%")
+	status(f"TERRI VIEW | {k.player} to play | white: {terriWhite} | black: {terriBlack} | black winrate: {b_winrate}%")
 
 def nearby():
 	"show policy moves near existing stones"
@@ -92,7 +92,7 @@ def nearby():
 		mark(i.pos, round(val))
 
 
-	status(f"NEARBY VIEW | {k.toPlay} to play")
+	status(f"NEARBY VIEW | {k.player} to play")
 
 
 def vitals():
@@ -137,7 +137,7 @@ def vitals():
 		mark(v, "♢")
 
 	if VITAL_COMMENT == "": VITAL_COMMENT = "no vitals found"
-	status(f"VITALS VIEW | {k.toPlay} to play | {VITAL_COMMENT}")
+	status(f"VITALS VIEW | {k.player} to play | {VITAL_COMMENT}")
 
 def strong_moves():
 	"Order the moves but enlarge those that improved in rank through reading (aka visits)"
@@ -159,7 +159,7 @@ def strong_moves():
 				# better than policy rank, make it huge
 				mark(m, m.order+1, scale=1.5)
 
-	status(f"MOVE STRENGTH VIEW | {k.toPlay} to play | {k.visits} visits")
+	status(f"MOVE STRENGTH VIEW | {k.player} to play | {k.visits} visits")
 
 # Rotate through the above functions
 persist("COUNT", 0)

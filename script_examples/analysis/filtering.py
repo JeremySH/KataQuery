@@ -8,10 +8,10 @@
 
 TERRI = check1("terri")
 
-TERRI_THRESH = slider1("Terri. Threshold", min_value=0.01, default_value=0.1)
-MOVES_MAX = slider2("Moves", min_value=1, max_value=30, default_value=5, value_type="int")
-FIGHT_THRESH = slider3("Fight Value", default_value=0)
-DISPLAY = slider4("Display", min_value=0, max_value=5, default_value=0, value_type="int")
+TERRI_THRESH = dial1("Terri. Threshold", min_value=0.01, default_value=0.1)
+MOVES_MAX = dial2("Moves", min_value=1, max_value=30, default_value=5, value_type="int")
+FIGHT_THRESH = dial3("Fight Value", default_value=0)
+DISPLAY = dial4("Display", min_value=0, max_value=5, default_value=0, value_type="int")
 
 BEST = button1("Best")
 INVADE = button2("Invade")
@@ -45,7 +45,7 @@ def threatValue(m):
 	if not m.legal: return 0
 	
 	g = k.goban.copy()
-	g.play(g.toPlay, m.pos)
+	g.play(g.player, m.pos)
 	answer = analyze(g)
 
 	return answer.scoreLead - k.scoreLead
@@ -70,7 +70,7 @@ def showHelp():
 
 def markTitle(title):
     "mark `title` at bottom of board"
-	mark((k.xsize//2, -0.5), title)
+    mark((k.xsize//2, -0.5), title)
 
 if HELP:
 	showHelp()

@@ -21,6 +21,7 @@ TRACK_STEALS = check2("track steals")
 
 # show suggested moves by rank
 SUGGEST = check3("suggest", default_value=False)
+HELP = button1("help")
 
 def ownership():
 	"normal territory display"
@@ -116,6 +117,13 @@ if SUGGEST:
 	for m in k.moves[:5]:
 		mark(m, m.order+1)
 
+if HELP:
+	text = "White terri is orange, and black is blue.\n\n"
+	text += "delta: show territorial shifts\n"
+	text += "track steals: dot intersections where opponent was reduced\n"
+	text += "suggest: suggest moves"
+	msgBox(text)
+	
 if k.last_move:
 	mark(k.last_move, "square")
 

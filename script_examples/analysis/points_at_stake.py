@@ -1,5 +1,5 @@
 # Current "points at stake" on the board is calculated by
-# passing and calculating the score difference:
+# passing and subtracting the score difference:
 # (score - pass score)/2
 
 # if a player can grab that many points, or rescue that
@@ -15,7 +15,7 @@ clearAll()
 if k.depth == 'full': # because we use "quickplay" which may take a bit longer
 
 	# determine score change when I pass 
-	mePass = quickPlay(k, [[k.toPlay, "pass"]])
+	mePass = quickPlay(k, [[k.player, "pass"]])
 
 	board_value = abs(k.scoreLeadWhite - mePass.scoreLeadWhite)/2
 	board_value = round(board_value*10)/10.0
@@ -36,9 +36,8 @@ if k.depth == 'full': # because we use "quickplay" which may take a bit longer
 	else:
 	    kind = "dame"
 
-	status(f"{k.toPlay} to play | points at stake: {board_value} | {k.visits} visits | {kind}")
+	status(f"{k.player} to play | points at stake: {board_value} | {k.visits} visits | {kind}")
 	mark( (k.xsize/2, -0.5,), f"{board_value} points at stake • {kind}", scale=1.5)
-
 
 
 for m in k.moves[:6]:

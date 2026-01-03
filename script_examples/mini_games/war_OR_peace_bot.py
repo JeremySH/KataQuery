@@ -35,24 +35,26 @@ def getMove(futures, testFunction):
 	
 	return bestMove
 
-clearMarks() ; clearHeat() 
+clearAll()
 
 fightMessage = ""
 if k.depth == 'full':
-	if BOTH_SIDES or humanColor != k.toPlay:
+	if BOTH_SIDES or humanColor != k.player:
 
 		# try some plays to determine max point threat,
 		# and use this info to get "war" or "peace" move
 		futures = []
 		for m in k.moves[:MAX_MOVES]:
-			analysis = quickPlay(k, [[k.toPlay, m.coords], [opponent(k.toPlay), "pass"]])
+			analysis = quickPlay(k, [[k.player, m.coords], [opponent(k.player), "pass"]])
 			futures.append((m, analysis))
 
 		peaceMove = getMove(futures, lambda a,b: a < b)
 		warMove = getMove(futures, lambda a,b: a > b)
 
 		mark(peaceMove, "circle")
-		mark(warMove, "●")			
+		mark(warMove, "●")
+		ghost(peaceMove, k.player)
+		ghost(warMove, k.player)
 
 		if peaceMove == k.bestMove:
 			mark(peaceMove, "square")
@@ -61,7 +63,7 @@ if k.depth == 'full':
 	elif cheat:
 		for m in k.moves: mark(m)
 
-if BOTH_SIDES or humanColor != k.toPlay:
-	status(f"my play ({k.toPlay}) {fightMessage} | {k.visits} visits")
+if BOTH_SIDES or humanColor != k.player:
+	status(f"my play ({k.player}) {fightMessage} | {k.visits} visits")
 else:
 	status(f"your play {fightMessage}")

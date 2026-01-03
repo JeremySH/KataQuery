@@ -10,11 +10,10 @@ GENERATE_NEAR = button2("Gen Nearby")
 GENERATE_LOCAL = button3("Gen Local")
 HELP = button4("help")
 
-status(f"{k.toPlay} to play")
+status(f"{k.player} to play")
 
 if HELP:
-	import pydoc
-	log(pydoc.plain(pydoc.render_doc(analyze)))
+	log(helptext(analyze))
 
 if GENERATE_FAST:
 	# generate 30 moves quickly
@@ -25,11 +24,11 @@ if GENERATE_FAST:
 		# returns a KataAnswer object, just like 'k'
 		ans = analyze(goban)
 
-		ghost(ans.bestMove, goban.toPlay)
+		ghost(ans.bestMove, goban.player)
 		snooze() # update display
 
-		goban.play(goban.toPlay, ans.bestMove)
-		goban.toPlay = opponent(goban.toPlay)
+		goban.play(goban.player, ans.bestMove)
+		goban.player = opponent(goban.player)
 
 	status("DONE.")
 
@@ -41,11 +40,11 @@ if GENERATE_NEAR:
 	for i in range(1,10):
 		ans = analyze(goban, nearby=2, visits=20)
 		
-		ghost(ans.bestMove, goban.toPlay)
+		ghost(ans.bestMove, goban.player)
 		snooze()
 		
-		goban.play(goban.toPlay, ans.bestMove)
-		goban.toPlay = opponent(goban.toPlay)
+		goban.play(goban.player, ans.bestMove)
+		goban.player = opponent(goban.player)
 
 	status("DONE.")
 
@@ -73,11 +72,11 @@ if GENERATE_LOCAL:
 		ans = analyze(goban, allowedMoves=near, visits=5)
 		
 		latest = ans.bestMove
-		ghost(ans.bestMove, goban.toPlay)
+		ghost(ans.bestMove, goban.player)
 		snooze() # update
 		
-		goban.play(goban.toPlay, ans.bestMove)
-		goban.toPlay = opponent(goban.toPlay)
+		goban.play(goban.player, ans.bestMove)
+		goban.player = opponent(goban.player)
 
 	status("DONE.")
 

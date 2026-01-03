@@ -39,7 +39,7 @@ if hello: log("HELLO THERE")
 
 # SLIDERS
 # sliders (aka "dials") have more settings than the above.
-move_limit = slider1("Move Limit", default_value=0, min_value=0, max_value=100, value_type='int')
+move_limit = dial1("Move Limit", default_value=0, min_value=0, max_value=100, value_type='int')
 
 # You don't need to specify all the keywords.
 # by default, sliders provide a float value from 0.0 to 1.0.
