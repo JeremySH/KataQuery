@@ -177,6 +177,7 @@ _kataqueryWords = [
     "havek",
     "quickPlay",
     "analyze",
+    "rerun",
     "set_clipboard",
     "get_clipboard",
     "log",

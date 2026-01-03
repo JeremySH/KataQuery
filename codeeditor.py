@@ -155,6 +155,24 @@ def analyze(goban: 'Goban', visits=2, allowedMoves: list[tuple[int, int]] =  Non
     response = kata.analyze(q)
     return KataAnswer(response)
 
+def rerun(more_visits: int, max_visits: int):
+    """
+    Submit a new analysis request with `more_visits` more visits,
+    immediately bail() so the script can run again.
+    
+    If `k.visits >= max_visits`, or `k.depth == "quick"`,
+    return like a no-op (without bail())
+        
+    The purpose is to allow interactive analysis updates from a script,
+    and to guarantee a number of visits for later code.
+    """
+    if k.depth == "quick": return
+    if k.visits >= max_visits: return
+    visits = min(k.visits + more_visits, max_visits)
+    
+    GS.analyzeVisits.emit(visits)
+    bail()
+
 def opponent(color: str) -> str:
     "return the opponent's color"
     if color[0].upper() == "W":
@@ -306,6 +324,7 @@ extrafuncs = {
     "havek": haveK,
     "quickPlay": quickPlay,
     "analyze": analyze,
+    "rerun": rerun,
     "set_clipboard": set_clipboard,
     "get_clipboard": get_clipboard,
     "log": log,

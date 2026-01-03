@@ -6,6 +6,7 @@ from PyQt5.QtCore import pyqtSignal, QObject
 # NOT when it completed. This is so slots can ignore out-of-order analyses,
 # and simply render/recalculate the latest one.
 class _GS(QObject):
+    analyzeVisits = pyqtSignal(int) #analyze with provided visit count
     currentBoardChanged = pyqtSignal(dict)
     boardSizeChanged = pyqtSignal(tuple)
     komiChanged = pyqtSignal(float)

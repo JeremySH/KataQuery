@@ -1715,6 +1715,9 @@ class BoardController(QObject):
         print("HANDLING fullAnalysis", signalData['t'])
         pass #kataResults = signalData["payload"]
 
+    def handleAnalyzeVisits(self, visit_count: int) -> None:
+        self.askForFullAnalysis(visit_count)
+        
     def askForFullAnalysis(self, visits=None) -> None:
         "Construct a query of the current position and submit it to Katago"
         if visits == None:
