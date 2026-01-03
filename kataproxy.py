@@ -42,7 +42,6 @@ class _KataSignals(QObject):
     def __init__(self) -> None:
         super().__init__()
 
-
 KataSignals = _KataSignals()
 
 # it's quite impossible to ask for analysis in a blocking way
@@ -622,13 +621,15 @@ class KataAnswer:
             if allowedMoves == None or info['pos'] in allowedMoves:
                 info['allowedMove'] = True
 
+            # back reference to me, for convenience
+            info['k'] = self
+
             # store it in our temporary dictionary of points
             if notpass:
                 intersectionsDict[(x,y)] = dotdict(info)
             else:
                 info['pos'] = (-1,-1)
                 intersectionsDict[(-1,-1)] = dotdict(info)
-
 
         # MUNGE MORE INFORMATION FOR SUGGESTED MOVES
         for m in self.answer['moveInfos']:
