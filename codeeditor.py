@@ -25,12 +25,12 @@ class Bail(Exception):
     "an excption to allow bailing out of a script"
     pass
 
-def helptext(thing):
+def helptext(thing) -> str:
     "return the documentation text for a thing"
     import pydoc
     return pydoc.plain(pydoc.render_doc(thing))
 
-def khelp(thing):
+def khelp(thing) -> None:
     "custom help because builtin help() doesn't work in GUI app"
     import pydoc
     print(helptext(thing))
@@ -39,7 +39,7 @@ def bail() -> None:
     "exit the script immediately"
     raise Bail
 
-def snooze(seconds:float =0) -> None:
+def snooze(seconds: float=0) -> None:
     "sleep for seconds, updating graphics"
     t = time.time()
     QApplication.instance().processEvents()
@@ -51,11 +51,12 @@ def bookmark(g: 'Goban', location: str="current") -> None:
     "add a bookmark for the passed Goban, at location 'start', 'end' or 'current'(default)"
     GS.addBookmark.emit({'goban': g, 'location': location})
 
-def status(info: str, **kwargs):
+def status(info: str, **kwargs) -> None:
     "change status line to provided text"
     GS.statusBarPrint.emit(str(info))
 
-def mark(gopoint: tuple or str or dict, label="triangle", halign='center', valign='center', scale=1.0) -> None:
+def mark(gopoint: tuple or str or dict, label: str="triangle", 
+         halign: str='center', valign: str='center', scale: float=1.0) -> None:
     """
     Mark a gopoint [e.g. (3,3)] with a symbol or
     text. Symbol types are 'triangle' 'square' 'circle', 'x', and 'clear'
@@ -73,7 +74,7 @@ def mark(gopoint: tuple or str or dict, label="triangle", halign='center', valig
 
     GS.addMark.emit(pos, str(label), options)
 
-def ghost(gopoint: tuple or str or dict, color: str, scale=1.0) -> None:
+def ghost(gopoint: tuple or str or dict, color: str, scale: float=1.0) -> None:
     "make a translucent stone at this go point"
     pos = to_gopoint(gopoint)
     if type(pos) != tuple:
@@ -119,7 +120,7 @@ def haveK() -> bool:
     "does k exist? OUTDATED FUNCTION, cuz it always exists"
     return k != None
 
-def quickPlay(katainfo: 'KataAnswer', plays: list, visits=2) -> 'KataAnswer':
+def quickPlay(katainfo: 'KataAnswer', plays: list, visits: int=2) -> 'KataAnswer':
     """
     play a sequence of moves on the provided KataAnswer
     and return a new KataAnswer Analysis.
@@ -141,7 +142,9 @@ def quickPlay(katainfo: 'KataAnswer', plays: list, visits=2) -> 'KataAnswer':
 
     return KataAnswer(response)
 
-def analyze(goban: 'Goban', visits=2, allowedMoves: list[tuple[int, int]] =  None, nearby: int=0) -> 'KataAnswer':
+def analyze(goban: 'Goban', visits: int=2, 
+            allowedMoves: list[tuple[int, int]]= None,
+            nearby: int=0) -> 'KataAnswer':
     "Analyze a goban. If 'nearby' > 0, analyze points within specified hop distance of existing stones"
     allowed = None
     if nearby > 0:
@@ -157,7 +160,7 @@ def analyze(goban: 'Goban', visits=2, allowedMoves: list[tuple[int, int]] =  Non
     response = kata.analyze(q)
     return KataAnswer(response)
 
-def rerun(more_visits: int, max_visits: int):
+def rerun(more_visits: int, max_visits: int) -> None:
     """
     Submit a new analysis request with `more_visits` more visits,
     immediately bail() so the script can run again.
@@ -235,7 +238,7 @@ def msgBox(msg: str, buttons:list[str] or None = None) -> str:
     else:
         return "OK"
 
-def chooseFile(prompt:str or None =None, save:bool =False, default:str="", extension:str="", multi=False) -> str:
+def chooseFile(prompt: str or None =None, save: bool=False, default: str="", extension: str="", multi: bool=False) -> str:
     """
     present an open/save file dialog box using 'prompt' and return filename(s) (or None if canceled)
     prompt:    show this prompt string (if possible)
@@ -281,7 +284,7 @@ def hover(gopoint: tuple[int,int], text:str ) -> None:
 def clearHovers() -> None:
     GS.clearHoverTexts.emit()
 
-def _guiPing(id: str, title:str) -> None:
+def _guiPing(id: str, title: str) -> None:
     "ping the gui to show me"
     GS.CodeGUI_SetTitle.emit(id, title)
     GS.CodeGUI_ShowMe.emit(id)
@@ -292,14 +295,14 @@ def _buttonX(id: str, title: str) -> bool:
     d = {"clicked": False, "title": title, "default_value": False}
     return d
 
-def _checkX(id: str, title: str, default_value: bool = False) -> dict:
+def _checkX(id: str, title: str, default_value: bool=False) -> dict:
     "internal function to access a GUI checkbox"
     GS.CodeGUI_SetTitle.emit(id, title)
     GS.CodeGUI_SetChecked.emit(id, default_value)
     d = {"checked": default_value, "title": title, "default_value": default_value}
     return d
 
-def _sliderX(id: str, title: str, default_value:float = 0.0, min_value:float =0.0, max_value: float=0.0, value_type:str ='float') -> dict:
+def _sliderX(id: str, title: str, default_value: float=0.0, min_value: float=0.0, max_value: float=0.0, value_type:str ='float') -> dict:
     "internal function to access a GUI slider"
     GS.CodeGUI_SetTitle.emit(id, title)
     GS.CodeGUI_SetSliderType.emit(id, value_type)
@@ -348,7 +351,7 @@ extrafuncs = {
 # so as to stay within the script context
 GUI_FUNCS_SRC = ""
 buttonFuncTemplate = """
-def button{n}(title:str="button{n}") -> bool:
+def button{n}(title: str="button{n}") -> bool:
     "connect to GUI button {n} and return true whenever pressed"
     _guiPing("button{n}", title)
     if 'button{n}' in __GUI__:
@@ -369,7 +372,7 @@ def button{n}(title:str="button{n}") -> bool:
 """
 
 checkFuncTemplate = """
-def check{n}(title:str="check{n}", default_value:bool =False) -> bool:
+def check{n}(title: str="check{n}", default_value: bool=False) -> bool:
     "connect to GUI checkbox {n} and return default value on first run, and its value otherwise"
     _guiPing("check{n}", title)
     changed = False
@@ -391,7 +394,7 @@ def check{n}(title:str="check{n}", default_value:bool =False) -> bool:
 """
 
 sliderFuncTemplate = """
-def slider{n}(title: str="dial{n}", default_value:float =0.0, min_value:float =0.0, max_value:float =1.0, value_type:float ='float') -> float:
+def slider{n}(title: str="dial{n}", default_value: float=0.0, min_value: float=0.0, max_value: float=1.0, value_type: str='float') -> float:
     "connect to GUI checkbox {n} and return default value on first run, and its value otherwise."
     _guiPing("dial{n}", title)
     changed = False
@@ -473,7 +476,8 @@ def persist(variable: str, val) -> None:
             self.code = None
 
 
-    def run(self, kataResults: dict = None, extraGlobals=None, explicit=False, gui_run=False, query_points=None) -> None:
+    def run(self, kataResults: dict=None, extraGlobals: dict=None, explicit: bool=False, 
+            gui_run: bool=False, query_points: list[tuple[int, int]]=None) -> None:
         if kataResults != None:
             self.createContexts(kataResults, extraGlobals=extraGlobals, manual_run=explicit, gui_run=gui_run, query_points=query_points)
 
@@ -520,7 +524,8 @@ def persist(variable: str, val) -> None:
     def getGlobals(self) -> dict:
         return self.context_global
     
-    def createContexts(self, kataResults: dict, extraGlobals: dict = None, manual_run=False, gui_run=False, query_points=None) -> None:
+    def createContexts(self, kataResults: dict, extraGlobals: dict=None, manual_run: bool=False, 
+                       gui_run: bool=False, query_points: list[tuple[int, int]]=None) -> None:
 
         global k
         #print("CREATE CONTEXTS: explicit: ", manual_run)
@@ -765,7 +770,8 @@ class CodeEditor(CodeEdit):
     def markDirty(self) -> None:
         self._dirty = True
 
-    def runit(self, explicit:bool =False, gui_run=False, query_points=None) -> None:
+    def runit(self, explicit: bool=False, gui_run: bool=False, 
+              query_points: list[tuple[int, int]]=None) -> None:
         "run against the analysis in self.lastAnswer. If explicit is true, treat this as a manual run by user."
         if self.lastAnswer != None:
             if "error" in self.lastAnswer:
@@ -789,7 +795,7 @@ class CodeEditor(CodeEdit):
         print("RUN REQUESTED.")
         self.runit(explicit = True)
     
-    def handleDisableCode(self, value) -> None:
+    def handleDisableCode(self, value: bool) -> None:
         "Disable/Enable running the code automatically"
         self.disabled = value
         settings = QSettings()
@@ -813,7 +819,7 @@ class CodeEditor(CodeEdit):
         "Handle an incoming full analysis from KataProxy"
         self.handleAnalysis(signalData, kind="full")
 
-    def handleAnalysis(self, signalData: dict, kind:str ='full') -> None:
+    def handleAnalysis(self, signalData: dict, kind: str='full') -> None:
         "Handle an analysis from KataProxy. kind can be 'quick' or 'full'."
         signalData['payload']['depth'] = kind
         self.lastAnswer = signalData['payload']
@@ -844,7 +850,7 @@ class CodeGUISwitchboard(QObject):
     # and input from the user. This prevents infinite loops in the GUI,
     # with the caveat that blockSignals() prevents any other code
     # from getting code-initiated update signals when a GUI item is changed from the script
-    def __init__(self, guiTab, parent=None) -> None:
+    def __init__(self, guiTab: QtWidgets.QTabWidget, parent=None) -> None:
         super().__init__(parent)
         # connect checkboxes, butttons, sliders, and the log output
         checkboxes = guiTab.findChildren(QtWidgets.QCheckBox)
@@ -945,7 +951,7 @@ class CodeGUISwitchboard(QObject):
         if name in self.lookup:
             self.lookup[name].setToolTip(text)
 
-    def setChecked(self, name: str, onOff:bool) -> None:
+    def setChecked(self, name: str, onOff: bool) -> None:
         if name in self.lookup:
             o = self.lookup[name]
             o.blockSignals(True)
@@ -953,13 +959,13 @@ class CodeGUISwitchboard(QObject):
             o.blockSignals(False)
             self.GUI_state[name]['checked'] = onOff
 
-    def slider2Float(self, val:int, minV:float, maxV:float) -> float:
+    def slider2Float(self, val: int, minV: float, maxV: float) -> float:
         return minV + ((maxV-minV)*val)/100000.0
     
-    def float2Slider(self, val:float, minV:float , maxV:float) -> int:
+    def float2Slider(self, val: float, minV: float , maxV: float) -> int:
         return int(100000.0*(val-minV)/(maxV-minV))
 
-    def sliderChangedRaw(self, name:str , value:int ) -> None:
+    def sliderChangedRaw(self, name: str, value: int ) -> None:
         # convert integer crap into ranged value floats
         if name in self.lookup:
             #print("Slider CHANGED: ", self.GUI_state[name])
@@ -971,7 +977,7 @@ class CodeGUISwitchboard(QObject):
         else:
             print("DUNNO: ", name)
 
-    def sliderSetValue(self, name:str, value: int) -> None:
+    def sliderSetValue(self, name: str, value: int) -> None:
         if name in self.lookup:
             state = self.GUI_state[name]
             o = self.lookup[name]
@@ -980,7 +986,7 @@ class CodeGUISwitchboard(QObject):
             o.blockSignals(False)
             self.GUI_state[name]['value'] = value
 
-    def sliderSetRange(self, name:str , min_val:float, max_val:float) -> None:
+    def sliderSetRange(self, name: str, min_val: float, max_val: float) -> None:
         if name in self.lookup:
             o = self.lookup[name]
             s = self.GUI_state[name]
@@ -999,11 +1005,11 @@ class CodeGUISwitchboard(QObject):
 
             self.GUI_state[name].update(u)
 
-    def sliderSetType(self, name:str, value_type:str) -> None:
+    def sliderSetType(self, name: str, value_type: str) -> None:
         if name in self.lookup:
             self.GUI_state[name]['value_type'] = value_type
  
-    def buttonClicked(self, name:str, value=None) -> None:
+    def buttonClicked(self, name: str, value: bool=None) -> None:
         # only handle one button at a time, much easier
         for b in self.buttonNames:
             self.GUI_state[b]['clicked'] = False
@@ -1011,7 +1017,7 @@ class CodeGUISwitchboard(QObject):
             self.GUI_state[name]['clicked'] = True
             self.GUI_Changed(clear_buttons=False)
 
-    def checkboxClicked(self, name:str, value:bool) -> None:
+    def checkboxClicked(self, name: str, value: bool) -> None:
         if name in self.checkboxNames:
             self.GUI_state[name]['checked'] = value
             self.GUI_Changed()
@@ -1082,7 +1088,7 @@ class CodeGUISwitchboard(QObject):
                 self.GUI_state[b]['title'] = state[b]['title']
                 self.GUI_state[b]['clicked'] = False
 
-    def GUI_Changed(self, clear_buttons: bool = True) -> None:
+    def GUI_Changed(self, clear_buttons: bool=True) -> None:
         # by default clear the buttons to False
         # as I only want buttons true after a click
         if clear_buttons:
