@@ -13,6 +13,8 @@ from goutils import to_gopoint
 from kataproxy import KataAnswer, GlobalKata, KataGoQueryError, goban2query
 from io import StringIO
 
+import json
+
 # localize the line number to the code editor during error reports.
 # Actually it's only useful the day that kataquery internal code never throws, heh
 _LOCALIZE_LINE_NUMBER = False
@@ -628,47 +630,107 @@ class CodeEditor(CodeEdit):
         self.disabled = settings.value("codeeditor/disabled", False, type=bool)
         
         self.nameAllSlots()
-        self.activateSlot(settings.value("codeeditor/current_slot", 1, type=int), force=True)
-
+        self.loadSlot(settings.value("codeeditor/current_slot", 1, type=int))
+        
     def saveCurrentSlot(self) -> None:
+        "save the active slot along with the current gui state"
+        #print("SAVE SLOT:", self.currentSlot)
+        
+        if self.currentSlot == None:
+            return
+
         settings = QSettings()
         key = f"codeeditor/slot{self.currentSlot}_src"
         settings.setValue(key, self.document().toPlainText())
+        
+        key = f"codeeditor/slot{self.currentSlot}_guistate"
+        value = self.codegui.asJSON()
+        settings.setValue(key, value)
+        #print("GUISTATE", self.currentSlot, value)
+        
+        key = f"codeeditor/slot{self.currentSlot}_guisaved"
+        value =  json.dumps(self.GUI_Saved)
+        settings.setValue(key,value)
+        #print("GUI SAVED", self.currentSlot, value)
+
+        key = f"codeeditor/slot{self.currentSlot}_cursorpos"
+        settings.setValue(key, self.textCursor().position())
+        
+        # FIXME: persisted variables should save
+        
         self.nameASlot(self.currentSlot)
 
-    def activateSlot(self, slotNum: int, force:bool =False) -> None:
-        """
-        Activate the current code slot and load the source code.
-        If forced is True do it even if the current code slot
-        is the same. This will remove undo history, but is
-        useful on startup
-        """
-
-        # let user repeat the number to alternate
-        if slotNum == self.currentSlot and self.previousSlot:
-            slotNum = self.previousSlot
-        else:
-            self.previousSlot = self.currentSlot
-
-        # have to do nothing otherwise undo history is lost
-        if not force and self.currentSlot == slotNum: return
-
+    def loadSlot(self, slotNum: int) -> None:
+        "load a slot and restore its saved gui (if any)"
+        #print("LOAD SLOT", slotNum)
+        
         settings = QSettings()
         key = f"codeeditor/slot{slotNum}_src"
         text = settings.value(key, "")
         self.document().setPlainText(text)
-        self.moveCursor(QtGui.QTextCursor.Start)
+        
+        key = f"codeeditor/slot{slotNum}_cursorpos"
+        pos = settings.value(key, 0, type=int)
+        
+        key = f"codeeditor/slot{slotNum}_guistate"
+        gstate = settings.value(key, "")
+        #print("GSTATE", gstate)
+        
+        key = f"codeeditor/slot{slotNum}_guisaved"
+        gsaved = settings.value(key, "")
+        #print("GUI JSON", slotNum, gsaved)
+        
+        if gsaved != "":
+            self.GUI_Saved = json.loads(gsaved)
+        else:
+            self.GUI_Saved = {}
 
+        # restore GUI
+        if gstate != "":
+            self.codegui.restoreState(gstate)
+            self.loadGUIInfo(self.codegui.GUI_state)
+        
+        #print("RESTORE GUI SAVED", slotNum, self.GUI_Saved)
+        #print("RESTORE GUI STATE", slotNum, self.codegui.GUI_state)
+        
+        for key, v in self.GUI_Saved.items():
+            if v['kind'] == 'button':
+                v['clicked'] = False
+
+        #restore cursor
+        c = self.textCursor()
+        c.setPosition(pos)
+        self.setTextCursor(c)
+        
         self.currentSlot = slotNum
         settings.setValue("codeeditor/current_slot", self.currentSlot)
         self.nameAllSlots()
+        
+        self._dirty = True
+        
         GS.Code_SlotActivated.emit(slotNum)
 
     def slotSelected(self) -> None:
-        self.saveCurrentSlot()
-        self.activateSlot(self.sender().data())
-        self.GUI_Saved = {}
+        "Slot was selected by the user, load it, or toggle if number double-pressed"
+        slotNum = self.sender().data()
+
+        # user can alternate between scripts by repeating the slot number
+        if slotNum == self.currentSlot:
+            if self.previousSlot and self.previousSlot != slotNum:
+                self.saveCurrentSlot()
+                p = self.currentSlot
+                self.loadSlot(self.previousSlot)
+                self.previousSlot = p
+            else:
+                return
+        else: # switch slot
+            self.saveCurrentSlot()
+            self.previousSlot = self.currentSlot
+            self.loadSlot(slotNum)
+
+        #self.GUI_Saved = {}
         self._dirty = True
+
         if not self.disabled:
             self.runit(explicit=False)
 
@@ -717,6 +779,8 @@ class CodeEditor(CodeEdit):
 
             self.codeRunner.run(self.lastAnswer, extraGlobals = {"__GUI__": self.GUI_Saved}, explicit=explicit, gui_run=gui_run, query_points=self.queryPoints)
             self.updateGUIVars()
+            if explicit: # we need to save code-changed GUI info if any
+                self.saveCurrentSlot()
         else:
             GS.statusBarPrint.emit("No KataGo Analysis to run against.")
 
@@ -761,13 +825,17 @@ class CodeEditor(CodeEdit):
         self.runit(gui_run=True, query_points=self.queryPoints) # FIXME: not sure if appropriate
         self.queryPoints = None
 
-    def newGUIInfo(self, info: dict) -> None:
+    def loadGUIInfo(self, info: dict) -> bool:
+        "load GUI info into GUI_Saved, return if something changed"
         changed = False
         for thing in self.GUI_Saved.keys():
             if thing in info:
                 self.GUI_Saved[thing].update(info[thing])
                 changed = True
-        if changed and not self.disabled:
+        return changed
+        
+    def newGUIInfo(self, info: dict) -> None:
+        if self.loadGUIInfo(info) and not self.disabled:
             self.runit(explicit=False, gui_run=True)
 
 from PyQt5 import QtWidgets
@@ -883,6 +951,7 @@ class CodeGUISwitchboard(QObject):
             o.blockSignals(True)
             o.setChecked(onOff)
             o.blockSignals(False)
+            self.GUI_state[name]['checked'] = onOff
 
     def slider2Float(self, val:int, minV:float, maxV:float) -> float:
         return minV + ((maxV-minV)*val)/100000.0
@@ -909,6 +978,7 @@ class CodeGUISwitchboard(QObject):
             o.blockSignals(True)
             o.setValue(self.float2Slider(value, state['min_value'], state['max_value']))
             o.blockSignals(False)
+            self.GUI_state[name]['value'] = value
 
     def sliderSetRange(self, name:str , min_val:float, max_val:float) -> None:
         if name in self.lookup:
@@ -982,7 +1052,37 @@ class CodeGUISwitchboard(QObject):
     def checkboxNames(self) -> list[str]:
         return [o.objectName() for o in self.checkboxes]
 
-    def GUI_Changed(self, clear_buttons:bool = True) -> None:
+    def asJSON(self) -> str:
+        "return my state as a json string"
+        return json.dumps(self.GUI_state)
+    
+    def restoreState(self, json_text: str) -> None:
+        "restore the GUI state from a json string"
+        state = json.loads(json_text)
+        
+        # update dials, etc
+        for d in self.dialNames:
+            if d in state:
+                self.setATitle(d, state[d]['title'])
+                self.sliderSetType(d, state[d]['value_type'])
+                self.sliderSetRange(d, state[d]['min_value'], state[d]['max_value'])
+                self.sliderSetValue(d, state[d]['value'])
+                self.GUI_state[d].update(state[d])
+        
+        for c in self.checkboxNames:
+            if c in state:
+                self.setATitle(c, state[c]['title'])
+                self.setChecked(c, state[c]['checked'])
+                self.GUI_state[c].update(state[c])
+        
+        # buttons always false unless clicked
+        for b in self.buttonNames:
+            if b in state:
+                self.setATitle(b, state[b]['title'])
+                self.GUI_state[b]['title'] = state[b]['title']
+                self.GUI_state[b]['clicked'] = False
+
+    def GUI_Changed(self, clear_buttons: bool = True) -> None:
         # by default clear the buttons to False
         # as I only want buttons true after a click
         if clear_buttons:
