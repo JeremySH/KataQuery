@@ -607,6 +607,7 @@ class Goban:
 
         col = int2color[self.board[srcPoint]]
         self._remove(srcPoint)
+        self._remove(destPoint)
         self._place(col, destPoint)
         self.bifurcator.collect()
 

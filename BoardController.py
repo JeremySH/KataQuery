@@ -1193,6 +1193,7 @@ class BoardController(QObject):
                     # stone is above existing stone so
                     # treat it as a place always
                     self.goban.remove(gopoint)
+                    self.goban.remove(self.stoneInHand.origPoint)
                     self.goban.place(self.stoneInHand.stoneColor, gopoint)
                     self.activeGoban = self.goban.copy()
                     self.stonePool.remove(self.stones[gopoint])
