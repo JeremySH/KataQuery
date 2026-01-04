@@ -415,14 +415,8 @@ class Goban:
         "play a move"
         point = to_gopoint(gopoint)
         #print("Playing ", gopoint)
-        if is_pass(point): return []
 
         removed =  self.bifurcator.play(color, point)
-
-        self.board[self.board == 4] = 0 # remove ko
-        
-        if len(removed) == 1:
-            self.board[removed[0]] = 4 # add ko
 
         #print("PLAYS ", self.bifurcator._plays)
         return removed
@@ -462,7 +456,9 @@ class Goban:
         return black_caps, white_caps
 
     def _play(self, color:str, gopoint: T.Tuple[int,int]) -> T.List[T.Tuple[int,int]]:
-        "play a stone, perform captures, and return list of captured indicies"
+        "play a stone, perform captures, set ko, and return list of captured indicies"
+        if is_pass(gopoint): return []
+        
         c = color2int[color[0].upper()]
         if c & 1 == 0: return []
 
@@ -473,6 +469,11 @@ class Goban:
             if self.board[a] == opposite(c) and not self.haslibs(a):
                 removed.extend(self._remove_group(a))
 
+        self.board[self.board == 4] = 0 # remove lingering kos
+        
+        if len(removed) == 1: # add ko
+            self.board[removed[0]] = 4
+            
         return removed
 
     def _place(self, color:str, gopoint: T.Tuple[int,int]) -> None:
