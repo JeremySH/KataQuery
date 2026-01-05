@@ -64,7 +64,8 @@ def criticality(ans):
 	if len(ans.moves) <= 1:
 		return 0
 
-	byWinrate = sorted(ans.moves, key=lambda m: -m.winrate)
+	# limit to 20 so that very bad moves don't skew
+	byWinrate = ans.sorted("-m.winrate", ans.moves[:20])
 	wrs = [w.winrate for w in byWinrate]
 	top = max(wrs)
 	
@@ -88,7 +89,8 @@ def vital_points(ans, threshold=9.0):
 		count = 0
 		maxwin = ans.max("m.winrate", ans.moves).winrate
 		for m in ans.moves:
-			if maxwin - m.winrate < crit/2: # pick the best
+			# presuming that 1/3rd of threshold is all we can bear
+			if maxwin - m.winrate < threshold/333:
 				vits.append(m)
 				count += 1
 				if count > 2:
