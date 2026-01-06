@@ -1,6 +1,7 @@
 
 from PyQt5.QtWidgets import QTextEdit, QPlainTextEdit,  QApplication, QMainWindow, QWidget
 from PyQt5.QtCore import QObject, pyqtSignal, QSettings
+import PyQt5.QtCore as QtCore
 from PyQt5 import QtGui # for the clipboard
 import sys
 
@@ -443,6 +444,7 @@ class CodeRunner(QObject):
         super().__init__(parent)
         self.context_global = {}
         self.code = None
+        self.lock = False
 
         # this is needed as text to execute in the same global context
         # as the running script, rather than the context of this very file
@@ -475,9 +477,19 @@ def persist(variable: str, val) -> None:
             status(type(e).__name__ + ": " + str(e))
             self.code = None
 
-
     def run(self, kataResults: dict=None, extraGlobals: dict=None, explicit: bool=False, 
             gui_run: bool=False, query_points: list[tuple[int, int]]=None) -> None:
+        
+        # FIXME: QtCore.Qt.QueuedConnection should have fixed
+        # the issue of analisysFinished signals being handled while the
+        # code is still running (and thus triggering another code run while running)
+        
+        # however, let's keep track of sync problems anyway,
+        # even though this is cosmetic
+        if self.lock:
+            print("SYNC ERROR: RUN LOCKED", file=sys.stderr)
+
+        self.lock = True
         if kataResults != None:
             self.createContexts(kataResults, extraGlobals=extraGlobals, manual_run=explicit, gui_run=gui_run, query_points=query_points)
 
@@ -506,6 +518,10 @@ def persist(variable: str, val) -> None:
 
 
                 status(f"{type(e).__name__} : {str(e)}, '{name}' line {line}")
+            finally:
+                self.lock = False
+        
+        self.lock = False
 
     def getSavedVars(self, glob: dict, loc: dict) -> tuple[dict, dict]:
         if '__saved__' not in glob:
@@ -615,8 +631,8 @@ class CodeEditor(CodeEdit):
 
         self.setTabStopDistance(QtGui.QFontMetricsF(self.font()).horizontalAdvance(' ') * 2)
         
-        GS.fullAnalysisReady.connect(self.handleFullAnalysis)
-        GS.quickAnalysisReady.connect(self.handleQuickAnalysis) 
+        GS.fullAnalysisReady.connect(self.handleFullAnalysis, QtCore.Qt.QueuedConnection)
+        GS.quickAnalysisReady.connect(self.handleQuickAnalysis, QtCore.Qt.QueuedConnection) 
         GS.queryPoints.connect(self.handleQueryPoint)
         GS.CodeGUI_Changed.connect(self.newGUIInfo)
         GS.MainWindowReadyAndWilling.connect(self.afterStartup)
