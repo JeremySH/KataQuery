@@ -14,6 +14,7 @@ VITAL_THRESHOLD = dial2("Vital Thresh", default_value=0.09)
 MOVE_COUNT = dial3("Moves Shown", default_value=5, min_value=0, max_value=20, value_type = 'int')
 PV_VARIATION = dial4("PV variation", default_value=0, max_value=8, value_type="int")
 DISPLAY_MODE = dial5("Display Mode",  default_value=0, max_value=4, value_type="int")
+DEEP_VISITS = dial6("Deep visits", default_value=5000, max_value=50000, min_value=1000, value_type = 'int')
 
 DISP_MODE = ["bubble", "move rank", "winrate", "points", "policy"][DISPLAY_MODE]
 
@@ -26,6 +27,7 @@ DREAM_WHITE = button6("White Dreams")
 SENTES      = button5("Sentes")
 SENTE_THRESHOLD = 0.05
 
+GO_DEEP     = button7("Go deep")
 SAVE_SGF    = button8("Save SGF")
 
 def terri(threshold=0.02, show=True):
@@ -323,7 +325,12 @@ def button_stuff():
 				f.write(sgf)
 
 # main script entry
-
+if GO_DEEP:
+	# request a high level of visits and rerun the script
+	mark((k.xsize//2, k.ysize//2), "GOING DEEP, PLEASE WAIT...", scale=2.0)
+	snooze()
+	rerun(DEEP_VISITS, DEEP_VISITS)
+	
 clearLog()
 blackScore, whiteScore = main_stuff()
 button_stuff()
@@ -344,4 +351,6 @@ log(f"Terri threshold: {TERRI_THRESHOLD}")
 log(f"Vital threshold: {VITAL_THRESHOLD*100:0.1f}% winrate loss")
 log(f"Move Count:      {MOVE_COUNT}")
 log(f"PV Var:          {PV_VARIATION}")
-log(f"Result:          {scoreText}")
+log(f"Deep Visits:     {DEEP_VISITS}")
+
+log(f"\nResult:          {scoreText}")
