@@ -1574,10 +1574,15 @@ class BoardController(QObject):
     def makeMarkText(self, gopoint, text:str, rgb=None, halign='center', valign='center', scale=1.0):
         "all marks are text ATM. Make a text item and put it in the scene"
         col = "empty"
+
+        if gopoint in self.ghost_stones:
+            col = self.ghost_stones[gopoint].stoneColor
+
         if gopoint in self.stones:
             col = self.stones[gopoint].stoneColor
         if self.stoneInHand and self.stoneInHand.location == gopoint:
             col = self.stoneInHand.stoneColor
+
 
         item = self.markPool.createMark(text, color=col, scale=scale)
 
@@ -1635,15 +1640,34 @@ class BoardController(QObject):
 
         item.setScale(item.scale()*scale)
         self.ghost_stones[gopoint] = item
+        
+        if gopoint in self.marks:
+            self.marks[gopoint].setBrush(self.markPool.brushes[color])
+
 
     def removeGhostStone(self, gopoint):
         if gopoint in self.ghost_stones:
+            if gopoint in self.marks:
+                if gopoint in self.stones:
+                    col = self.stones[s].stoneColor
+                else:
+                    col = "empty"
+                self.marks[gopoint].setBrush(self.markPool.brushes[col])
+
             self.ghostPool.remove(self.ghost_stones[gopoint])
             del self.ghost_stones[gopoint]
 
     def removeAllGhostStones(self):
         for s in self.ghost_stones:
+            if s in self.marks:
+                if s in self.stones:
+                    col = self.stones[s].stoneColor
+                else:
+                    col = "empty"
+                self.marks[s].setBrush(self.markPool.brushes[col])
+            
             self.ghostPool.remove(self.ghost_stones[s])
+
 
         self.ghost_stones = {}
 
