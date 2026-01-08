@@ -4,9 +4,10 @@
 NUMBER = check1("number moves")
 
 def show_continuation(answer, labels=False):
+	"show continuation plays with ghost stones"
 
-	# ghost the continuation plays on the board
 	player = k.player 
+
 	for i, m in enumerate(answer.bestMove.pvPos):
 		ghost(m, player)
 		player = opponent(player)
