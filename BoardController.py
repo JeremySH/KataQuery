@@ -491,8 +491,12 @@ class GobanSnapshots:
     def insertSnap(self, board: 'Goban', location: str = "current") -> None:
         "insert this snapshot at current cursor"
         b = board.copy()
+
         if location == "current":
-            self.snaps.insert(self.cursor, b)
+            if self.atEnd():
+                self.snaps.insert(self.cursor, b)
+            else:
+                self.snaps.insert(self.cursor+1,b)
             self.cursor += 1
         elif location == "end":
             self.snaps.insert(len(self.snaps), b)
@@ -513,6 +517,7 @@ class GobanSnapshots:
             more = 1
         self.cursor -= (count + more)
         if self.cursor < 0: self.cursor = 0
+
         return self.snaps[self.cursor]
 
     def goForward(self, count:int = 1) -> 'Goban':
@@ -528,11 +533,13 @@ class GobanSnapshots:
     def goToBeginning(self) -> 'Goban':
         "go to the beginning of snapshots and return the position there"
         self.cursor = 0
+
         return self.getCurrentSnap()
 
     def goToEnd(self) -> 'Goban':
         "go to the end and return the position there"
         self.cursor = len(self.snaps)
+
         return self.getCurrentSnap()
 
     def atEnd(self) -> bool:
@@ -547,6 +554,7 @@ class GobanSnapshots:
         "delete the current snapshot"
         if len(self.snaps) == 0: return
         i = min(self.cursor, len(self.snaps) -1 )        
+
         del self.snaps[i]
 
     def deleteAll(self) -> None:
