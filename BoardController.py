@@ -1728,18 +1728,15 @@ class BoardController(QObject):
 
         #print(f"NAME IS {name}")
         if name == "policyHeat":
-            self.kata.claimAnswer(id)
             self.showPolicies(answer=ans)
             #print("GOT POLICY ANSWER")
         elif name == "fullAnalysis":
             #print("emitting full analysis")
-            self.kata.claimAnswer(id)
             if not out_of_date:
                 GS.fullAnalysisReady.emit({"t": t, "payload": ans})
             self.moreVisits = ans['original_query']['maxVisits']
 
         elif name == "quickAnalysis":
-            self.kata.claimAnswer(id)
             if not out_of_date:
                 GS.quickAnalysisReady.emit({"t": t, "payload": ans})
 

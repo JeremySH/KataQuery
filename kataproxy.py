@@ -19,7 +19,7 @@ KATACONFIG_ZERO = os.path.join(BIN_PATH, "analysis-zero.cfg")
 KATATHREADS = "2" # this is for mutli-position processing. Small helps lower latency b/c threads are working hard analyzing current position
 
 import traceback
-from PyQt5.QtCore import QProcess, QObject, pyqtSignal, QCoreApplication
+from PyQt5.QtCore import QProcess, QObject, pyqtSignal, pyqtSlot, QCoreApplication, QThread, Qt
 from PyQt5 import QtCore
 import PyQt5
 
@@ -121,8 +121,231 @@ class KataGoQueryError(Exception):
 
         super().__init__(self.message)
 
+class KataProcess(QProcess):
+    """
+    Wrapper for KataGo binary.
+
+    Must do this because custom stdout readers can't be touched by other threads
+    who might need my data.
+    
+    Users should use KataProxyQ, not this class. 
+    """
+    ask_query = pyqtSignal(dict) # ask to analyze query
+    answer_ready = pyqtSignal(dict) # emitted after query is analyzed
+    _pokeme = pyqtSignal()
+    
+    def __init__(self, cmd: str, model: str, config: str, 
+                 config_overrides:dict=None, parent=None) -> None:
+        """
+        prep katago with cmd path, model file, and config file
+        """
+        super().__init__(parent)
+        self.cmd    = cmd
+        self.model  = model
+        self.config = config
+        self.args = ["analysis", "-model", model, "-config", config]
+        self.config_overrides = config_overrides
+        
+        self.queries = {}
+        self.buffer = ""
+        
+        self.setProcessChannelMode(QProcess.SeparateChannels)
+        self.readyReadStandardOutput.connect(self._readStdout)
+        self.readyReadStandardError.connect(self._readStderr)
+        self.ask_query.connect(self._ask)
+        self._pokeme.connect(self._poke)
+
+    def start(self):
+        "launch KataGo in a process"
+        
+        self.args = ["analysis", "-model", self.model, "-config", self.config]
+        
+        if self.config_overrides:
+            terms = ""
+            for key, value in self.config_overrides:
+                terms += f"{key}={value},"
+            terms = terms[:-1]
+            
+            self.args.append("-override-config")
+            self.args.append(terms)
+            
+        if self.state() == QProcess.NotRunning:
+            super().start(self.cmd, self.args)
+            self.waitForStarted()
+            if self.exitCode() != 0:
+                raise EnvironmentError(f"KataGo at '{self.cmd}' could not be launched.")
+
+    def restart(self, cmd: str, model: str, config: str, 
+                config_overrides: dict=None) -> None:
+        "restart with the cmd, model, and configs provided"
+        if self.state() != QProcess.NotRunning:
+            #self.terminate()
+            self.kill() # terminate doesn't work
+            self.waitForFinished()
+        
+        self.cmd    = cmd
+        self.model  = model
+        self.config = config
+        
+        self.config_overrides = config_overrides
+             
+        self.start()
+        
+    def _ask(self, query: dict) -> None:
+        "respond to ask_query signal by writing to KataProcess stdin"
+        orig = dict(query)
+        orig['id'] = str(orig['id']) #enforce a string
+        self.queries[query['id']] = orig
+        q = json.dumps(orig, separators=(',', ':')) + "\n"
+        #print(q)
+        self.write(q.encode("utf-8"))
+        
+    def _processAnswer(self, ans: dict) -> None:
+        "respond to _readStdout, finding an answer and emitting answer_ready"
+        j = json.loads(ans)
+        if j['id'] in self.queries:
+            orig = self.queries[j['id']]
+            j['original_query'] = dict(orig)
+            del self.queries[j['id']]
+
+        self.answer_ready.emit(j)
+
+    def _poke(self) -> None:
+        """
+        poke gives me a time slice to read the stdout of KataProcess
+        without handling GUI events, etc.
+        """
+        if self.waitForReadyRead(0):
+            self._readStdout()
+
+    def _readStdout(self) -> None:
+        "custom stdout reader because Qt has strange operating procedures with lines"
+
+        b = self.bytesAvailable()
+        if b > 0:
+            self.buffer = self.buffer + str(self.readAllStandardOutput(), "utf-8")
+            lines = self.buffer.split('\n')
+
+            if self.buffer[-1] == '\n':
+                self.buffer = ""
+                for l in lines:
+                    if len(l): self._processAnswer(l)
+            else:
+                self.buffer = lines[-1]
+                for l in lines[:-1]:
+                    if len(l): self._processAnswer(l)
+    
+    def _readStderr(self) -> None:
+        "read the stderr output from katago, print, and forward it"
+        b = str(self.readAllStandardError(), 'utf-8')
+        KataSignals.stderrPrinted.emit(b)
+        print(b, end='', file=sys.stderr)
+
+class KataProxyQ(QObject):
+    "Main interface for running KataGo and getting analyses"
+    # basically translate methods to signals sent to a KataProcess.
+    # this is for thread safety and I/O isolation of KataProcess
+    def __init__(self, cmd: str, model: str, config:str, 
+                 config_overrides: dict=None) -> None:
+        super().__init__()
+        self.process = KataProcess(cmd, model, config, config_overrides=config_overrides)
+        self.answers = {}
+        self.queries = {}
+        
+        self.process.answer_ready.connect(self._handleAnswer)
+        
+        # kill on quit
+        hookQuit = True
+        try:
+            PyQt5.QtWidgets
+        except AttributeError:
+            hookQuit = False
+
+        if hookQuit: # it's a gui
+            PyQt5.QtWidgets.QApplication.instance().aboutToQuit.connect(self._kill) #TODO: "terminate" hangs so i have to kill, why?
+
+        self.process.start()
+        
+        # block until katago is ready:
+        res = self.analyze({"id": "wait for startup", "action": "query_version"})
+
+        # also allow asking via signal
+        KataSignals.askForAnalysis.connect(self.ask)
+        
+    def ask(self, query: dict) -> None:
+        "ask katago to analyze `query`, return immediately"
+        self.queries[query['id']] = query
+        self.process.ask_query.emit(query)
+
+    def haveAnswer(self, id_: str) -> bool:
+        "Do I have the answer with this id?"
+        return id_ in self.answers
+
+    def getAnswer(self, id_: str) -> dict:
+        "block until answer is ready, return it"
+
+        if id_ not in self.queries:
+            raise ValueError(f"KataProxyQ: Cannot get answer for non-existing query id '{id_}'")
+            
+        while True:
+            if id_ in self.answers:
+                ans = self.answers[id_]
+                del self.answers[id_]
+                del self.queries[id_]
+                return ans
+            # poke the process for a time slice
+            # this allows reading from I/O without GUI handling
+            self.process._pokeme.emit()
+            time.sleep(.0001)
+            
+    def analyze(self, query: dict) -> dict:
+        """
+        Ask katago to analyze `query`, blocking until an answer is ready
+        """
+        id_ = query['id']
+        self.ask(dict(query))
+        return self.getAnswer(id_)
+
+    def restart(self, cmd: str=None, model: str=None, config: str=None,
+                config_overrides: dict=None) -> None:
+        "restart KataGo with the provided cmd, model and/or config"
+        if self.process:
+            self.process.restart(cmd, model, config, config_overrides=config_overrides)
+        else:
+            self.process = KataProcess(cmd, model, config, config_overrides=config_overrides)
+            self.process.start()
+            self.process.answer_ready.connect(self._handleAnswer)
+        
+        # block until katago is ready:
+        res = self.analyze({"id": "wait for startup", "action": "query_version"})
+
+    def quit(self) -> None:
+        "quit the process. To use again, you must restart()"
+        self._kill()
+        
+    def _handleAnswer(self, ans: dict) -> None:
+        """
+        handle the answer_ready signal from KataProcess
+        and emit KataSignals.answerFinished
+        """
+        self.answers[ans['id']] = ans
+        if ans['id'] in self.queries:
+            ans['original_query'] = self.queries[ans['id']]
+        
+        KataSignals.answerFinished.emit(ans)
+
+    def _kill(self) -> None:
+        "oddly katago has no means of gracefully quitting?"
+        if self.process:
+            self.process.kill()
+            self.process = None
+
 class KataAnswer:
-    "a class to make using katago analysis data easier"
+    """
+    A class that makes using katago analysis data easier.
+    `k = KataAnswer(response_from_katago)`
+    where the response_from_katago is simply `json.loads(katago_json)`
+    """
     from functools import cached_property
     def __init__(self, rawAnswer: dict) -> None:
         
@@ -766,269 +989,6 @@ def moreKataData(kataAnswer: dict) -> dict:
     d.update ({"stats": morestuff})
     return d
 
-"""
-Board Position:
-{
-    boardXSize: 9,
-    boardYSize: 9,
-    initialStones: [["B" "C3"] ["W", "E5"] ...], # can be []
-    moves: [["B", "C6"]... ] # can be []
-}
-"""
-
-class KataProxyQ(QObject):
-    "a proxy for katago that uses Qt"
-    loginfo = pyqtSignal(str)
-    #answerReady = pyqtSignal(str) # provides the id of the answer that is ready
-    def __init__(self, cmd:str, model:str, config:str) -> None:
-        super().__init__()
-        self.buffer = ""
-        self.answers = {} # received answers dicts by id
-        self.queries = {} # sent queries dicts by id
-
-        self.quickVisits = 1
-        self.fullVisits = 10
-
-        KataSignals.askForAnalysis.connect(self.ask)
-        KataSignals.claimAnswer.connect(self.claimAnswer)
-        self._startup(cmd, model, config)
-
-    def _startup(self, cmd:str, model:str, config:str) -> None:
-        "called on __init__() and during restart()"
-        self.cmd = cmd
-        self.model = model
-        self.config = config
-
-        kataargs = ["analysis", "-model", model, "-config", config, "-analysis-threads", KATATHREADS]
-
-        self.kata = QProcess()
-        #self.kata.setProcessChannelMode(QProcess.ForwardedErrorChannel)
-        self.kata.setProcessChannelMode(QProcess.SeparateChannels)
-        #self.kata.setReadChannel(QProcess.StandardOutput)
-
-        self.kata.readyReadStandardOutput.connect(self._readStdout)
-        self.kata.readyReadStandardError.connect(self._readStderr)
-
-        hookQuit = True
-        try:
-            PyQt5.QtWidgets
-        except AttributeError:
-            hookQuit = False
-
-        if hookQuit: # it's a gui
-            PyQt5.QtWidgets.QApplication.instance().aboutToQuit.connect(self.kata.kill) #TODO: "terminate" hangs so i have to kill, why?
-
-        self.isGui = hookQuit
-        self.kata.start(cmd, kataargs)
-        self.kata.waitForStarted()
-        if self.kata.exitCode() != 0:
-            raise EnvironmentError(f"KataGo at '{self.cmd}' could not be launched.")
-
-        # block until katago is ready:
-        res = self.analyze({"id": "wait for startup", "action": "query_version"})
-        #eprint(f"KATAGO STARTED {res}")
-
-    def _kill(self) -> None:
-        "oddly katago has no means of gracefully quitting?"
-        if self.kata:
-            self.kata.kill()
-
-    def restart(self, cmd:str =None, model:str =None, config:str =None) -> None:
-        "restart KataGo with the provided cmd, model and/or config"
-        if cmd == None: cmd = self.cmd
-        if model == None: model = self.model
-        if config == None: config = self.config
-
-        self._kill()
-        self._startup(cmd, model, config)
-
-    def ask(self, query: dict, cached:bool =False) -> None:
-        "Submit query to KataGo. If 'cached', keep a copy until manually claimed with getAnswer()/claimAnswer()"
-        orig = dict(query)
-        orig['proxy_cached'] = cached
-        #eprint(f"CACHED IS {orig['proxy_cached']}")
-
-        self.queries[query['id']] = orig
-        q = json.dumps(orig) + "\n"
-        #eprint("JSON: ", q)
-        self.kata.write(q.encode("utf-8"))
-        #QCoreApplication.instance().processEvents()
-
-    def _askBlocking(self, query: dict) -> dict:
-        "Submit query to KataGo, block until ready, and return the answer."
-        self.ask(query, cached=True)
-        return self.getAnswer(query['id'])
-
-    def haveAnswer(self, id: str) -> bool:
-        "Do I have the answer with this id?"
-        return id in self.answers
-
-    def getAnswer(self, id: str) -> dict:
-        "Get the analysis answer identified by id"
-        #eprint(f"ANSWER REQUESTED: {id}, current answer size: {len(self.answers)}, query size: {len(self.queries)}")
-        
-        # FIXME: this needs a timeout option or something, it feels weird looping forever (even though it works)
-
-        if id not in self.queries:
-            raise ValueError(f"KataProxy: Cannot get answer for non-existing query id '{id}'")
-        count = 0
-        while True:
-            if count % 100 == 0:
-                pass #eprint(f"Count: {count}")
-
-            if id in self.answers:
-                result = dict(self.answers[id])
-                # add original query to result for later use
-                result.update({"original_query": dict(self.queries[id])})
-                del self.answers[id]
-                del self.queries[id]
-                return result
-            else:
-                # have to check for execution error as it can fail during startup 
-                if self.kata.exitCode() != 0:
-                    raise OSError(f"KataGo terminated with error {self.kata.exitCode()}, please refer to terminal output.")
-                #self._readStdout()
-                #QCoreApplication.instance().processEvents()
-                if self.kata.waitForReadyRead(0): #trigger signal without doing recursive processEvent()
-                    self._readStdout()
-                #self.kata.readyRead.emit()
-            count +=1
-
-    def claimAnswer(self, id: str) -> None:
-        "remove this answer from my cache"
-        if id in self.queries:
-            del self.queries[id]
-
-        if id in self.answers:
-            del self.answers[id]
-
-    def answerToPD(self, answer: str) -> "DataFrame":
-        """
-        provides a many-columned flat df for all intersections.
-        Global stuff (like rules & current move number) are repeated for each intersection
-        """
-        oq = answer['original_query']
-        istones = oq['initialStones']
-        #eprint(f"Initial stones: {istones}")
-        initialStones = {}
-        for s in istones:
-            initialStones[s[1]] = s[0] # e.g. 'Q4' = "B"
-
-
-        xs = oq['boardXSize']
-        ys = oq['boardYSize']
-
-        general = {}
-        for k in ['boardXSize', 'boardYSize', 'rules', 'maxVisits']:
-            general[k] = [oq[k]] * xs*ys
-
-        # TODO: handle all the stuff in anwer['rootInfo'] somehow
-
-        for k in ['symHash', 'thisHash']:
-            general[k] = [answer['rootInfo'][k]] * xs*ys
-
-
-        #eprint("ownership size:", len(answer['ownership']))
-        ownershipflat = np.array(answer['ownership'])
-        policiesflat =  np.array(answer['policy'][:-1]) # skip the pass policy value for now (should be separate IMO)
-
-        eprint("np ownership size:", len(ownershipflat))
-
-        ownership = ownershipflat.reshape(xs, ys)
-        policies = policiesflat.reshape(xs, ys)
-
-        #eprint("BUILD INFO")
-        columns = {'x': [], 'y': [], 'coord': []}
-        moveSchema ={}
-        for c in answer['moveInfos'][0].keys():
-            if c != "move": # already covered by "coord"
-                columns[c] = []
-                moveSchema[c] = True
-
-        columns['ownership'] = []
-        columns['policy'] = []
-
-
-        infosByCoord = {}
-        for i in answer['moveInfos']:
-            infosByCoord[i['move']] = i
-
-        for x in range (xs):
-            for y in range(ys):
-                columns['x'].append(x)
-                columns['y'].append(y)
-                columns['coord'].append(gopoint_to_str((x,y)))
-                move = gopoint_to_str((x,y))
-
-                if move in infosByCoord:
-                    for c,v in infosByCoord[move].items():
-                        #eprint(f"Col: {c} Val: {v}")
-                        if c != "move": # already covered by "coord"
-                            columns[c].append(v)
-                else:
-                    for c,v in moveSchema.items():
-                        #eprint(f"Col: {c} Val: {v}")
-                        if c not in ["move", "order"]: # already covered by "coord"
-                            columns[c].append(0) #FIXME should be something sensible
-                        else:
-                            columns['order'].append(float('inf'))
-                columns['ownership'].append(ownership[x,y])
-                columns['policy'].append(policies[x,y])
-
-        columns.update(general)
-        result = pd.DataFrame(columns)
-        return result
-
-    def analyzePANDA(self, query: dict) -> "DataFrame":
-        return self.answerToPD(self.analyze(query))
-
-    def analyze(self, query: dict) -> dict:
-        "Analyze the provided query, block until it's ready, and return the answer"
-        return self._askBlocking(dict(query))
-
-    def queueDepth(self) -> int:
-        "return the amount of queries still waiting to be answered"
-        return len(self.queries) - len(self.answers)
-
-    def _readStdout(self) -> None:
-        'custom stdout reader because Qt has strange operating procedures with lines'
-        # have to make my own line reader because readyRead()/readline() acts irrational
-        #eprint("Read STDOUT")
-        b = self.kata.bytesAvailable()
-        if b > 0:
-            self.buffer = self.buffer + str(self.kata.readAllStandardOutput(), "utf-8")
-            lines = self.buffer.split('\n')
-            #eprint(lines)
-            if self.buffer[-1] == '\n':
-                self.buffer = ""
-                for l in lines:
-                    if len(l): self._processLine(l)
-            else:
-                self.buffer = lines[-1]
-                for l in lines[:-1]:
-                    if len(l): self._processLine(l)
-    
-    def _readStderr(self) -> None:
-        "read the stderr output from katago, print, and forward it"
-        b = str(self.kata.readAllStandardError(), 'utf-8')
-        KataSignals.stderrPrinted.emit(b)
-        print(b, end='', file=sys.stderr)
-
-    def _processLine(self, line: str) -> None:
-        "process a line from KataGo's stdout and emit answerFinished signal, which provides the answer"
-        j = json.loads(line)
-        #eprint(f"KATAGO RESPONDED: {j['id']}")
-        self.answers[j['id']] = j
-        orig = self.queries[j['id']]
-        j['original_query'] = dict(orig)
-
-        if 'proxy_cached' in orig and not orig['proxy_cached']:
-            del self.queries[j['id']]
-            del self.answers[j['id']]
-
-        #KataSignals.answerReady.emit(j['id'])
-        KataSignals.answerFinished.emit(j)
-
 
 def goban2query(goban: 'Goban', id: str, maxVisits=2, flipPlayer=False, 
         allowedMoves: list[tuple[int, int]] = None, allowedDepth: int = 1) -> dict:
@@ -1049,7 +1009,7 @@ def goban2query(goban: 'Goban', id: str, maxVisits=2, flipPlayer=False,
     black_stones = goban.black_stones()
     
     query = {
-        "id": id,
+        "id": str(id),
         "boardXSize": goban.xsize,
         "boardYSize": goban.ysize,
         "initialStones": initial,
