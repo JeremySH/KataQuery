@@ -196,8 +196,9 @@ class KataProcess(QProcess):
         orig = dict(query)
         orig['id'] = str(orig['id']) #enforce a string
         self.queries[query['id']] = orig
+
         q = json.dumps(orig, separators=(',', ':')) + "\n"
-        #print(q)
+
         self.write(q.encode("utf-8"))
         
     def _processAnswer(self, ans: dict) -> None:
@@ -282,11 +283,22 @@ class KataProxyQ(QObject):
         return id_ in self.answers
 
     def getAnswer(self, id_: str) -> dict:
-        "block until answer is ready, return it"
+        """
+        block until answer is ready, remove it from the cache, and return it.
+        
+        This ONLY works if the query was sent with q['KQ_cache'] == True, 
+        which analyze() does.
+        
+        For non-cached queries, you should simply respond to the signal
+        `KataSignals.answerFinished`, which is always emitted on an answer result.
+        
+        Cached queries are only useful for `analyze()` which blocks and needs state
+        
+        """
 
         if id_ not in self.queries:
             raise ValueError(f"KataProxyQ: Cannot get answer for non-existing query id '{id_}'")
-            
+
         while True:
             if id_ in self.answers:
                 ans = self.answers[id_]
@@ -303,7 +315,10 @@ class KataProxyQ(QObject):
         Ask katago to analyze `query`, blocking until an answer is ready
         """
         id_ = query['id']
-        self.ask(dict(query))
+        d = dict(query)
+        d['KQ_cached'] = True
+        
+        self.ask(d)
         return self.getAnswer(id_)
 
     def restart(self, cmd: str=None, model: str=None, config: str=None,
@@ -328,10 +343,19 @@ class KataProxyQ(QObject):
         handle the answer_ready signal from KataProcess
         and emit KataSignals.answerFinished
         """
-        self.answers[ans['id']] = ans
-        if ans['id'] in self.queries:
-            ans['original_query'] = self.queries[ans['id']]
+        id_ = ans['id']
+        cached = False
         
+        if id_ in self.queries:
+            ans['original_query'] = self.queries[id_]
+            cached = 'KQ_cached' in self.queries[id_] and self.queries[id_]['KQ_cached']
+
+            if not cached:
+                del self.queries[id_]
+        
+        if cached:
+            self.answers[id_] = ans
+
         KataSignals.answerFinished.emit(ans)
 
     def _kill(self) -> None:
