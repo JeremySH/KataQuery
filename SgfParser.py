@@ -90,9 +90,9 @@ class SgfNode:
 		node.index = len(self.children)
 		self.children.append(node)
 
-	def find(self, key, mainlineOnly=True):
+	def find(self, key, mainlineOnly=True, excludeSelf=False):
 		"find first node with this key"
-		if self.key == key:
+		if self.key == key and not excludeSelf:
 			return self
 		
 		for p in self.children:
@@ -111,7 +111,7 @@ class SgfNode:
 			result.append(self)
 		
 		for c in self.children:
-			result.extend(c.find(key))
+			result.extend(c.findAll(key))
 			if c.key == "GameTree" and mainlineOnly:
 				return result
 
@@ -134,8 +134,80 @@ class SgfNode:
 			else:
 				print(f"{p.key}[{p.value}]", end='')
 
+	def toGoban(self) -> 'Goban':
+		"""
+		Construct the board position as it appears at this node and return the Goban.
+		This is useful for getting a Goban for, e.g., analyzing
+		an SGF file node by node
+		"""
+		path = [self]
+		p = self.parent
+		while p is not None:
+			path.append(p)
+			p = p.parent
+
+		for n in path:
+			print(n.key, end=", ")
+		print()
+			
+		depth = 0
+		# descend down the tree path, collecting board changes
+		changes = []
+		sizex, sizey = (19, 19)
+		komi = 6.5
+		while len(path):
+			current = path.pop()
+			next = None
+			if len(path):
+				next = path[0]
+			
+			for i, c in enumerate(current.children):
+				if c == next: break
+				if c.key == "PropList":
+					for child in c.children:
+						if child.key == "KM":
+							try:
+								k = float(child.value)
+								komi = k
+							except ValueError:
+								pass
+						elif child.key == "SZ":
+							sizex, sizey = toSize(child.value) 
+						elif child.key in ["AW", "AB", "B", "W", "PL"]:
+							changes.append(child)
+
+			depth = depth +1
+
+		g = Goban(sizex, sizey)
+		g.komi = round(komi*2)/2
+		g.player = "black"
+		
+		for c in changes:
+			if c.key == "AW":
+				for location in toCoordList(c.value, g.ysize):
+					g.place("white", location)
+			elif c.key == "AB":
+				for location in toCoordList(c.value, g.ysize):
+					g.place("black", location)
+			elif c.key == "B":
+				g.play("black", toCoord(c.value, g.ysize))
+				g.player = "white"
+			elif c.key == "W":
+				g.play("white", toCoord(c.value, g.ysize))
+				g.player = "black"
+			elif c.key == "PL":
+				g.player = toColor(c.value)
+		
+		return g
+
+
 	def toGobanList(self, boards:list['Goban'] or None =None, testPrint=False) -> list['Goban']:
-		"construct a goban for every new position and return these as a list"
+		"""
+		construct a goban for every new position after this node and return these as a list.
+		
+		Nice to use on the root node, as it will return the entire game mainline.
+		"""
+		
 		if boards == None:
 			sz = self.find('SZ')
 			#print("SZ FOUND: ", sz.value)
@@ -370,6 +442,9 @@ class SgfParser:
 			elif c == ';':
 				node = SgfNode("PropList", None)
 				i, node.children = self.gulpProps(contents, i+1)
+				for _i, n in enumerate(node.children):
+					n.parent = node
+					n.index = _i
 				curNode.addChild(node)
 			else:
 				chaff += contents[i]
@@ -379,6 +454,18 @@ class SgfParser:
 			print("SGF PARSING CHAFF: ", chaff, file=sys.stderr)
 		
 		return curNode
+
+
+def parseString(sgf:str) -> SgfNode:
+	"parse an entire sgf string and return an Sgf root node"
+	p = SgfParser.fromString(sgf)
+	return p.root
+
+def parseFile(filename:str) -> SgfNode:
+	"parse an sgf file and return and Sgf root node"
+	p = SgfParser.fromFile(filename)
+	return p.root
+
 
 if __name__ == "__main__":
 	#thing = SgfParser.fromFile("test_files/test_normal.sgf")
