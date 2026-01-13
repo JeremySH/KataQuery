@@ -111,7 +111,7 @@ class SgfNode:
 			result.append(self)
 		
 		for c in self.children:
-			result.extend(c.findAll(key))
+			result.extend(c.findAll(key, mainlineOnly=mainlineOnly))
 			if c.key == "GameTree" and mainlineOnly:
 				return result
 
@@ -134,6 +134,31 @@ class SgfNode:
 			else:
 				print(f"{p.key}[{p.value}]", end='')
 
+	def root(self):
+		"get the first node in the tree"
+		p = self.parent
+		root = self
+		
+		while p != None:
+			root = p
+			p = p.parent
+		
+		return root
+			
+	def getSgf(self):
+		s = ""
+		if self.key == "GameTree":
+			s += "("
+
+		for p in self.children:
+			if p.key == "PropList":
+				s = s + ";" + p.getSgf()
+			elif p.key == "GameTree":
+				s = s + p.getSgf() + ")"
+			else:
+				s = s + f"{p.key}[{p.value}]"
+		return s
+		
 	def toGoban(self) -> 'Goban':
 		"""
 		Construct the board position as it appears at this node and return the Goban.
@@ -145,10 +170,6 @@ class SgfNode:
 		while p is not None:
 			path.append(p)
 			p = p.parent
-
-		for n in path:
-			print(n.key, end=", ")
-		print()
 			
 		depth = 0
 		# descend down the tree path, collecting board changes
@@ -162,7 +183,6 @@ class SgfNode:
 				next = path[0]
 			
 			for i, c in enumerate(current.children):
-				if c == next: break
 				if c.key == "PropList":
 					for child in c.children:
 						if child.key == "KM":
@@ -175,6 +195,7 @@ class SgfNode:
 							sizex, sizey = toSize(child.value) 
 						elif child.key in ["AW", "AB", "B", "W", "PL"]:
 							changes.append(child)
+				if c == next: break
 
 			depth = depth +1
 

@@ -213,6 +213,7 @@ _kataqueryWords = [
     "isMove",
     "pos",
     "coords",
+    "coords_sgf",
     "allowedMove",
     "pvPos",
     "lcb",

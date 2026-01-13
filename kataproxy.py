@@ -162,7 +162,7 @@ class KataProcess(QProcess):
         
         if self.config_overrides:
             terms = ""
-            for key, value in self.config_overrides:
+            for key, value in self.config_overrides.items():
                 terms += f"{key}={value},"
             terms = terms[:-1]
             
@@ -859,6 +859,7 @@ class KataAnswer:
             # coords is a go coordinate string, e.g. 'K10'
             if notpass:
                 info['coords'] = gopoint_to_str((x,y,))
+                info['coords_sgf'] = gopoint_to_sgf((x,y,), ysize)
             else:
                 info['coords'] = "pass"
 

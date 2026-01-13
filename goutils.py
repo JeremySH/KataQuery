@@ -42,6 +42,26 @@ def str_to_gopoint(coords: str) -> tuple[int, int]:
 
     return (letter2go[xStr], int(yStr.strip())-1)
 
+def _sgf2int(c): return ord(c)-97
+def _int2sgf(i): return chr(i+97)
+
+def sgf_to_gopoint(coords_sgf: str, ysize:int) -> tuple[int, int]:
+	"convert an sgf-style 2 char pair into go tuple, given board ysize"
+	if len(coords_sgf) != 2:
+		raise ValueError("SGF coordinates must be length of exactly 2")
+	
+	x = _sgf2int(coords_sgf[0])
+	y = ysize - _sgf2int(coords_sgf[1])
+	
+	return (x,y,)
+	
+def gopoint_to_sgf(point: tuple[int, int], ysize: int) -> str:
+	"convert a gopoint tuple into sgf 2 char coordinates, given board ysize"
+	x = _int2sgf(point[0])
+	y = _int2sgf(ysize - 1 - point[1])
+
+	return x + y
+	
 def to_gopoint(gopoint: str or dict or tuple[int,int]) -> tuple[int,int]:
     "try to return a gopoint tuple from any compatible type provided"
     if type(gopoint) == tuple:
