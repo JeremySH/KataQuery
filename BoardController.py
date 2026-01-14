@@ -478,7 +478,7 @@ class QueueSubmitter(QObject):
 
             #print("delay: ", self.delay)
 
-            self.timer.setInterval(int(self.delay*500)) # 1/2 to keep it snappy
+            self.timer.setInterval(int(self.delay*950)) # smidge beneath measurement to keep it responsive
 
 class GobanSnapshots:
     "Class to manage position snapshots"
