@@ -60,9 +60,8 @@ def mark(gopoint: tuple or str or dict, label: str="triangle",
          halign: str='center', valign: str='center', scale: float=1.0) -> None:
     """
     Mark a gopoint [e.g. (3,3)] with a symbol or
-    text. Symbol types are 'triangle' 'square' 'circle', 'x', and 'clear'
+    text. Symbol types are 'triangle' 'square' 'circle', 'x'
     all other text is treated as is.
-    if 'clear', remove the mark at the provided point.
     """
     global k
 
@@ -90,7 +89,7 @@ def clearGhosts() -> None:
 
 def clearMarks() -> None:
     """
-    clear all marks on the board
+    clear all labels on the board
     """
     GS.clearAllMarks.emit()
 
@@ -99,7 +98,7 @@ def clearHeat() -> None:
     GS.clearAllHeat.emit()
 
 def clearAll() -> None:
-    "clear everything but the stones"
+    "clear all markings but not the GUI log"
     GS.clearAllMarkup.emit()
     GS.clearAllGhosts.emit()
     GS.clearHoverTexts.emit()
@@ -116,10 +115,6 @@ def heat(gopoint: tuple or str, value: float) -> None:
     pos = to_gopoint(gopoint)
 
     GS.heatValueChanged.emit(pos, value)
-
-def haveK() -> bool:
-    "does k exist? OUTDATED FUNCTION, cuz it always exists"
-    return k != None
 
 def quickPlay(katainfo: 'KataAnswer', plays: list, visits: int=2) -> 'KataAnswer':
     """
@@ -278,22 +273,25 @@ def chooseFile(prompt: str or None =None, save: bool=False, default: str="", ext
     else:
         return filenames
 
-def playSound(soundfile:str, volume:int=100, pitch:float=1.0) -> None:
+def playSound(soundfile:str, volume:int=100) -> None:
+    "play a sound file at `volume`"
     GS.playSound.emit(soundfile, volume)
 
 def notify(title:str, message: str) -> None:
     "show a system-wide notification"
     GS.notification.emit(title, message)
 
-def hover(gopoint: tuple[int,int], text:str ) -> None:
+def hover(gopoint: tuple[int,int] or dict or str, text:str ) -> None:
+    "set the hover text over this go point"
     p = to_gopoint(gopoint)
     GS.setHoverText.emit(p, str(text))
 
 def clearHovers() -> None:
+    "clear all hovertexts for the board"
     GS.clearHoverTexts.emit()
 
 def _guiPing(id: str, title: str) -> None:
-    "ping the gui to show me"
+    "ping the gui to enable me"
     GS.CodeGUI_SetTitle.emit(id, title)
     GS.CodeGUI_ShowMe.emit(id)
 
@@ -334,7 +332,6 @@ extrafuncs = {
     "clearAll": clearAll,
     "opponent": opponent,
     "heat": heat,
-    "havek": haveK,
     "quickPlay": quickPlay,
     "analyze": analyze,
     "rerun": rerun,
@@ -464,13 +461,9 @@ def persist(variable: str, val) -> None:
 """     
         #self.preambleC = code.compile_command(__code_preamble, symbol="exec")
         self.preambleC = compile(__code_preamble + GUI_FUNCS_SRC, "<preamble>", 'exec', optimize=1)
-    
-    def printit(self, thing):
-        # placeholder until gui shows stdout
-        print(f"{thing}", end='', file=sys.stderr)
-
 
     def setCode(self, sourceCode: str) -> None:
+        "compile the code, print exception on status line when error"
 
         try:
             #c = code.compile_command(sourceCode, filename="<code editor>", symbol="exec")
@@ -488,7 +481,7 @@ def persist(variable: str, val) -> None:
 
     def run(self, kataResults: dict=None, extraGlobals: dict=None, explicit: bool=False, 
             gui_run: bool=False, query_points: list[tuple[int, int]]=None) -> None:
-        
+        "run the script"
         # FIXME: QtCore.Qt.QueuedConnection should have fixed
         # the issue of analisysFinished signals being handled while the
         # code is still running (and thus triggering another code run while running)
@@ -533,6 +526,7 @@ def persist(variable: str, val) -> None:
         self.lock = False
 
     def getSavedVars(self, glob: dict, loc: dict) -> tuple[dict, dict]:
+        "return script persistent variables as (global, local)"
         if '__saved__' not in glob:
             return {}, {}
 
@@ -547,11 +541,12 @@ def persist(variable: str, val) -> None:
         return glob_res, loc_res
     
     def getGlobals(self) -> dict:
+        "get the script's global context"
         return self.context_global
     
     def createContexts(self, kataResults: dict, extraGlobals: dict=None, manual_run: bool=False, 
                        gui_run: bool=False, query_points: list[tuple[int, int]]=None) -> None:
-
+        "create local and global variables/functions provided to the script"
         global k
         #print("CREATE CONTEXTS: explicit: ", manual_run)
         moreglobs = extraGlobals
@@ -586,12 +581,13 @@ import os
 import project_globals
 
 class CodeEditor(CodeEdit):
+    "Edit those KataQuery scripts"
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.codeRunner = CodeRunner()
         self.lastAnswer = None
         self.textChanged.connect(self.markDirty)
-        self._dirty = True
+        self._dirty = True # FIXME, there's a diff between "needs to rerun" and "text changed", but i use this for both
         self.GUI_Saved = {} # saved gui info by the script
         self.queryPoints = None
         self.disabled = False
@@ -667,6 +663,7 @@ class CodeEditor(CodeEdit):
         self.previousSlot = None
 
     def afterStartup(self) -> None:
+        "Called after the main GUI is ready. Restore saved slots, prefs, etc."
         settings = QSettings()
         self.disabled = settings.value("codeeditor/disabled", False, type=bool)
         
@@ -832,7 +829,7 @@ class CodeEditor(CodeEdit):
         self.runit(explicit = True)
     
     def handleDisableCode(self, value: bool) -> None:
-        "Disable/Enable running the code automatically"
+        "Disable/Enable automatic running of the code"
         self.disabled = value
         settings = QSettings()
         settings.setValue("codeeditor/disabled", value)
@@ -843,6 +840,7 @@ class CodeEditor(CodeEdit):
             clearAll()
 
     def updateGUIVars(self) -> None:
+        "update the GUI variables possibly set by the script"
         g = self.codeRunner.getGlobals()
         if "__GUI__" in g:
             self.GUI_Saved.update(g['__GUI__'])
@@ -863,6 +861,7 @@ class CodeEditor(CodeEdit):
             self.runit()
 
     def handleQueryPoint(self, qpoints: list[tuple[int, int]]) -> None:
+        "User clicked a query point(s), set them and run script"
         self.queryPoints = qpoints
         self.runit(gui_run=True, query_points=self.queryPoints) # FIXME: not sure if appropriate
         self.queryPoints = None
@@ -877,11 +876,13 @@ class CodeEditor(CodeEdit):
         return changed
         
     def newGUIInfo(self, info: dict) -> None:
+        "Something changed in the GUI dials/etc. Handle that."
         if self.loadGUIInfo(info) and not self.disabled:
             self.runit(explicit=False, gui_run=True)
 
 from PyQt5 import QtWidgets
 class CodeGUISwitchboard(QObject):
+    "a controller for the GUI dials/etc."
     # There is a strong separation between output from the code
     # and input from the user. This prevents infinite loops in the GUI,
     # with the caveat that blockSignals() prevents any other code
@@ -958,21 +959,18 @@ class CodeGUISwitchboard(QObject):
 
         # test
         #GS.CodeGUI_SliderSetRange.emit(sliders[0].objectName(), 0.3, 120.0)
-        GS.CodeGUI_Changed.connect(self.codeGUIChangedTest)
         self.checkboxes = checkboxes
         self.buttons = buttons
         self.sliders = sliders
 
-    def codeGUIChangedTest(self, info: dict) -> None:
-        #print("CODE GUI CHANGED: ", info, file=sys.stderr)
-        pass
-
     def log(self, stuff:str) -> None:
+        "respond to a signal to print to the log"
         self.logOutput.moveCursor(QtGui.QTextCursor.End)
         self.logOutput.insertPlainText(stuff)
         self.logOutput.moveCursor(QtGui.QTextCursor.End)
         
     def setATitle(self, name: str, text: str) -> None:
+        "respond to a signal changing the title of a gui item"
         if name in self.lookup:
             o = self.lookup[name]
             if hasattr(o, "setText"):
@@ -984,10 +982,12 @@ class CodeGUISwitchboard(QObject):
             self.GUI_state[name]['title'] = text
 
     def setAToolTip(self, name: str, text: str) -> None:
+        "respond to a signal changing the tooltip for a gui item"
         if name in self.lookup:
             self.lookup[name].setToolTip(text)
 
     def setChecked(self, name: str, onOff: bool) -> None:
+        "set a checkbox by `name` (e.g. 'check1')"
         if name in self.lookup:
             o = self.lookup[name]
             o.blockSignals(True)
@@ -996,13 +996,16 @@ class CodeGUISwitchboard(QObject):
             self.GUI_state[name]['checked'] = onOff
 
     def slider2Float(self, val: int, minV: float, maxV: float) -> float:
+        "convert dial integer data to a float"
+        # 1000000 is what the dials are internally set at
         return minV + ((maxV-minV)*val)/100000.0
     
     def float2Slider(self, val: float, minV: float , maxV: float) -> int:
+        "convert a float input to dial-compatible integer"
         return int(100000.0*(val-minV)/(maxV-minV))
 
     def sliderChangedRaw(self, name: str, value: int ) -> None:
-        # convert integer crap into ranged value floats
+        "The dial changed, handle converting the integer value provided"
         if name in self.lookup:
             #print("Slider CHANGED: ", self.GUI_state[name])
             s = self.GUI_state[name]
@@ -1013,7 +1016,8 @@ class CodeGUISwitchboard(QObject):
         else:
             print("DUNNO: ", name)
 
-    def sliderSetValue(self, name: str, value: int) -> None:
+    def sliderSetValue(self, name: str, value: float) -> None:
+        "set the dial value, respecting its range settings"
         if name in self.lookup:
             state = self.GUI_state[name]
             o = self.lookup[name]
@@ -1023,6 +1027,7 @@ class CodeGUISwitchboard(QObject):
             self.GUI_state[name]['value'] = value
 
     def sliderSetRange(self, name: str, min_val: float, max_val: float) -> None:
+        "set the minimum and maximum for the dial"
         if name in self.lookup:
             o = self.lookup[name]
             s = self.GUI_state[name]
@@ -1042,10 +1047,12 @@ class CodeGUISwitchboard(QObject):
             self.GUI_state[name].update(u)
 
     def sliderSetType(self, name: str, value_type: str) -> None:
+        "Set the type of slider, either 'int' or 'float' "
         if name in self.lookup:
             self.GUI_state[name]['value_type'] = value_type
  
     def buttonClicked(self, name: str, value: bool=None) -> None:
+        "a button was clicked, set it to true, rerun script"
         # only handle one button at a time, much easier
         for b in self.buttonNames:
             self.GUI_state[b]['clicked'] = False
@@ -1054,11 +1061,13 @@ class CodeGUISwitchboard(QObject):
             self.GUI_Changed(clear_buttons=False)
 
     def checkboxClicked(self, name: str, value: bool) -> None:
+        "checkbox clicked, set it, rerun script"
         if name in self.checkboxNames:
             self.GUI_state[name]['checked'] = value
             self.GUI_Changed()
 
     def showMe(self, name: str) -> None:
+        "enable element `name` (e.g. 'check1')"
         if name in self.lookup:
             self.lookup[name].setEnabled(True)
             self.lookup[name].show()
@@ -1070,6 +1079,7 @@ class CodeGUISwitchboard(QObject):
 
 
     def hideAll(self) -> None:
+        "disable all gui elements, for further showMe()s to enable"
         for name, item in self.lookup.items():
             if item != self.logOutput:
                 item.setEnabled(False)
@@ -1125,6 +1135,12 @@ class CodeGUISwitchboard(QObject):
                 self.GUI_state[b]['clicked'] = False
 
     def GUI_Changed(self, clear_buttons: bool=True) -> None:
+        """
+        The GUI changed in some way, send the signal. By default, buttons
+        are set to false unless told not to  (via button click handler) 
+        This guarantees that when a button == True, it's just
+        been clicked (and not "held down")
+        """
         # by default clear the buttons to False
         # as I only want buttons true after a click
         if clear_buttons:

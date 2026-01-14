@@ -186,7 +186,6 @@ _kataqueryWords = [
     "clearAll",
     "opponent",
     "heat",
-    "havek",
     "quickPlay",
     "analyze",
     "rerun",
