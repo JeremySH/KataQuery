@@ -630,6 +630,17 @@ class CodeEditor(CodeEdit):
         #patch a bug
         def _handle_indent_in_statement(fullline, lastword, post, pre):
             return post,pre
+        
+        # patch another bug (bad extra indent on blank line insertion)
+        def _get_indent(self, cursor):
+            from pyqode.core.api import TextHelper
+            if cursor.atBlockStart(): # <--- this is the fix
+                return "", ""
+            indent = TextHelper(self.editor).line_indent() * self._indent_char
+            return "", indent
+
+        modes.AutoIndentMode._get_indent = _get_indent
+    
         m = pymodes.PyAutoIndentMode()
         m._handle_indent_in_statement = _handle_indent_in_statement
 
