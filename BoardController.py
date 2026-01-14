@@ -1016,6 +1016,19 @@ class BoardController(QObject):
 
         self.boardChanged()
 
+    def handleRevertMove(self) -> None:
+        "undo the last move permanently."
+        g = self.goban.copy()
+        color, last = g.last_move()
+
+        if last:
+            g.player = color
+
+        g.undo()
+        
+        self.changeGoban(g)
+        self.boardChanged()
+        
     @property
     def toplay(self) -> str:
         return self._toplay

@@ -512,7 +512,8 @@
                  </property>
                  <property name="pageStep">
                   <number>10000</number>
-                 </property>                </widget>
+                 </property>
+                </widget>
                </item>
               </layout>
              </item>
@@ -665,6 +666,7 @@
     <addaction name="actionFlip_Player"/>
     <addaction name="actionAnalyze_More"/>
     <addaction name="actionClearBoard"/>
+    <addaction name="actionRevert_Move"/>
     <addaction name="actionDraw_Mode"/>
     <addaction name="actionPlay_Mode"/>
     <addaction name="actionQuery_Mode"/>
@@ -1080,6 +1082,17 @@
    </property>
    <property name="iconVisibleInMenu">
     <bool>false</bool>
+   </property>
+  </action>
+  <action name="actionRevert_Move">
+   <property name="text">
+    <string>Revert Move</string>
+   </property>
+   <property name="toolTip">
+    <string>Undo last move permanently</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+U</string>
    </property>
   </action>
  </widget>

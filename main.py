@@ -62,6 +62,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.actionAnalyze_More.triggered.connect(self.board.handleAnalyzeMore)
         GS.analyzeVisits.connect(self.board.handleAnalyzeVisits)
         self.actionClearBoard.triggered.connect(self.board.handleClearBoard)
+        self.actionRevert_Move.triggered.connect(self.board.handleRevertMove)
         self.actionToggleDraw.triggered.connect(self.board.handleToggleDraw)
 
         self.actionPlay_Mode.triggered.connect(self.handleSetPlayMode)
