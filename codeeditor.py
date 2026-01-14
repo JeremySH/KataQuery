@@ -278,6 +278,13 @@ def chooseFile(prompt: str or None =None, save: bool=False, default: str="", ext
     else:
         return filenames
 
+def playSound(soundfile:str, volume:int=100, pitch:float=1.0) -> None:
+    GS.playSound.emit(soundfile, volume)
+
+def notify(title:str, message: str) -> None:
+    "show a system-wide notification"
+    GS.notification.emit(title, message)
+
 def hover(gopoint: tuple[int,int], text:str ) -> None:
     p = to_gopoint(gopoint)
     GS.setHoverText.emit(p, str(text))
@@ -337,6 +344,8 @@ extrafuncs = {
     "clearLog": clearLog,
     "msgBox": msgBox,
     "chooseFile": chooseFile,
+    "playSound": playSound,
+    "notify": notify,
     "_buttonX": _buttonX,
     "_checkX": _checkX,
     "_sliderX": _sliderX,

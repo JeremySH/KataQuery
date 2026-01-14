@@ -196,6 +196,8 @@ _kataqueryWords = [
     "clearLog",
     "msgBox",
     "chooseFile",
+    "playSound",
+    "notify",
     "bail",
     "dist",
     "snooze",

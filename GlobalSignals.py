@@ -74,6 +74,9 @@ class _GS(QObject):
 
     MainWindowReadyAndWilling = pyqtSignal() # emitted when main window is fully shown, approx 1 event loop after startup
 
+    playSound = pyqtSignal(str, int) # soundfile, volume (0-100)
+    notification = pyqtSignal(str, str) # tite, message
+    
     def __init__(self):
         super().__init__()
     

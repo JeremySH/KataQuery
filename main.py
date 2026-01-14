@@ -13,7 +13,7 @@ from BoardController import BoardController
 from PyQt5 import QtGui, QtCore, QtWidgets
 from PyQt5.QtGui import QGuiApplication
 
-from PyQt5.QtCore import Qt, QPoint, QSize, QObject, QStandardPaths, QSettings, QTimer
+from PyQt5.QtCore import Qt, QPoint, QSize, QObject, QStandardPaths, QSettings, QTimer, QUrl
 
 from PyQt5.QtWidgets import (
 
@@ -24,6 +24,8 @@ from PyQt5.QtWidgets import (
     QGraphicsView, QActionGroup, QAction
 
 )
+
+from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 
 from mainwindow_ui import Ui_MainWindow
 
@@ -342,6 +344,52 @@ class ConsoleWindow(QWidget):
         #self.show()
         pass
 
+class SoundPlayer(QObject):
+    def __init__(self):
+        super().__init__()
+        self.player = QMediaPlayer()
+        GS.playSound.connect(self.play_sound)
+    
+    def play_sound(self, soundfile:str, volume:int) -> None:
+        if soundfile == None:
+            self.player.stop()
+            return
+            
+        if soundfile == "beep":
+            QApplication.beep()
+            return
+        
+        self.player.setMedia(QMediaContent(QUrl.fromLocalFile(soundfile)))
+        self.player.setVolume(volume)
+        self.player.play()
+
+class Notifier(QObject):
+    "for system wide notifications"
+    def __init__(self):
+        super().__init__()
+        self.tray = None
+        GS.notification.connect(self.show_notification)
+        
+    def show_notification(self, title:str, message:str) -> None:
+    
+        if not self.tray:
+            self._create_tray()
+        
+        self.tray.show()
+        self.tray.showMessage(title, message)
+    
+    def _create_tray(self):
+    
+        from PyQt5.QtWidgets import QSystemTrayIcon, QStyle
+        from project_globals import getMainWindow   
+
+        pixmap = QStyle.SP_MessageBoxCritical
+        icon = getMainWindow().style().standardIcon(pixmap)
+
+        self.tray = QSystemTrayIcon(icon, getMainWindow())
+
+        self.tray.show()
+
 class DupeStd(QObject):
     "a pseudo file object that duplicates std outputs to signal emission"
     def __init__(self, which):
@@ -374,12 +422,15 @@ if __name__ == "__main__":
         
         app.setApplicationName("KataQuery")
         app.setOrganizationName("KataQuery.org")
-        
+
         win = Window()
         win.actionShow_Console.triggered.connect(console.show)
         win.actionShow_Console.triggered.connect(console.raise_)
         #KataSignals.stderrPrinted.connect(GS.stderrPrinted)
         win.show()
+
+        media_player = SoundPlayer()
+        notifier = Notifier()
         
         #print(f"DATA LOCATION: {QStandardPaths.writableLocation(QStandardPaths.AppDataLocation)}")
 
