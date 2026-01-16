@@ -370,7 +370,11 @@ class Notifier(QObject):
         super().__init__()
         self.tray = None
         GS.notification.connect(self.show_notification)
-        
+        self.timer = QTimer()
+        self.timer.setSingleShot(True)
+        self.timer.setInterval(2000)
+        self.timer.timeout.connect(self._hide)
+                
     def show_notification(self, title:str, message:str) -> None:
     
         if not self.tray:
@@ -378,18 +382,21 @@ class Notifier(QObject):
         
         self.tray.show()
         self.tray.showMessage(title, message)
+        self.timer.start()
     
+    def _hide(self):
+        self.tray.hide()
+        
     def _create_tray(self):
     
         from PyQt5.QtWidgets import QSystemTrayIcon, QStyle
         from project_globals import getMainWindow   
 
-        pixmap = QStyle.SP_MessageBoxCritical
+        pixmap = QStyle.SP_MessageBoxInformation
         icon = getMainWindow().style().standardIcon(pixmap)
 
         self.tray = QSystemTrayIcon(icon, getMainWindow())
 
-        self.tray.show()
 
 class DupeStd(QObject):
     "a pseudo file object that duplicates std outputs to signal emission"
