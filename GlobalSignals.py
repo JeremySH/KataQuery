@@ -77,6 +77,9 @@ class _GS(QObject):
     playSound = pyqtSignal(str, int) # soundfile, volume (0-100)
     notification = pyqtSignal(str, str) # tite, message
     
+    captureBoardImage = pyqtSignal(str, int) # filename, maximum width
+    boardImageCaptured = pyqtSignal(str) # filename
+    
     def __init__(self):
         super().__init__()
     

@@ -17,14 +17,14 @@ import typing as T
 
 from GameSettingsDialog import GameSettingsDialog
 
-from PyQt5.QtCore import QObject, Qt, QSettings, QPoint, QPointF, QSize, QTimer, QRect
+from PyQt5.QtCore import QObject, Qt, QSettings, QPoint, QPointF, QSize, QTimer, QRect, QRectF
 
 from PyQt5.QtWidgets import (
 
     QGraphicsScene, QGraphicsItemGroup, QGraphicsEllipseItem, QGraphicsRectItem, 
     QGraphicsSimpleTextItem, QGraphicsLineItem, QMessageBox, QApplication, QGraphicsPixmapItem
 )
-from PyQt5.QtGui import QPen, QBrush, QRadialGradient, QImage, QPixmap, QFont, QFontMetrics, QCursor
+from PyQt5.QtGui import QPen, QBrush, QRadialGradient, QImage, QPixmap, QFont, QFontMetrics, QCursor, QPainter
 from PyQt5 import QtGui
 
 # Use pools for the graphics items to reduce
@@ -615,6 +615,8 @@ class BoardController(QObject):
 
         GS.SetNeuralNetSettings.connect(self.nnSettingsChanged)
 
+        GS.captureBoardImage.connect(self.takePicture)
+        
         self.analysisQueue = QueueSubmitter() # only for quick analysis, rate limit
 
         #FIXME these should be in settings or maybe not in this class at all
@@ -819,6 +821,31 @@ class BoardController(QObject):
         default.setBold(True)
         self.markFont = default
 
+    def takePicture(self, filename, max_width=1024):
+        """
+        take a picture of the current go board into `filename`
+        constraining proportionally to `max_width`
+        """
+        
+        # FIXME: error checking
+        # constrain proportionally to max_width     
+        maxi = max(self.boardsize)
+
+        increment = max_width/(maxi+1)
+        w = max_width
+        h = increment*(1+self.boardsize[1])
+        
+        qsize = QSize(int(w),int(h))
+        image = QImage(qsize, QImage.Format_ARGB32)
+        painter = QPainter(image)
+
+        self.scene.render(painter, QRectF(image.rect()))
+
+        image.save(filename)
+        painter.end() # otherwise CRASH
+
+        GS.boardImageCaptured.emit(filename)
+        
     def boardResized(self, size: T.Tuple[int, int]) -> None:
         "the goban is a different size/shape so destroy everything and create the new one"
         # could be shortened TBH

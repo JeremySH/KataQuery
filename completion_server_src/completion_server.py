@@ -197,6 +197,7 @@ _kataqueryWords = [
     "chooseFile",
     "playSound",
     "notify",
+    "board2image",
     "bail",
     "dist",
     "snooze",

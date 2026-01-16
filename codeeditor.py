@@ -1,5 +1,7 @@
 
 from PyQt5.QtWidgets import QTextEdit, QPlainTextEdit,  QApplication, QMainWindow, QWidget
+from PyQt5.QtGui import QImage
+
 from PyQt5.QtCore import QObject, pyqtSignal, QSettings
 import PyQt5.QtCore as QtCore
 from PyQt5 import QtGui # for the clipboard
@@ -187,10 +189,14 @@ def dist(pos1: tuple[int, int] or str or dict, pos2: tuple[int, int] or str or d
     p2 = to_gopoint(pos2)
     return abs(p1[0]-p2[0]) + abs(p1[1] - p2[1])
 
-def set_clipboard(stuff: str) -> None:
-    "set the clipboard to stuff"
+def set_clipboard(stuff: str or QImage) -> None:
+    "set the clipboard to stuff, which can be text or QImage"
+    
     app = QApplication.instance()
-    app.clipboard().setText(str(stuff))
+    if issubclass(stuff.__class__, QImage):
+        app.clipboard().setImage(stuff)
+    else:
+        app.clipboard().setText(str(stuff))
 
 def get_clipboard() -> str:
     "get the clipboard as text"
@@ -281,6 +287,36 @@ def notify(title:str, message: str) -> None:
     "show a system-wide notification"
     GS.notification.emit(title, message)
 
+def board2image(max_width=1024) -> QImage:
+    """
+    capture the current board image as a PIL.Image
+    sized proportionally to fit in `max_width`
+    and return it
+    """
+    
+    # FIXME: error checking
+    import os
+    from PyQt5.QtCore import QStandardPaths
+    
+    path = QStandardPaths.writableLocation(QStandardPaths.CacheLocation)
+    os.makedirs(path, exist_ok=True)
+    
+    fpath = os.path.join(path, "board_capture.png")
+
+    image = None
+    def _getResponse(filename: str):
+        nonlocal image
+        image = QImage()
+        image.load(filename)
+
+    GS.boardImageCaptured.connect(_getResponse)
+    GS.captureBoardImage.emit(fpath, max_width)
+
+    while image == None:
+        QApplication.instance().processEvents()
+
+    return image
+
 def hover(gopoint: tuple[int,int] or dict or str, text:str ) -> None:
     "set the hover text over this go point"
     p = to_gopoint(gopoint)
@@ -343,6 +379,7 @@ extrafuncs = {
     "chooseFile": chooseFile,
     "playSound": playSound,
     "notify": notify,
+    "board2image": board2image,
     "_buttonX": _buttonX,
     "_checkX": _checkX,
     "_sliderX": _sliderX,
