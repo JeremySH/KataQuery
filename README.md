@@ -1,21 +1,24 @@
 # KataQuery
 
-KataQuery is a freeform, scriptable analysis goban for interactively exploring Go (aka Baduk/Weiqi).
+KataQuery is a freeform, scriptable analysis goban for exploring Go (aka Baduk/Weiqi).
 
 ![Analysis and Code View](screenshots/code_view.jpg)
-Code your own analyses, markup, and visualizations at will.
+By exploiting the powerful data provided by KataGo, you can design your own analyses and visualizations at will.
 
-![Tracking Influence Shifts with GUI](screenshots/explore_joseki_gui.jpg)
-Hook into to the provided GUI controls if you like.
+![Designing Bots With GUI Controls](screenshots/gui_view.jpg)
+Create your own bots, hook them up to the many provided GUI controls.
 
-![Plotting With Mathplotlib](screenshots/plots.jpg)
-Create plots with matplotlib and pandas.
+![Plotting With Mathplotlib](screenshots/plots2.jpg)
+Analyze entire games, draw ad-hoc plots with matplotlib & pandas.
+
+## Plenty Of Example Scripts Included
+![Lots Of Example Scripts](screenshots/lots_of_examples.jpg)
 
 * * *
 
 ## How It Works
 
-Whenever the position changes, your Python script is run, which marks up the board in any way it likes. Scripts have
+Whenever the position changes, your Python script is run. Your script can mark up the board however it likes. Scripts have
 full access to KataGo's analysis, and display their results in real time.
 
 ## What Might Surprise You
