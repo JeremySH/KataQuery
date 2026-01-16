@@ -862,6 +862,7 @@ class KataAnswer:
                 info['coords_sgf'] = gopoint_to_sgf((x,y,), ysize)
             else:
                 info['coords'] = "pass"
+                info['coords_sgf'] = gopoint_to_sgf((x,y,), ysize)
 
             # allow scripts to know if this intersection is "allowed" in analysis
             # FIXME: this should munge the avoid field too

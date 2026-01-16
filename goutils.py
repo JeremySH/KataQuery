@@ -50,6 +50,9 @@ def sgf_to_gopoint(coords_sgf: str, ysize:int) -> tuple[int, int]:
 	if len(coords_sgf) != 2:
 		raise ValueError("SGF coordinates must be length of exactly 2")
 	
+	if coords_sgf == "tt": # pass move
+		return (-1, -1,)
+		
 	x = _sgf2int(coords_sgf[0])
 	y = ysize - _sgf2int(coords_sgf[1])
 	
@@ -57,6 +60,9 @@ def sgf_to_gopoint(coords_sgf: str, ysize:int) -> tuple[int, int]:
 	
 def gopoint_to_sgf(point: tuple[int, int], ysize: int) -> str:
 	"convert a gopoint tuple into sgf 2 char coordinates, given board ysize"
+	if point[0] < 0 or point[1] < 0:
+		return "tt" # pass move
+		
 	x = _int2sgf(point[0])
 	y = _int2sgf(ysize - 1 - point[1])
 
