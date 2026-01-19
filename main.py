@@ -57,7 +57,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.actionAbout.triggered.connect(self.about)
         self.actionRun.triggered.connect(self.codeEdit.runRequested)
         self.actionDisable_Code.toggled.connect(self.codeEdit.handleDisableCode)
-
+        self.actionToggle_Gui.triggered.connect(self.handleToggleGUI)
         self.actionFlip_Player.triggered.connect(self.board.handleFlipPlayer)
         self.actionAnalyze_More.triggered.connect(self.board.handleAnalyzeMore)
         GS.analyzeVisits.connect(self.board.handleAnalyzeVisits)
@@ -301,6 +301,11 @@ class Window(QMainWindow, Ui_MainWindow):
         self.actionQuery_Mode.setChecked(True)
         self.board.handleSetQueryMode()
 
+    def handleToggleGUI(self, _=None) -> None:
+        newWidg = (self.tabWidget.currentIndex()+1)%2
+        self.tabWidget.setCurrentIndex(newWidg)
+        
+        
 class ConsoleWindow(QWidget):
     def __init__(self, parent=None):
         from PyQt5.QtGui import QFont, QFontMetrics

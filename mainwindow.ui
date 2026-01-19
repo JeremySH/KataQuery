@@ -640,6 +640,7 @@
     <addaction name="actionRun"/>
     <addaction name="menuCodeSlot"/>
     <addaction name="separator"/>
+    <addaction name="actionToggle_Gui"/>
     <addaction name="actionShow_Console"/>
     <addaction name="separator"/>
     <addaction name="actionDisable_Code"/>
@@ -1093,6 +1094,17 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+U</string>
+   </property>
+  </action>
+  <action name="actionToggle_Gui">
+   <property name="text">
+    <string>Toggle Gui</string>
+   </property>
+   <property name="toolTip">
+    <string>Swap between GUI and Code view</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Esc</string>
    </property>
   </action>
  </widget>
