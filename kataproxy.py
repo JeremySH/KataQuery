@@ -539,7 +539,10 @@ class KataAnswer:
             d = dict(thing)
             d['x'], d['y'] = thing['pos']
             d['info'] = thing
-            return d            
+            if 'k' in d:
+                del d['k']
+            return d
+            
         return pd.DataFrame(convert(m) for m in ([self.pass_move] + self.intersections))
 
     @cached_property
