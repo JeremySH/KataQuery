@@ -62,7 +62,7 @@ build_receipts/receipts_ready:
 	touch build_receipts/receipts_ready
 
 build_receipts/venv_built: build_receipts/receipts_ready
-	sh -c "python3 -m venv venv && . venv/bin/activate && pip install \
+	sh -c "python3 -m venv venv && . venv/bin/activate && pip install --upgrade setuptools==67.6.1 \
 	pyqt5==5.15.10 \
 	pandas==2.2.2 \
 	matplotlib==3.9.0 \
