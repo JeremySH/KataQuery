@@ -1093,7 +1093,7 @@
     <string>Undo last move permanently</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+Shift+U</string>
+    <string>Ctrl+Alt+U</string>
    </property>
   </action>
   <action name="actionToggle_Gui">

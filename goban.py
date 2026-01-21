@@ -702,12 +702,12 @@ class Goban:
         return self.bifurcator.stones_n_moves_coords()
 
     def last_move(self) -> T.Tuple[str, T.Tuple[int, int]] or None:
-        "return, e.g. ('white', (3, 3)) which indicates the last move, or None"
+        "return, e.g. ('white', (3, 3)) which indicates the last move, or (None, None)"
         stones, moves = self.stones_n_moves()
         if len(moves):
             return moves[-1]
         else:
-            return None
+            return None, None
         
     def ko_location(self): # returns tuple or None
         "return a tuple of the current ko location or None"
