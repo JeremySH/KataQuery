@@ -1,6 +1,6 @@
 # KataQuery
 
-KataQuery is a freeform, scriptable analysis goban for exploring Go (aka Baduk/Weiqi).
+KataQuery is a freeform, scriptable analysis goban for exploring Go (aka Baduk/Weiqi). It works on OpenCL Macs and Linux.
 
 ![Analysis and Code View](screenshots/code_view.jpg)
 By exploiting the powerful data provided by KataGo, you can design your own analyses and visualizations at will.
@@ -40,14 +40,20 @@ While you can certainly review a game in KataQuery, there is limited SGF import,
 * c++ compiler for KataGo
 * Pretty good GPU for interactivity
 
+## Dependencies
+
 For arch linux, you can install library dependencies like so:
 ```
 sudo pacman -S yay
 yay -S patch make cmake opencl opencl-clhpp eigen libzip
 ```
 
-Of course, don't install opencl/eigen if you don't need it or want it.
+For Mint/Ubuntu you can
+```
+sudo apt install python3.12-venv cmake libzip-dev opencl-dev libeigen3-dev
+```
 
+In general, for CPU use, *use EIGEN*. It's faster. For GPU use, *use OpenCL*, it's easier to setup.
 
 ### Libraries:
 
@@ -56,7 +62,13 @@ Of course, don't install opencl/eigen if you don't need it or want it.
 
 ## Installing
 
-KataQuery is meant for normal users. For the moment, however, you have to build it yourself with the makefile:
+### Modify Makefile If You Need To
+KataQuery is meant for normal users. For the moment, however, you have to build it yourself.
+
+If you're not using OpenCL, please choose your platform by modifying the `makefile`. The setting
+is at the top, and easy to select.
+
+To build:
 
 ```
 cd KataQuery
