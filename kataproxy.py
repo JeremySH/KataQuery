@@ -268,10 +268,20 @@ class KataProxyQ(QObject):
         self.process.start()
         
         # block until katago is ready:
-        res = self.analyze({"id": "wait for startup", "action": "query_version"})
-
+        #res = self.analyze({"id": "wait for startup", "action": "query_version"})
+        self.waitForStartup()
+        
         # also allow asking via signal
         KataSignals.askForAnalysis.connect(self.ask)
+
+    def waitForStartup(self):
+        "block until katago is ready to handle requests."
+        self.ask({"id": "wait for startup", "action": "query_version", "KQ_cached": True})
+        while not self.haveAnswer("wait for startup"):
+            QCoreApplication.instance().processEvents()
+
+        # claim the answer from the cache
+        self.getAnswer("wait for startup")
         
     def ask(self, query: dict) -> None:
         "ask katago to analyze `query`, return immediately"
@@ -332,8 +342,9 @@ class KataProxyQ(QObject):
             self.process.answer_ready.connect(self._handleAnswer)
         
         # block until katago is ready:
-        res = self.analyze({"id": "wait for startup", "action": "query_version"})
-
+        #res = self.analyze({"id": "wait for startup", "action": "query_version"})
+        self.waitForStartup()
+        
     def quit(self) -> None:
         "quit the process. To use again, you must restart()"
         self._kill()

@@ -17,7 +17,7 @@ import typing as T
 
 from GameSettingsDialog import GameSettingsDialog
 
-from PyQt5.QtCore import QObject, Qt, QSettings, QPoint, QPointF, QSize, QTimer, QRect, QRectF
+from PyQt5.QtCore import QObject, Qt, QSettings, QPoint, QPointF, QSize, QTimer, QRect, QRectF, QCoreApplication
 
 from PyQt5.QtWidgets import (
 
@@ -700,40 +700,32 @@ class BoardController(QObject):
 
     def relaunchKataGo(self, cmd, model, config):
         "Display a 'Launching KataGo' message and restart KataGo"
-        prog = QMessageBox(project_globals.getMainWindow())
-        prog.setText("Launching KataGo...")
-        prog.setStandardButtons(QMessageBox.NoButton)
-        prog.setModal(False)
+        prog = RelaunchWindow()
+        prog.setWindowModality(2)
         prog.show()
-        # seems to only show if I spam these (shrug)
-        QApplication.instance().processEvents()
-        QApplication.instance().processEvents()
-        QApplication.instance().processEvents()
-        QApplication.instance().processEvents()
+        prog.raise_()
 
         try:
             if KP.GlobalKata() != None:
                 self.kata = KP.GlobalKata()
-                prog.setText("Re-launching KataGo...")
+                prog.setMessage("Re-launching KataGo...")
                 self.kata.restart(KP.KATACMD, model, config)
 
             else:
                 self.kata = KP.GlobalKataInit(KP.KATACMD, model, config)
             
+            prog.hide()
+            prog.close()
+            
             # run another analysis with new engine settings
             self.askForFullAnalysis()
 
-            prog.hide()
-            prog.close()
         except OSError as e:
-            prog.setText(str(e))
-            prog.setStandardButtons(QMessageBox.Abort)
-            prog.setModal(True)
-            prog.exec_()
-            sys.exit()
-        finally:
-            prog.hide()
-            prog.close() # doesn't really act like it's supposed to but here's hoping
+            print("\nAn error occured: \n", e)
+            prog.setMessage(str(e))
+            prog.showAbort() # will block until user presses abort.
+            while True:
+                QCoreApplication.instance().processEvents()
 
     def afterStartup(self) -> None:
         "main app window is ready, so now do stuff that may depend upon it"
@@ -1833,3 +1825,57 @@ class BoardController(QObject):
     def clearKataGoCache(self, _=None) -> None:
         q = {"id": "clear cache", "action": "clear_cache"}
         KP.KataSignals.askForAnalysis.emit(q)
+
+from PyQt5.QtWidgets import QWidget, QPushButton, QPlainTextEdit, QFormLayout, QLabel
+from PyQt5 import QtCore
+class RelaunchWindow(QWidget):
+    "show console while relaunching"
+    def __init__(self, parent=None, message="Launching KataGo..."):
+        from PyQt5.QtGui import QFont, QFontMetrics
+        super().__init__(parent)
+        self.setObjectName("RelaunchWindow")
+        self.setWindowTitle("Re-launching KataGo")
+
+        conFont = QFont("Menlo", 12, QFont.Monospace)
+        conFont.insertSubstitutions("Menlo", ["Monaco", "Consolas", "Liberation Mono", "Monospace"])
+        
+        m = QFontMetrics(conFont).boundingRect("M")
+
+        self.resize(132*m.width(), 25*m.height()) # total guess
+
+        layout = QFormLayout()
+        self.setLayout(layout)
+
+        self.relaunchLabel = QLabel(self)
+        self.relaunchLabel.setText(message)
+
+        self.consoleTextEdit = QPlainTextEdit(self)
+        self.consoleTextEdit.setReadOnly(True)
+        self.consoleTextEdit.setMaximumBlockCount(1000)
+        self.consoleTextEdit.setFont(conFont)
+        
+        self.layout().addRow(self.relaunchLabel)
+        self.layout().addRow(self.consoleTextEdit)
+
+        QtCore.QMetaObject.connectSlotsByName(self)
+        GS.stderrPrinted.connect(self.addMore)
+        GS.stdoutPrinted.connect(self.addMore)
+        self.addMore("Starting...")
+        
+    def addMore(self, stuff: str):
+        self.consoleTextEdit.moveCursor(QtGui.QTextCursor.End)
+        self.consoleTextEdit.insertPlainText(stuff)
+        self.consoleTextEdit.moveCursor(QtGui.QTextCursor.End)
+
+    def showAbort(self):
+        self.abortButton = QPushButton(self)
+        self.abortButton.setText("Abort")
+        self.layout().addRow(self.abortButton)
+        self.abortButton.clicked.connect(self.freakOut)
+
+    def freakOut(self):
+        sys.exit()
+        
+    def setMessage(self, message):
+        self.relaunchLabel.setText(message)
+        self.setWindowTitle(message)
