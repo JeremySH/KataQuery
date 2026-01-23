@@ -155,6 +155,16 @@ class KataProcess(QProcess):
         self.ask_query.connect(self._ask)
         self._pokeme.connect(self._poke)
 
+        # kill on quit
+        self.isInsideGUI = True
+        try:
+            PyQt5.QtWidgets
+        except AttributeError:
+            self.isInsideGUI = False
+
+        if self.isInsideGUI: # it's a gui
+            PyQt5.QtWidgets.QApplication.instance().aboutToQuit.connect(self.quit) #TODO: "terminate" hangs so i have to kill, why?
+            
     def start(self):
         "launch KataGo in a process"
         
@@ -178,10 +188,8 @@ class KataProcess(QProcess):
     def restart(self, cmd: str, model: str, config: str, 
                 config_overrides: dict=None) -> None:
         "restart with the cmd, model, and configs provided"
-        if self.state() != QProcess.NotRunning:
-            #self.terminate()
-            self.kill() # terminate doesn't work
-            self.waitForFinished()
+        
+        self.quit()
         
         self.cmd    = cmd
         self.model  = model
@@ -190,6 +198,19 @@ class KataProcess(QProcess):
         self.config_overrides = config_overrides
              
         self.start()
+
+    def quit(self) -> None:
+        "oddly katago has no means of gracefully quitting?"
+        import os, signal
+
+        if self.state() == QProcess.NotRunning:
+            return
+
+        # be nice, then mean
+        os.kill(self.pid(), signal.SIGINT)
+        if not self.waitForFinished(5000):
+            print("FORCEFULLY KILLING KATAGO")
+            self.kill()
         
     def _ask(self, query: dict) -> None:
         "respond to ask_query signal by writing to KataProcess stdin"
@@ -254,16 +275,6 @@ class KataProxyQ(QObject):
         self.queries = {}
         
         self.process.answer_ready.connect(self._handleAnswer)
-        
-        # kill on quit
-        hookQuit = True
-        try:
-            PyQt5.QtWidgets
-        except AttributeError:
-            hookQuit = False
-
-        if hookQuit: # it's a gui
-            PyQt5.QtWidgets.QApplication.instance().aboutToQuit.connect(self._kill) #TODO: "terminate" hangs so i have to kill, why?
 
         self.process.start()
         
@@ -345,10 +356,6 @@ class KataProxyQ(QObject):
         #res = self.analyze({"id": "wait for startup", "action": "query_version"})
         self.waitForStartup()
         
-    def quit(self) -> None:
-        "quit the process. To use again, you must restart()"
-        self._kill()
-        
     def _handleAnswer(self, ans: dict) -> None:
         """
         handle the answer_ready signal from KataProcess
@@ -369,11 +376,6 @@ class KataProxyQ(QObject):
 
         KataSignals.answerFinished.emit(ans)
 
-    def _kill(self) -> None:
-        "oddly katago has no means of gracefully quitting?"
-        if self.process:
-            self.process.kill()
-            self.process = None
 
 class KataAnswer:
     """
