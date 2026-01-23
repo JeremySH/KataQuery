@@ -443,7 +443,7 @@ class QueueSubmitter(QObject):
         self.timer = QTimer()
         self.timer.setSingleShot(True)
         self.timer.timeout.connect(self.processQueue)
-        self.timer.setInterval(int(self.delay*500))
+        self.timer.setInterval(int(self.delay))
 
         KP.KataSignals.answerFinished.connect(self.adjustRate)
 
@@ -473,13 +473,17 @@ class QueueSubmitter(QObject):
 
             gap = time.time() - t
 
-            self.delay = (self.delay + gap)/2
-            self.delay = min(self.delay, 1.0)
+            stall = (self.delay + gap)/2
+            self.delay = min(1.0, max(1/30, stall))
 
-            #print("delay: ", self.delay)
-
-            self.timer.setInterval(int(self.delay*950)) # smidge beneath measurement to keep it responsive
-
+            if len(self.submissions):
+                self.timer.setInterval(int(self.delay*950)) # smidge beneath measurement to keep it responsive
+            else:
+                self.timer.setInterval(int(1000/30)) # snappier
+        else:
+            self.delay = 0
+            self.timer.setInterval(int(1000/30))
+            
 class GobanSnapshots:
     "Class to manage position snapshots"
     # about the only thing different betweeen this and a list
