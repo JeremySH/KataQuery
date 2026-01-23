@@ -701,7 +701,7 @@ class Goban:
         "return stones, movelist as go coordinates format, e.g. D4"
         return self.bifurcator.stones_n_moves_coords()
 
-    def last_move(self) -> T.Tuple[str, T.Tuple[int, int]] or None:
+    def last_move(self) -> T.Tuple[str, T.Tuple[int, int]]:
         "return, e.g. ('white', (3, 3)) which indicates the last move, or (None, None)"
         stones, moves = self.stones_n_moves()
         if len(moves):

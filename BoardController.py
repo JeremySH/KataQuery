@@ -1728,8 +1728,6 @@ class BoardController(QObject):
         
         return KP.goban2query(self.activeGoban, id, maxVisits = maxVisits, 
             flipPlayer = flipPlayer, allowedMoves = restricted, allowedDepth=1)
-        
-        return query
 
     def handleAnswerFinished(self, ans: dict) -> None:
         "KataGo has finished an analysis, process it. Called by KataProxy via KataSignal"
