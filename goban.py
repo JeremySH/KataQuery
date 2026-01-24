@@ -471,7 +471,9 @@ class Goban:
 
         self.board[self.board == 4] = 0 # remove lingering kos
         
-        if len(removed) == 1: # add ko
+        if len(removed) == 1: # add ko.
+            # NOTE: there is no check for the last move to be in atari
+            # as this mucks with keeping move order on changes
             self.board[removed[0]] = 4
             
         return removed
