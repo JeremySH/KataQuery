@@ -67,6 +67,8 @@ def mark(gopoint: tuple or str or dict, label: str="triangle",
     """
     global k
 
+    if not gopoint: return
+
     pos = to_gopoint(gopoint)
 
     if type(pos) != tuple:
@@ -78,6 +80,8 @@ def mark(gopoint: tuple or str or dict, label: str="triangle",
 
 def ghost(gopoint: tuple or str or dict, color: str, scale: float=1.0) -> None:
     "make a translucent stone at this go point"
+    if not gopoint: return
+
     pos = to_gopoint(gopoint)
     if type(pos) != tuple:
         return # FIXME: exception might be more appropriate, though annoying.
@@ -114,6 +118,7 @@ def heat(gopoint: tuple or str, value: float) -> None:
     """
     set the heat value for gopoint [e.g. (3,3)] from 0 to 1
     """
+    if not gopoint: return
     pos = to_gopoint(gopoint)
 
     GS.heatValueChanged.emit(pos, value)
@@ -289,7 +294,7 @@ def notify(title:str, message: str) -> None:
 
 def board2image(max_width=1024) -> QImage:
     """
-    capture the current board image as a PIL.Image
+    capture the current board image as a QImage
     sized proportionally to fit in `max_width`
     and return it
     """
@@ -319,6 +324,7 @@ def board2image(max_width=1024) -> QImage:
 
 def hover(gopoint: tuple[int,int] or dict or str, text:str ) -> None:
     "set the hover text over this go point"
+    if not gopoint: return
     p = to_gopoint(gopoint)
     GS.setHoverText.emit(p, str(text))
 
