@@ -548,18 +548,8 @@ class KataAnswer:
     @property
     def ko(self) -> 'dotdict':
         'get the intersection info for the ko point, or None'
-        theKo = self.goban.ko_location()
-
-        if not self.last_move: # shouldn't ever happen
-            return None
-
-        # goban ko location is simple (detect single capture)
-        # so also make sure the capturing stone is in atari
-        if theKo and len(self.goban.libs(self.last_move.pos)) == 1:
-            return self.get_point(theKo)
-        else:
-            return None
-
+        return self.goban.ko_location()
+        
     @cached_property
     def dataframe(self) -> 'DataFrame':
         "return a data frame of every move infos, legal and illegal"

@@ -713,9 +713,30 @@ class Goban:
         
     def ko_location(self): # returns tuple or None
         "return a tuple of the current ko location or None"
-        k = list(zip(*np.where(self.board == 4)))
-        if len(k):
-            return k[0]
+        
+        # NOTE: the np.array only tracks the latest
+        # "single stone capture," not real ko.
+        # This is faster, and helps preserve move order 
+        # when using diff().
+        # Therefore, we must perform some extra checks here.
+        
+        kos = list(zip(*np.where(self.board == 4)))
+
+        if len(kos):
+            ko = kos[0]
+        else: 
+            return None
+        
+        last = self.last_move()[1]
+        
+        if not last: return None
+        
+        # one stone
+        if len(self.connected(last)) == 1:
+            # with one liberty
+            if len(self.libs(last)) == 1:
+                return ko
+    
         return None
 
     def adjacent(self, gopoint: T.Tuple[int,int]) -> T.List[T.Tuple[int,int]]:
