@@ -418,7 +418,6 @@ def button{n}(title: str="button{n}") -> bool:
         d = _buttonX('button{n}', title)
         __GUI__['button{n}'] = d
         return __GUI__['button{n}']["clicked"]
-
 """
 
 checkFuncTemplate = """
@@ -609,8 +608,9 @@ def persist(variable: str, val) -> None:
         saved_globals, saved_locals = self.getSavedVars(self.context_global, self.context_global)
 
         self.context_global = {'__saved__': {}}
-
-        self.context_global.update(extrafuncs)
+        
+        self.context_global['__builtins__'] = dict(__builtins__)
+        self.context_global['__builtins__'].update(extrafuncs)
         self.context_global.update(moreglobs)
         self.context_global.update(saved_globals)
 
