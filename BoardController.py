@@ -1036,8 +1036,8 @@ class BoardController(QObject):
         self.stones = {}
         self.goban.clear()
         self.activeGoban = self.goban.copy()
-
-        self.boardChanged()
+        
+        self.boardChanged(do_quick=True)
 
     def handleRevertMove(self) -> None:
         "undo the last move permanently."
@@ -1050,7 +1050,7 @@ class BoardController(QObject):
         g.undo()
         
         self.changeGoban(g)
-        self.boardChanged()
+        self.boardChanged(do_quick=True)
         
     @property
     def toplay(self) -> str:
@@ -1547,10 +1547,14 @@ class BoardController(QObject):
         "typically during a drag, request a quick analysis for the changed board"
         self.askForQuickAnalysis()
 
-    def boardChanged(self, save_snap:bool = False) -> None:
+    def boardChanged(self, save_snap:bool = False, do_quick:bool = False) -> None:
         "usually on mouse up, ask for a deeper full analysis"
         if save_snap:
             self.gobanSnapshots.insertSnap(self.goban)
+            
+        if do_quick:
+            self.askForQuickAnalysis() # needed so scripts that only respond to "quick" can get it
+
         self.askForFullAnalysis()
 
     def getBoardToPlay(self) -> str:
