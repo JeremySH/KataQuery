@@ -23,382 +23,24 @@ import json
 _LOCALIZE_LINE_NUMBER = False
 
 # built in functions for the code editor to use
+# these act like they're imported via `from kq import *`
+import kq
+sys.modules['kq'] = kq
 
-class Bail(Exception):
-    "an excption to allow bailing out of a script"
-    pass
+# By default, imports are cached by python.
+# But we have to reload any module the user imports.
+# Otherwise, she cannot change her module code and expect changes
 
-def helptext(thing) -> str:
-    "return the documentation text for a thing"
-    import pydoc
-    return pydoc.plain(pydoc.render_doc(thing))
+# FIXME: these should be explicit
 
-def khelp(thing) -> None:
-    "custom help because builtin help() doesn't work in GUI app"
-    import pydoc
-    print(helptext(thing))
-
-def bail() -> None:
-    "exit the script immediately"
-    raise Bail
-
-def snooze(seconds: float=0) -> None:
-    "sleep for seconds, updating graphics"
-    t = time.time()
-    QApplication.instance().processEvents()
-    while time.time() - t < seconds:
-        time.sleep(1/60)
-        QApplication.instance().processEvents()
-
-def bookmark(g: 'Goban', location: str="current") -> None:
-    "add a bookmark for the passed Goban, at location 'start', 'end' or 'current'(default)"
-    GS.addBookmark.emit({'goban': g, 'location': location})
-
-def status(info: str, **kwargs) -> None:
-    "change status line to provided text"
-    GS.statusBarPrint.emit(str(info))
-
-def mark(gopoint: tuple or str or dict, label: str="triangle", 
-         halign: str='center', valign: str='center', scale: float=1.0) -> None:
-    """
-    Mark a gopoint [e.g. (3,3)] with a symbol or
-    text. Symbol types are 'triangle' 'square' 'circle', 'x'
-    all other text is treated as is.
-    """
-    global k
-
-    if not gopoint: return
-
-    pos = to_gopoint(gopoint)
-
-    if type(pos) != tuple:
-        return # FIXME: exception might be more appropriate, though annoying.
-
-    options = {'halign': halign, 'valign': valign, 'rgb': None, 'scale': scale}
-
-    GS.addMark.emit(pos, str(label), options)
-
-def ghost(gopoint: tuple or str or dict, color: str, scale: float=1.0) -> None:
-    "make a translucent stone at this go point"
-    if not gopoint: return
-
-    pos = to_gopoint(gopoint)
-    if type(pos) != tuple:
-        return # FIXME: exception might be more appropriate, though annoying.
-    options = {'scale': scale}    
-    
-    GS.addGhostStone.emit(color, pos, options)
-
-def clearGhosts() -> None:
-    "clear all ghost stones on the board"
-    GS.clearAllGhosts.emit()
-
-def clearMarks() -> None:
-    """
-    clear all labels on the board
-    """
-    GS.clearAllMarks.emit()
-
-def clearHeat() -> None:
-    "clear the heatmap"
-    GS.clearAllHeat.emit()
-
-def clearAll() -> None:
-    "clear all markings but not the GUI log"
-    GS.clearAllMarkup.emit()
-    GS.clearAllGhosts.emit()
-    GS.clearHoverTexts.emit()
-    clearStatus()
-
-def clearStatus() -> None:
-    "clear the status line"
-    GS.statusBarPrint.emit("")
-
-def heat(gopoint: tuple or str, value: float) -> None:
-    """
-    set the heat value for gopoint [e.g. (3,3)] from 0 to 1
-    """
-    if not gopoint: return
-    pos = to_gopoint(gopoint)
-
-    GS.heatValueChanged.emit(pos, value)
-
-def quickPlay(katainfo: 'KataAnswer', plays: list, visits: int=2) -> 'KataAnswer':
-    """
-    play a sequence of moves on the provided KataAnswer
-    and return a new KataAnswer Analysis.
-    
-    plays is a list of pairs like [["black", "D4"], ["white" "Q16"]].
-    Coordinates must be in GTP format (not ints)
-    
-    This function is ugly and will change
-    """
-    kata = GlobalKata()
-    if kata == None:
-        return katainfo
-    
-    orig = dict(katainfo.answer['original_query'])
-    orig['moves'] = orig['moves'] + plays
-    orig['id'] = "codeAnalysis_" + str(time.time_ns())
-    orig['maxVisits'] = max(visits,2)
-    response = kata.analyze(orig)
-
-    return KataAnswer(response)
-
-def analyze(goban: 'Goban', visits: int=2, 
-            allowedMoves: list[tuple[int, int]]= None,
-            nearby: int=0) -> 'KataAnswer':
-    "Analyze a goban. If 'nearby' > 0, analyze points within specified hop distance of existing stones"
-    allowed = None
-    if nearby > 0:
-        allowed = goban.nearby_stones(nearby)
-    else:
-        allowed = allowedMoves
-
-    kata = GlobalKata() # if this doesn't succeed it's a KataQuery bug
-    
-    id = "codeAnalysis" + "_" + str(time.time_ns())
-    
-    q = goban2query(goban, id, maxVisits=visits, allowedMoves = allowed)
-    response = kata.analyze(q)
-    return KataAnswer(response)
-
-def rerun(more_visits: int, max_visits: int) -> None:
-    """
-    Submit a new analysis request with `more_visits` more visits,
-    immediately bail() so the script can run again.
-    
-    If `k.visits >= max_visits`, or `k.depth == "quick"`,
-    return like a no-op (without bail())
-        
-    The purpose is to allow interactive analysis updates from a script,
-    and to guarantee a number of visits for later code.
-    """
-    if k.depth == "quick": return
-    if k.visits >= max_visits: return
-    visits = min(k.visits + more_visits, max_visits)
-    
-    GS.analyzeVisits.emit(visits)
-    bail()
-
-def opponent(color: str) -> str:
-    "return the opponent's color"
-    if color[0].upper() == "W":
-        return "black"
-    else:
-        return "white"
-
-def dist(pos1: tuple[int, int] or str or dict, pos2: tuple[int, int] or str or dict,) -> int:
-    "return the manhattan distance between 2 go points"
-    p1 = to_gopoint(pos1)
-    p2 = to_gopoint(pos2)
-    return abs(p1[0]-p2[0]) + abs(p1[1] - p2[1])
-
-def set_clipboard(stuff: str or QImage) -> None:
-    "set the clipboard to stuff, which can be text or QImage"
-    
-    app = QApplication.instance()
-    if issubclass(stuff.__class__, QImage):
-        app.clipboard().setImage(stuff)
-    else:
-        app.clipboard().setText(str(stuff))
-
-def get_clipboard() -> str:
-    "get the clipboard as text"
-    app = QApplication.instance()
-    return app.clipboard().text()
-
-def log(*args, **kwargs) -> None:
-    "like print() but to the GUI log"
-    s = StringIO("")
-    kwargs['file'] = s
-    print(*args, **kwargs)
-
-    GS.CodeGUI_LogPrint.emit(s.getvalue())
-
-def clearLog() -> None:
-    "clear the GUI log"
-    GS.CodeGUI_LogClear.emit()
-
-def msgBox(msg: str, buttons:list[str] or None = None) -> str:
-    "Display a message box with buttons if desired. Returns the name of the button clicked."
-    tops = QApplication.instance().topLevelWidgets()
-    w = None
-    for t in tops:
-        if issubclass(t.__class__, QMainWindow):
-            w = t
-            break
-
-    mb = QtWidgets.QMessageBox(w)
-
-    buttonDict = {}
-    if buttons:
-        for b in buttons:
-            buttonObject = mb.addButton(b, QtWidgets.QMessageBox.AcceptRole)
-            buttonDict[buttonObject] = b
-
-    mb.setText(str(msg))
-    mb.exec_()
-
-    if mb.clickedButton() in buttonDict:
-        return buttonDict[mb.clickedButton()]
-    else:
-        return "OK"
-
-def chooseFile(prompt: str or None =None, save: bool=False, default: str="", extension: str="", multi: bool=False) -> str:
-    """
-    present an open/save file dialog box using 'prompt' and return filename(s) (or None if canceled)
-    prompt:    show this prompt string (if possible)
-    save:      show save file dialog
-    default:   the default file/directory to navigate to
-    extension: the extension to automatically apply 
-    multi:     allow multiple file selection (returns a list)
-    """
-    from PyQt5.QtWidgets import QFileDialog
-    from PyQt5.QtCore import QDir
-    from project_globals import getMainWindow
-
-    dialog = QFileDialog(parent=getMainWindow())
-    dialog.setViewMode(QFileDialog.Detail)
-    dialog.setDefaultSuffix(extension)
-
-    if multi:
-        dialog.setFileMode(QFileDialog.ExistingFiles)
-
-    if save:
-        dialog.setFileMode(QFileDialog.AnyFile)
-        dialog.setAcceptMode(QFileDialog.AcceptSave)
-
-    if default != "":
-        if type(default) == list:
-            dialog.selectFile(default[0])
-        else:
-            dialog.selectFile(default)
-
-    filenames = None
-    if dialog.exec_():
-        filenames = dialog.selectedFiles()
-
-    if filenames and not multi:
-        return filenames[0]
-    else:
-        return filenames
-
-def playSound(soundfile:str, volume:int=100) -> None:
-    "play a sound file at `volume`"
-    GS.playSound.emit(soundfile, volume)
-
-def notify(title:str, message: str) -> None:
-    "show a system-wide notification"
-    GS.notification.emit(title, message)
-
-def board2image(max_width=1024) -> QImage:
-    """
-    capture the current board image as a QImage
-    sized proportionally to fit in `max_width`
-    and return it
-    """
-    
-    # FIXME: error checking
-    import os
-    from PyQt5.QtCore import QStandardPaths
-    
-    path = QStandardPaths.writableLocation(QStandardPaths.CacheLocation)
-    os.makedirs(path, exist_ok=True)
-    
-    fpath = os.path.join(path, "board_capture.png")
-
-    image = None
-    def _getResponse(filename: str):
-        nonlocal image
-        image = QImage()
-        image.load(filename)
-
-    GS.boardImageCaptured.connect(_getResponse)
-    GS.captureBoardImage.emit(fpath, max_width)
-
-    while image == None:
-        QApplication.instance().processEvents()
-
-    return image
-
-def hover(gopoint: tuple[int,int] or dict or str, text:str ) -> None:
-    "set the hover text over this go point"
-    if not gopoint: return
-    p = to_gopoint(gopoint)
-    GS.setHoverText.emit(p, str(text))
-
-def clearHovers() -> None:
-    "clear all hovertexts for the board"
-    GS.clearHoverTexts.emit()
-
-def _guiPing(id: str, title: str) -> None:
-    "ping the gui to enable me"
-    GS.CodeGUI_SetTitle.emit(id, title)
-    GS.CodeGUI_ShowMe.emit(id)
-
-def _buttonX(id: str, title: str) -> bool:
-    "internal function to access a GUI button"
-    GS.CodeGUI_SetTitle.emit(id, title)
-    d = {"clicked": False, "title": title, "default_value": False}
-    return d
-
-def _checkX(id: str, title: str, default_value: bool=False) -> dict:
-    "internal function to access a GUI checkbox"
-    GS.CodeGUI_SetTitle.emit(id, title)
-    GS.CodeGUI_SetChecked.emit(id, default_value)
-    d = {"checked": default_value, "title": title, "default_value": default_value}
-    return d
-
-def _sliderX(id: str, title: str, default_value: float=0.0, min_value: float=0.0, max_value: float=0.0, value_type:str ='float') -> dict:
-    "internal function to access a GUI slider"
-    GS.CodeGUI_SetTitle.emit(id, title)
-    GS.CodeGUI_SetSliderType.emit(id, value_type)
-    GS.CodeGUI_SetSliderRange.emit(id, min_value, max_value)
-    GS.CodeGUI_SetSliderValue.emit(id, default_value)
-    d = {"title": title, "value": default_value, "min_value": min_value, "max_value": max_value, "value_type": value_type, "default_value": default_value}
-    return d
-
-extrafuncs = {
-    "help": khelp,
-    "helptext": helptext,
-    "status": status,
-    "mark": mark,
-    "ghost": ghost,
-    "clearMarks": clearMarks,
-    "clearHeat": clearHeat,
-    "clearStatus": clearStatus,
-    "clearGhosts": clearGhosts,
-    "hover": hover,
-    "clearHovers": clearHovers,
-    "clearAll": clearAll,
-    "opponent": opponent,
-    "heat": heat,
-    "quickPlay": quickPlay,
-    "analyze": analyze,
-    "rerun": rerun,
-    "set_clipboard": set_clipboard,
-    "get_clipboard": get_clipboard,
-    "log": log,
-    "clearLog": clearLog,
-    "msgBox": msgBox,
-    "chooseFile": chooseFile,
-    "playSound": playSound,
-    "notify": notify,
-    "board2image": board2image,
-    "_buttonX": _buttonX,
-    "_checkX": _checkX,
-    "_sliderX": _sliderX,
-    "_guiPing": _guiPing,
-    "bail": bail,
-    "dist": dist,
-    "snooze": snooze,
-    "bookmark": bookmark,
-    "KataGoQueryError": KataGoQueryError
-}
+# preserved the cached imports
+_DEFAULT_IMPORTS = [name for name in sys.modules]
 
 # the GUI functions have to be compiled
-# so as to stay within the script context
+# so as to stay within the script context,
+# as they access a script-only global __GUI__
+
+# note that they use kq.py functions
 GUI_FUNCS_SRC = ""
 buttonFuncTemplate = """
 def button{n}(title: str="button{n}") -> bool:
@@ -444,7 +86,7 @@ def check{n}(title: str="check{n}", default_value: bool=False) -> bool:
 
 sliderFuncTemplate = """
 def slider{n}(title: str="dial{n}", default_value: float=0.0, min_value: float=0.0, max_value: float=1.0, value_type: str='float') -> float:
-    "connect to GUI checkbox {n} and return default value on first run, and its value otherwise."
+    "connect to GUI slider {n} and return default value on first run, and its value otherwise."
     _guiPing("dial{n}", title)
     changed = False
     if 'dial{n}' in __GUI__:
@@ -485,7 +127,6 @@ for n in range(8):
     GUI_FUNCS_SRC += checkFuncTemplate.format(n = str(n+1))
     GUI_FUNCS_SRC += sliderFuncTemplate.format(n = str(n+1))
 
-
 class CodeRunner(QObject):
     "runs custom python code against a position"
     def __init__(self, parent=None) -> None:
@@ -518,8 +159,15 @@ def persist(variable: str, val) -> None:
 
         except Exception as e:
             traceback.print_exc()
-            status(type(e).__name__ + ": " + str(e))
+            kq.status(type(e).__name__ + ": " + str(e))
             self.code = None
+
+    def _clearImports(self):
+        "total hack so that user can update her module code"
+        mods = [name for name in sys.modules]
+        for name in mods:
+            if name not in _DEFAULT_IMPORTS:
+                del sys.modules[name]
 
     def run(self, kataResults: dict=None, extraGlobals: dict=None, explicit: bool=False, 
             gui_run: bool=False, query_points: list[tuple[int, int]]=None) -> None:
@@ -543,8 +191,9 @@ def persist(variable: str, val) -> None:
             try:
                 exec(self.preambleC, self.context_global, self.context_global)
                 GS.CodeGUI_HideAll.emit()
+                self._clearImports()
                 exec(self.code, self.context_global, self.context_global)
-            except Bail as e:
+            except kq.Bail as e:
                 # don't care
                 pass
             
@@ -561,7 +210,7 @@ def persist(variable: str, val) -> None:
                             name, line, func, code = tup
 
 
-                status(f"{type(e).__name__} : {str(e)}, '{name}' line {line}")
+                kq.status(f"{type(e).__name__} : {str(e)}, '{name}' line {line}")
             finally:
                 self.lock = False
         
@@ -609,11 +258,10 @@ def persist(variable: str, val) -> None:
 
         self.context_global = {'__saved__': {}}
         
-        self.context_global['__builtins__'] = dict(__builtins__)
-        self.context_global['__builtins__'].update(extrafuncs)
+        self.context_global.update(kq.__dict__) # like 'from kq import *'
         self.context_global.update(moreglobs)
         self.context_global.update(saved_globals)
-
+        self.context_global['__name__'] = "__kq_script__"
         # k will always override, sry
         self.context_global["k"] = k
 

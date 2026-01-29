@@ -405,7 +405,6 @@ class Goban:
         res = self.as_ascii()
         eprint(res, end='')
 
-
     def clear(self) -> None:
         "clear the board"
         self.bifurcator.clear()
