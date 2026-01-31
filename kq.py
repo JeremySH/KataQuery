@@ -193,8 +193,11 @@ def rerun(more_visits: int, max_visits: int) -> None:
     
     k = _get_k()
     if k.depth == "quick": return
-    if k.visits >= max_visits: return
-    visits = min(k.visits + more_visits, max_visits)
+    
+    v = k.visits
+    if v >= max_visits: return
+    
+    visits = min(v + more_visits, max_visits)
     
     GlobalSignals.GS.analyzeVisits.emit(visits)
     bail()
@@ -331,26 +334,19 @@ def board2image(max_width=1024) -> PyQt5.QtGui.QImage:
 def _get_k() -> 'kataproxy.KataAnswer':
     "total hack"
     import inspect
-    frame = inspect.currentframe()
-    try:
-        while frame:
-            if frame.f_globals.get('k') != None:
-                return frame.f_globals['k']
-            frame = frame.f_back
-    finally:
-        del frame
+    stack = inspect.stack()
+    for s in stack:
+        if s.frame.f_globals.get('__name__') == "__kq_script__":
+            kk = s.frame.f_globals.get('k')
+            return kk
 
 def _caller_module() -> str:
     "for error reporting, retrieve the name of the calling module"
     import inspect
-    frame = inspect.currentframe()
-    try:
-        while frame:
-            if frame.f_globals.get('__name__') != __name__:
-                return frame.f_globals['__name__']
-            frame = frame.f_back
-    finally:
-        del frame
+    stack = inspect.stack()
+    for s in stack:
+        if s.frame.f_globals.get('__name__') != __name__:
+            return s.frame.f_globals.get('__name__')
 
 # these will be here until
 # I figure out how do deal the with GUI functions'
