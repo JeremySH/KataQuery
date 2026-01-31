@@ -1,20 +1,20 @@
 # DENSE INFO
 # information gluttony
 
-HIDE = check1("hide")
-DO_TERRI = check2("terri", default_value=False)
-DO_LND = check3("life")
+HIDE =         check1("hide")
+DO_TERRI =     check2("terri", default_value=False)
+DO_LND =       check3("life")
 DO_THICKNESS = check4("thickness")
-DO_HOVER = check5("hover text", default_value=True)
-DO_VITALS = check6("vitals", default_value=True)
-DO_PV = check7("PV")
+DO_HOVER =     check5("hover text", default_value=True)
+DO_VITALS =    check6("vitals", default_value=True)
+DO_PV =        check7("PV")
 
 TERRI_THRESHOLD = dial1("Terri Thresh", default_value=0.02)
 VITAL_THRESHOLD = dial2("Vital Thresh", default_value=0.09)
-MOVE_COUNT = dial3("Moves Shown", default_value=5, min_value=0, max_value=20, value_type = 'int')
-PV_VARIATION = dial4("PV variation", default_value=0, max_value=8, value_type="int")
-DISPLAY_MODE = dial5("Display Mode",  default_value=0, max_value=4, value_type="int")
-DEEP_VISITS = dial6("Deep visits", default_value=5000, max_value=50000, min_value=1000, value_type = 'int')
+MOVE_COUNT =      dial3("Moves Shown", default_value=5, min_value=0, max_value=20, value_type = 'int')
+PV_VARIATION =    dial4("PV variation", default_value=0, max_value=8, value_type="int")
+DISPLAY_MODE =    dial5("Display Mode",  default_value=0, max_value=4, value_type="int")
+DEEP_VISITS =     dial6("Deep visits", default_value=5000, max_value=50000, min_value=1000, value_type = 'int')
 
 DISP_MODE = ["bubble", "move rank", "winrate", "points", "policy"][DISPLAY_MODE]
 
@@ -38,7 +38,7 @@ def terri(threshold=0.02, show=True):
 	for i in k.intersections:
 		if i.ownershipBlack > threshold:
 			if show:
-				heat(i.pos, 1)
+				heat(i.pos, 0.75)
 			terriBlack += 1
 		if i.ownershipWhite > threshold:
 			if show:
@@ -60,46 +60,63 @@ def life_and_death(ans):
 			elif i.ownershipBlack < 0.5:
 				mark(i.pos, "?")
 
-def criticality(ans):
+def criticality(ans, by_points=False):
 	"measure median winrate devation from the top move"
 	from statistics import median
 	if len(ans.moves) <= 1:
 		return 0
 
 	# limit to 20 so that very bad moves don't skew
-	byWinrate = ans.sorted("-m.winrate", ans.moves[:20])
-	wrs = [w.winrate for w in byWinrate]
-	top = max(wrs)
+	
+	if by_points:
+		byPoints = ans.sorted("-m.scoreLead", ans.moves[:20])
+		data = [w.scoreLead for w in byPoints]
+	else:
+		byWinrate = ans.sorted("-m.winrate", ans.moves[:20])
+		data = [w.winrate for w in byWinrate]
+	
+	top = max(data)
 	
 	# treat the top move as the "standard"
 	# and compare all other values to it
-	dev = [top-w for w in wrs[1:]]
+	dev = [top-w for w in data[1:]]
 	
 	med = median(dev)
 
 	return med
 
-def vital_points(ans, threshold=9.0):
+def vital_points(ans, threshold=9.0, by_points=False):
 	"""
 	return (criticality, vital_points).
 	where criticality is the winrate loss risk
 	and vitals are a list of must-play moves (if any)
 	"""
-	crit = criticality(ans)
+	crit = criticality(ans, by_points=by_points)
 	vits = []
-	if crit*100 > threshold:
-		count = 0
-		maxwin = ans.max("m.winrate", ans.moves).winrate
-		for m in ans.moves:
-			# presuming that 1/3rd of threshold is all we can bear
-			if maxwin - m.winrate < threshold/333:
-				vits.append(m)
-				count += 1
-				if count > 2:
-					break
-			else:
-					break
-
+	if by_points:
+		if crit > threshold:
+			count = 0
+			maxp = ans.max("m.scoreLead", ans.moves).scoreLead
+			for m in ans.moves:
+				if maxp - m.scoreLead < threshold/3:
+					vits.append(m)
+					count += 1
+					if count > 2:
+						break
+	else:
+		if crit > threshold:
+			count = 0
+			maxwin = ans.max("m.winrate", ans.moves).winrate
+			for m in ans.moves:
+				# presuming that 1/3rd of threshold is all we can bear
+				if maxwin - m.winrate < threshold/333:
+					vits.append(m)
+					count += 1
+					if count > 2:
+						break
+				else:
+						break
+	
 	return crit, vits
 
 def points_at_stake(ans):
@@ -123,28 +140,44 @@ def obviousness(ans, aMove):
 	return len(ans.legal_moves) * aMove.policy/sumPol
 
 def thickness(ans):
-	"how much does ownership match the stone color upon it?"
-	for i in ans.stones:
-		if i.color == "white" :
-			val = (i.ownershipWhite - 0.5) * 20
+	"how much does ownership support the stone upon it?"
+	# goes from -10 (dead) to 10 (immortal)
+	# middle is taken at self-ownership of 0.5 instead of 0.0
+	# because < 0.5 ownership of your own stone
+	# means it's weak
+	for stone in k.stones:
+		if stone.color == "black":
+			thick = stone.ownershipBlack
 		else:
-			val = (i.ownershipBlack -0.5) * 20
+			thick = stone.ownershipWhite
+		
+		if thick > 0.5:
+			thick = (thick - 0.5)/0.5
+		else:
+			thick = (thick - 0.5)/1.5
 	
-		mark(i.pos, round(val))
-
+		mark(stone, round(thick*10))
+		
 def moves(ans, display_mode="bubble", limit=100):
 	"mark the suggested moves using the Display Mode chosen."
 	count = len(ans.moves)
 	if display_mode == "policy":
-		for m in ans.moves_by_policy[:limit]:
-			mark(m, f"{m.policy*100:0.0f}", scale=1)
+		for m in ans.merged_moves[:limit]:
+			if m.allowedMove:
+				mark(m, f"{m.policy*100:0.0f}", scale=1)
+		return
+
+	if display_mode == "move rank":
+		for m in ans.merged_moves[:limit]:
+			if m.allowedMove:
+				if m.isMove:
+					mark(m, m.order+1, scale=1 + m.visits/(ans.visits/2))				
+				else:
+					mark(m, m.mergedOrder+1, scale=1)
 		return
 
 	for m in ans.moves[:limit]:
-		if display_mode == "move rank":
-			#print(m.visits/ans.visits)
-			mark(m, m.order+1, scale=0.75 + m.visits/(ans.visits/2))
-		elif display_mode == "bubble":
+		if display_mode == "bubble":
 			#mark(m, "circle", scale=0.75 + (count-m.order)/count)
 			mark(m, "⃝", scale=0.75 +  m.visits/(ans.visits/2))
 		elif display_mode == "winrate":
@@ -224,8 +257,9 @@ def getSGF(ans, collapsed=False):
 def main_stuff ():
 	"do main markings"
 	clearAll()
-	if k.last_move:
-		mark(k.last_move, "●") 
+	
+	mark(k.last_move, "●") 
+	mark(k.ko, "Ko", scale=0.75)
 
 	if HIDE:
 		b,w = score(k, TERRI_THRESHOLD)
@@ -236,7 +270,7 @@ def main_stuff ():
 	moves(k, DISP_MODE, limit=MOVE_COUNT)
 	
 	if DO_VITALS:
-		crit, vitals = vital_points(k, VITAL_THRESHOLD*100)
+		crit, vitals = vital_points(k, VITAL_THRESHOLD)
 	else:
 		crit = criticality(k)
 		vitals = []
@@ -306,7 +340,7 @@ def button_stuff():
 		if g.xsize != k.xsize or g.ysize != k.ysize:
 			msgBox(f"SGF is {g.xsize}x{g.ysize} but your board is {k.xsize}x{k.ysize}", buttons=["Cancel"])
 		else:
-			bookmark(g)
+			bookmark(g, location="end")
 			log("Created new Bookmark for SGF!\n")
 		
 	if SENTES:
