@@ -548,7 +548,11 @@ class KataAnswer:
     @property
     def ko(self) -> 'dotdict':
         'get the intersection info for the ko point, or None'
-        return self.goban.ko_location()
+        loc = self.goban.ko_location()
+        if loc:
+            return self.get_point(loc)
+        else:
+            return None
         
     @cached_property
     def dataframe(self) -> 'DataFrame':
