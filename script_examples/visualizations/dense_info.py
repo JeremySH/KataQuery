@@ -7,7 +7,8 @@ DO_LND =       check3("life")
 DO_THICKNESS = check4("thickness")
 DO_HOVER =     check5("hover text", default_value=True)
 DO_VITALS =    check6("vitals", default_value=True)
-DO_PV =        check7("PV")
+VITAL_POINTS = check7("vitals by pts")
+DO_PV =        check8("PV")
 
 TERRI_THRESHOLD = dial1("Terri Thresh", default_value=0.02)
 VITAL_THRESHOLD = dial2("Vital Thresh", default_value=0.09)
@@ -91,7 +92,9 @@ def vital_points(ans, threshold=9.0, by_points=False):
 	where criticality is the winrate loss risk
 	and vitals are a list of must-play moves (if any)
 	"""
+	print("VITAL THRESH: ", threshold)
 	crit = criticality(ans, by_points=by_points)
+	print("CRIT: ", crit)
 	vits = []
 	if by_points:
 		if crit > threshold:
@@ -109,7 +112,7 @@ def vital_points(ans, threshold=9.0, by_points=False):
 			maxwin = ans.max("m.winrate", ans.moves).winrate
 			for m in ans.moves:
 				# presuming that 1/3rd of threshold is all we can bear
-				if maxwin - m.winrate < threshold/333:
+				if maxwin - m.winrate < threshold/3:
 					vits.append(m)
 					count += 1
 					if count > 2:
@@ -270,7 +273,10 @@ def main_stuff ():
 	moves(k, DISP_MODE, limit=MOVE_COUNT)
 	
 	if DO_VITALS:
-		crit, vitals = vital_points(k, VITAL_THRESHOLD)
+		if VITAL_POINTS:
+			crit,vitals = vital_points(k, VITAL_THRESHOLD*50, by_points=True)
+		else:
+			crit, vitals = vital_points(k, VITAL_THRESHOLD)
 	else:
 		crit = criticality(k)
 		vitals = []
@@ -293,7 +299,11 @@ def main_stuff ():
 	if len(vitals):
 		for v in vitals:
 			mark(v, "♢", scale=1+v.visits/k.visits)
-		BOTTOM_COMMENT += f"♢ VITALS BY {crit*100:0.1f}%"
+		
+		if VITAL_POINTS:
+			BOTTOM_COMMENT += f"♢ VITALS BY {crit:0.1f} pts"
+		else:
+			BOTTOM_COMMENT += f"♢ VITALS BY {crit*100:0.1f}%"
 	
 	if k.depth == "full":
 		stake = points_at_stake(k)
@@ -308,7 +318,9 @@ def main_stuff ():
 def button_stuff():
 	"handle button presses"
 	if CRITICALITY:
-		msgBox(f"Criticality: {100*criticality(k):.1f}")
+		text = f"Criticality (WR):  {100*criticality(k):.1f}\n"
+		text += f"Criticality (pts): {criticality(k,by_points=True):.1f}"
+		msgBox(text)
 	
 	if DREAM_WHITE or DREAM_BLACK:
 		player = "black"
@@ -382,7 +394,10 @@ status(f"{k.player} to play | {k.visits} visits | points: B {blackScore}, W {whi
 # GUI feedback
 log(f"Display Mode:    {DISP_MODE}")
 log(f"Terri threshold: {TERRI_THRESHOLD}")
-log(f"Vital threshold: {VITAL_THRESHOLD*100:0.1f}% winrate loss")
+if VITAL_POINTS:
+	log(f"Vital threshold: {VITAL_THRESHOLD*50:0.1f} point loss")
+else:
+	log(f"Vital threshold: {VITAL_THRESHOLD*100:0.1f}% winrate loss")
 log(f"Move Count:      {MOVE_COUNT}")
 log(f"PV Var:          {PV_VARIATION}")
 log(f"Deep Visits:     {DEEP_VISITS}")
