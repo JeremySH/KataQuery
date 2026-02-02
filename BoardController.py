@@ -1697,7 +1697,7 @@ class BoardController(QObject):
         if gopoint in self.ghost_stones:
             if gopoint in self.marks:
                 if gopoint in self.stones:
-                    col = self.stones[s].stoneColor
+                    col = self.stones[gopoint].stoneColor
                 else:
                     col = "empty"
                 self.marks[gopoint].setBrush(self.markPool.brushes[col])
