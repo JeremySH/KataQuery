@@ -290,6 +290,8 @@ class KataProxyQ(QObject):
         self.ask({"id": "wait for startup", "action": "query_version", "KQ_cached": True})
         while not self.haveAnswer("wait for startup"):
             QCoreApplication.instance().processEvents()
+            if self.process.state() == QProcess.NotRunning:
+                raise OSError("Error: KataGo could not be launched.")
 
         # claim the answer from the cache
         self.getAnswer("wait for startup")
