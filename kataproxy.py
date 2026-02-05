@@ -133,9 +133,10 @@ class KataProcess(QProcess):
     ask_query = pyqtSignal(dict) # ask to analyze query
     answer_ready = pyqtSignal(dict) # emitted after query is analyzed
     _pokeme = pyqtSignal()
+    _quit = pyqtSignal()
     
     def __init__(self, cmd: str, model: str, config: str, 
-                 config_overrides:dict=None, parent=None) -> None:
+                 config_overrides:dict=None, more_args=[], parent=None) -> None:
         """
         prep katago with cmd path, model file, and config file
         """
@@ -144,6 +145,8 @@ class KataProcess(QProcess):
         self.model  = model
         self.config = config
         self.args = ["analysis", "-model", model, "-config", config]
+        self.more_args = more_args
+
         self.config_overrides = config_overrides
         
         self.queries = {}
@@ -164,12 +167,15 @@ class KataProcess(QProcess):
 
         if self.isInsideGUI: # it's a gui
             PyQt5.QtWidgets.QApplication.instance().aboutToQuit.connect(self.quit) #TODO: "terminate" hangs so i have to kill, why?
-            
+        
+        self._quit.connect(self.quit)
+
     def start(self):
         "launch KataGo in a process"
         
         self.args = ["analysis", "-model", self.model, "-config", self.config]
-        
+        self.args.extend(self.more_args)
+
         if self.config_overrides:
             terms = ""
             for key, value in self.config_overrides.items():
@@ -268,9 +274,9 @@ class KataProxyQ(QObject):
     # basically translate methods to signals sent to a KataProcess.
     # this is for thread safety and I/O isolation of KataProcess
     def __init__(self, cmd: str, model: str, config:str, 
-                 config_overrides: dict=None) -> None:
+                 config_overrides: dict=None, more_args: list=[]) -> None:
         super().__init__()
-        self.process = KataProcess(cmd, model, config, config_overrides=config_overrides)
+        self.process = KataProcess(cmd, model, config, config_overrides=config_overrides, more_args=more_args)
         self.answers = {}
         self.queries = {}
         
@@ -318,7 +324,7 @@ class KataProxyQ(QObject):
         Cached queries are only useful for `analyze()` which blocks and needs state
         
         """
-
+        id_ = str(id_)
         if id_ not in self.queries:
             raise ValueError(f"KataProxyQ: Cannot get answer for non-existing query id '{id_}'")
 
@@ -378,6 +384,8 @@ class KataProxyQ(QObject):
 
         KataSignals.answerFinished.emit(ans)
 
+    def quit(self):
+        self.process._quit.emit()
 
 class KataAnswer:
     """
