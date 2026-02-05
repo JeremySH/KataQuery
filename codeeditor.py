@@ -167,7 +167,9 @@ def persist(variable: str, val) -> None:
         mods = [name for name in sys.modules]
         for name in mods:
             if name not in _DEFAULT_IMPORTS:
-                del sys.modules[name]
+                pass
+                # FIXME: not until segfaults are debugged
+                #del sys.modules[name]
 
     def run(self, kataResults: dict=None, extraGlobals: dict=None, explicit: bool=False, 
             gui_run: bool=False, query_points: list[tuple[int, int]]=None) -> None:
