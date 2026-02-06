@@ -84,8 +84,8 @@ def same_color(color: str) -> str:
 
     raise ValueError("color string must start with W, B or E")
 
-class dotdict(dict):
-    "dot notation for dictionary"
+class MoveInfo(dict):
+    "the information for an intersection, a glorified dictionary that can use dot notation"
     # note: __getattr__/__delattr__ needs to raise AttributeError 
     # so that code which catches AttributeError (but not  KeyError)
     # will continue to work (aka  PANDAS pretty printer)
@@ -297,7 +297,7 @@ class KataProxyQ(QObject):
         while not self.haveAnswer("wait for startup"):
             QCoreApplication.instance().processEvents()
             if self.process.state() == QProcess.NotRunning:
-                raise OSError("Error: KataGo could not be launched.")
+                raise EnvironmentError("Error: KataGo could not be launched.")
 
         # claim the answer from the cache
         self.getAnswer("wait for startup")
@@ -405,95 +405,130 @@ class KataAnswer:
         self.answer = moreKataData(rawAnswer)
         self._buildIntersections()
         self._moves = sorted([m for m in self.intersections if m.isMove], key=lambda m: m['order'], reverse=False)
+        
+        # some things from KataQuery
+        self._manual_run   = False
+        self._gui_run      = False
+        self._depth        = None
+        self._query_points = []
 
+        # allow general analysis information to be retrieved by dot notation
+        # e.g. `k.visits`
         self.__dict__.update(self.answer['stats'])
         self.__dict__.update(self.answer['rootInfo'])
-        
-        if len(self._moves): #FIXME: len(self.moves == 0) shouldn't happen ever
-            self.__dict__['bestMove'] = self.moves[0]
-        else:
-            self.__dict__['bestMove'] = self.pass_move
-            self._moves = [self.pass_move]
 
         # FIXME: seems a waste to always do for an occasional convenience
         for i, x in enumerate(self.merged_moves):
             x['mergedOrder'] = i
 
     @property
-    def player(self):
+    def manual_run(self) -> bool:
+        "was the script manually run by the user?"
+        return self._manual_run
+
+    @property
+    def gui_run(self) -> bool:
+        "was the script triggered by a gui event?"
+        return self._gui_run
+
+    @property
+    def depth(self) -> str:
+        "what depth is this analysis? 'quick', 'full', or None (not likely)"
+        return self._depth
+
+    @property
+    def query_points(self) -> list[MoveInfo]:
+        "a list of intersection info for query points the user clicked on, could be an empty`[]`"
+        return self._query_points
+
+    @property
+    def player(self) -> str:
         "who's move is it? 'black', or 'white'"
         return self.toPlay
 
     @player.setter
-    def player(self, who):
-        " set the current player to play. `who` is either 'black' 'white'"
+    def player(self, who) -> str:
+        "set the current player to play. `who` is either 'black' 'white'"
         self.toPlay = same_color(who)
     
     @property
-    def all(self) -> T.List['dotdict']:
-        "intersection data for all intersections + pass move"
+    def all(self) -> list[MoveInfo]:
+        "list of intersection info for all intersections + pass move"
         return self._intersections
 
     @property
-    def moves(self) -> T.List['dotdict']:
-        "intersection data of KataGo suggested moves"
+    def moves(self) -> list[MoveInfo]:
+        "list of intersection infos of KataGo suggested moves"
         return self._moves
 
+    @property
+    def best_move(self) -> 'MoveInfo':
+        "the intersection info for the best move (snakey version)"
+        if len(self.moves):
+            return self.moves[0]
+        else:
+            return self.pass_move
+
+    @property
+    def bestMove(self) -> 'MoveInfo':
+        "the intersection info for the best move"
+        return self.best_move
+
     @cached_property
-    def legal_moves(self) -> T.List['dotdict']:
-        "intersection data for all legal moves for current player"
+    def legal_moves(self) -> list[MoveInfo]:
+        "list of intersection infos for all legal moves for current player"
         return [self.pass_move] + [i for i in self.intersections if i['policy'] > 0]
 
     @cached_property
-    def illegal_moves(self) -> T.List['dotdict']:
-        "intersection data for all illegal moves for current player"
+    def illegal_moves(self) -> list[MoveInfo]:
+        "list of intersection infos for all illegal moves for current player"
         return [i for i in self.intersections if i['policy'] <= 0]
 
     @cached_property
-    def moves_by_policy(self) -> T.List['dotdict']:
-        "legal_moves pre-sorted by policy value"
+    def moves_by_policy(self) -> list[MoveInfo]:
+        "list of legal_moves pre-sorted by policy value"
         return sorted(self.legal_moves, key=lambda p: -p.policy)
 
     @cached_property
-    def merged_moves(self) -> T.List['dotdict']:
-        "both moves and unvisited legals combined & sorted by rank"
+    def merged_moves(self) -> list[MoveInfo]:
+        "list of both moves and unvisited legals combined & sorted by rank"
         return self.moves + [p for p in self.moves_by_policy if p not in self.moves]
 
     @cached_property
-    def white_stones(self) -> T.List['dotdict']:
-        "intersection data for each intersection with a white stone on it"
+    def white_stones(self) -> list[MoveInfo]:
+        "list of intersection infos for each intersection with a white stone on it"
         return [i for i in self.intersections if i.color == "white"]
 
     @cached_property
-    def black_stones(self) -> T.List['dotdict']:
-        "intersection data for each intersection with a black stone on it"
+    def black_stones(self) -> list[MoveInfo]:
+        "list of intersection infos for each intersection with a black stone on it"
         return [i for i in self.intersections if i.color == "black"]
 
     @cached_property
-    def stones(self) -> T.List['dotdict']:
-        "intersection data for each intersection with a stone on it"
+    def stones(self) -> list[MoveInfo]:
+        "list of intersection infos for each intersection with a stone on it"
         return [i for i in self.intersections if i.color != "empty"]
 
     @cached_property
-    def empties(self) -> T.List['dotdict']:
-        "intersection data for each empty point on the board"
+    def empties(self) -> list[MoveInfo]:
+        "list of intersection infos for each empty point on the board"
         return [i for i in self.intersections if i.color == "empty"]
 
     @cached_property
-    def intersections(self) -> T.List['dotdict']:
-        "intersection data for every intersection on the board"
+    def intersections(self) -> list[MoveInfo]:
+        "list of intersection infos for every intersection on the board"
         return [i for i in self._intersections if not is_pass(i.pos)]
 
     @cached_property
-    def allowed_moves(self) -> T.List['dotdict']:
-        "list of intersection data for currently allowed moves"
+    def allowed_moves(self) -> list[MoveInfo]:
+        "list of intersection infos for currently allowed moves"
         if self._allowedMoves == None: # means full-board analysis
             return self.legal_moves
         else:
             return [a for a in self.legal_moves if a.pos  in self._allowedMoves]
 
     @cached_property
-    def played_moves(self) -> T.List[T.Tuple[str,'dotdict']]:
+    def played_moves(self) -> list[tuple[str, MoveInfo]]:
         "list of (color, intersection info) corresponding to the moves made"
         oq = self.answer['original_query']
         if 'moves' in oq and len(oq['moves']) > 0:
@@ -502,7 +537,7 @@ class KataAnswer:
             return []
 
     @cached_property
-    def initial_stones(self) -> T.List[T.Tuple[str, 'dotdict']]:
+    def initial_stones(self) -> list[tuple[str, MoveInfo]]:
         "list of (color, intersectionInfo) placed on the board before moves were made"
         oq = self.answer['original_query']
         if 'initialStones' in oq and len(oq['initialStones']) > 0:
@@ -512,7 +547,7 @@ class KataAnswer:
 
     @cached_property
     def goban(self) -> "Goban":
-        "return a Goban object for this position"
+        "a Goban object containing this position and its (possible) moves"
         g = Goban(self.xsize, self.ysize)
         g.komi = self.komi
         for color, stone in self.initial_stones:
@@ -525,8 +560,8 @@ class KataAnswer:
         return g
 
     @cached_property
-    def last_move(self) -> 'dotdict':
-        "return the intersection info of the last move played, could be None"
+    def last_move(self) -> 'MoveInfo':
+        "the intersection info of the last move played, or None"
         #FIXME: decide whether tracking suicide moves is important, as suicide will remove stone color info
         p = self.played_moves
         if len(p):
@@ -537,12 +572,12 @@ class KataAnswer:
 
     @cached_property
     def max_policy(self) -> float:
-        "maximum policy value in this position"
+        "the maximum policy value in this position"
         return max(p.policy for p in self.legal_moves)
     
     @cached_property
     def min_policy(self) -> float:
-        "minimum legal policy value in this position"
+        "the minimum legal policy value in this position"
         return min(p.policy for p in self.legal_moves)
 
     @cached_property
@@ -551,13 +586,13 @@ class KataAnswer:
         return self.max_policy - self.min_policy
 
     @property
-    def pass_move(self) -> 'dotdict':
-        'get the intersection info for the pass move'
+    def pass_move(self) -> 'MoveInfo':
+        'the intersection info for the pass move'
         return self.get_point ( (-1,-1,))
 
     @property
-    def ko(self) -> 'dotdict':
-        'get the intersection info for the ko point, or None'
+    def ko(self) -> 'MoveInfo':
+        'the intersection info for the ko point, or None'
         loc = self.goban.ko_location()
         if loc:
             return self.get_point(loc)
@@ -566,7 +601,7 @@ class KataAnswer:
         
     @cached_property
     def dataframe(self) -> 'DataFrame':
-        "return a data frame of every move infos, legal and illegal"
+        "a PANDAS data frame for every intersection, legal and illegal"
         def convert(thing):
             d = dict(thing)
             d['x'], d['y'] = thing['pos']
@@ -579,7 +614,7 @@ class KataAnswer:
 
     @cached_property
     def rootInfo_dataframe(self) -> 'DataFrame':
-        "return a single-row data frame that holds the rootInfo (general position info)"
+        "a single-row data frame that holds the rootInfo (general position info)"
         a = self.answer['rootInfo']
         a.update(self.answer['stats'])
         a['min_policy'] = self.min_policy
@@ -587,19 +622,19 @@ class KataAnswer:
         a['policy_range'] = self.policy_range
         return pd.DataFrame([a]) # pandas needs a list to construct an index
 
-    def get_point(self, gopoint: T.Tuple[int, int]) -> dotdict:
-        "fetch intersection data by integer tuple, e.g. (3,3)"
+    def get_point(self, gopoint: tuple[int, int]) -> MoveInfo:
+        "fetch intersection info by integer tuple, e.g. (3,3)"
         return self._intersections_by_point[gopoint]
 
-    def point(self, x:int, y:int) -> dotdict:
+    def point(self, x:int, y:int) -> MoveInfo:
         "easier to type in a script. Get intersection info by coordinates"
         return self.get_point((x,y,))
 
-    def _func_or_lambda(self, eval_string) -> T.Callable:
+    def _func_or_lambda(self, eval_string) -> T.Callable[MoveInfo, T.Any]:
         "convert eval_string into a lambda or just return it if it's already a callable"
         return eval_string if callable(eval_string) else lambda m: eval(eval_string)
 
-    def filter(self, eval_string: str, vector=None) -> T.List['dotdict']:
+    def filter(self, eval_string: str, vector=None) -> list[MoveInfo]:
         """
         filter all intersections or provided 'vector' of moveInfos
         using eval_string.
@@ -607,7 +642,7 @@ class KataAnswer:
         eval_string is a string that uses 'm' to refer to the current 
         element, e.g.:
 
-        winners = k.filter('m.winrate > 0.5')
+        winners = k.filter('m.isMove and m.winrate > 0.5')
         """
         if vector == None:
             vector = self.all
@@ -616,7 +651,7 @@ class KataAnswer:
         
         return list(filter(f, vector))
 
-    def filterv(self, *eval_strings, vector=None) -> T.List['dotdict']:
+    def filterv(self, *eval_strings, vector=None) -> list[MoveInfo]:
         """
         filter all intersections or provided 'vector' of moveInfos
         using a list of eval_strings, which are applied sucessively.
@@ -634,7 +669,7 @@ class KataAnswer:
             vector =  filter(f, vector)
         return list(vector)
 
-    def sorted(self, eval_string: str, vector=None) -> T.List['dotdict']:
+    def sorted(self, eval_string: str, vector=None) -> list[MoveInfo]:
         """
         return a sorted list of all intersections (or of provided 
         'vector' of intersections) using eval_string, which must 
@@ -652,7 +687,7 @@ class KataAnswer:
         
         return sorted(vector, key=f)
 
-    def reduce(self, starter, eval_string: str, vector=None) -> T.List['dotdict']:
+    def reduce(self, starter, eval_string: str, vector=None) -> list[MoveInfo]:
         """
         reduce all the intersection infos (or vector if provided)
         using the eval_string.
@@ -676,12 +711,12 @@ class KataAnswer:
             a = f(m, a) 
         return a        
 
-    def map(self, eval_string: str, vector=None) -> T.List['dotdict']:
+    def map(self, eval_string: str, vector=None) -> list[MoveInfo]:
         """
         map all intersection infos (or vector if provided)
         to a value computed using eval_string, e.g.:
 
-        winrates_percent = k.map('m.winrate*100')
+        winrates_percent = k.map('m.winrate*100 if m.isMove else 0')
         """
         if vector == None:
             vector = self.all
@@ -689,13 +724,13 @@ class KataAnswer:
         f = self._func_or_lambda(eval_string)
         return list(map(f, vector))
 
-    def max(self, eval_string: str, vector=None) -> dotdict:
+    def max(self, eval_string: str, vector=None) -> MoveInfo:
         """
         get the intersection info item that has the maximum
         value computed by eval_string
         e.g.:
 
-        best_score_move = k.max("m.scoreLead")
+        best_score_move = k.max("m.scoreLead", m.moves)
         """
         if vector == None:
             vector = self.all
@@ -711,13 +746,13 @@ class KataAnswer:
 
         return item
 
-    def min(self, eval_string: str, vector=None) -> dotdict:
+    def min(self, eval_string: str, vector=None) -> MoveInfo:
         """
         get the intersection info item that has the maximum
         value computed by eval_string
         e.g.:
 
-        worst_on_the_board = k.min("m.policy", k.moves_by_policy)
+        worst_on_the_board = k.min("m.policy", k.legal_moves)
         """        
         if vector == None:
             vector = self.all
@@ -755,7 +790,7 @@ class KataAnswer:
         against all intersections (or vector if provided),
         e.g.:
 
-        should_be_1 = k.sum("m.policy")
+        should_be_1 = k.sum("m.policy", k.legal_moves)
         """        
         if vector == None:
             vector = self.all
@@ -764,7 +799,7 @@ class KataAnswer:
         
         return sum(f(m) for m in vector)
 
-    def takeuntil(self, eval_string: str, vector=None) -> T.List['dotdict']:
+    def takeuntil(self, eval_string: str, vector=None) -> list[MoveInfo]:
         """
         take items from all intersections or vector if
         provided until eval_string evaluates
@@ -784,7 +819,7 @@ class KataAnswer:
             res.append(m)
         return res
 
-    def takewhile(self, eval_string: str, vector=None) -> T.List['dotdict']:
+    def takewhile(self, eval_string: str, vector=None) -> list[MoveInfo]:
         """
         take items from all intersections or vector if
         provided until eval_string evaluates to False.
@@ -804,7 +839,7 @@ class KataAnswer:
         return res
 
     def _buildIntersections(self) -> None:
-        "build much intersection data from the analysis dict"
+        "build much intersection info from the analysis dict"
         # OK so most of this junk is to
         # reshape the katago answer into something
         # easy to work with in a python script
@@ -910,10 +945,10 @@ class KataAnswer:
 
             # store it in our temporary dictionary of points
             if notpass:
-                intersectionsDict[(x,y)] = dotdict(info)
+                intersectionsDict[(x,y)] = MoveInfo(info)
             else:
                 info['pos'] = (-1,-1)
-                intersectionsDict[(-1,-1)] = dotdict(info)
+                intersectionsDict[(-1,-1)] = MoveInfo(info)
 
         # MUNGE MORE INFORMATION FOR SUGGESTED MOVES
         for m in self.answer['moveInfos']:
@@ -950,7 +985,7 @@ class KataAnswer:
                 d['scoreMean' + who] = -d['scoreMean']
 
             # wrap it up in a dict that can be accessed by dot notation
-            intersectionsDict[point] = dotdict(d)
+            intersectionsDict[point] = MoveInfo(d)
 
         self._allowedMoves = allowedMoves
 
@@ -1051,9 +1086,18 @@ def moreKataData(kataAnswer: dict) -> dict:
     return d
 
 
-def goban2query(goban: 'Goban', id: str, maxVisits=2, flipPlayer=False, 
+def goban2query(goban: 'Goban', id: str, maxVisits: int = 2, flipPlayer: bool = False, 
         allowedMoves: list[tuple[int, int]] = None, allowedDepth: int = 1) -> dict:
-    "convert a goban into a query dict for sending to KataGo."
+    """
+    convert a goban into a query dict for sending to KataProxyQ.
+    goban:        a Goban object
+    id:           your UNIQUE id for retrieving response
+                  will be converted to string if necessary
+    maxVisits:    how many visits?
+    flipPlayer:   swap player to play (not very useful)
+    allowedMoves: list of position tuples of the moves allowed to consider
+    allowedDepth: the depth at which the allowedMoves will continue to restrict eval
+    """
 
     initial, moves = goban.stones_n_moves_coords()
 

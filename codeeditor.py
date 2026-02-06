@@ -248,13 +248,14 @@ def persist(variable: str, val) -> None:
 
         k = KataAnswer(kataResults)
 
-        setattr(k, "depth", kataResults['depth'])
-        setattr(k, "manual_run", manual_run)
-        setattr(k, "gui_run", gui_run)
-        qp = []
+        k._depth = kataResults['depth']
+        k._manual_run = manual_run
+        k._gui_run = gui_run
+
         if query_points:
             qp = [k.get_point(q) for q in query_points]
-        setattr(k, "query_points", qp)
+
+            k._query_points = qp
 
         saved_globals, saved_locals = self.getSavedVars(self.context_global, self.context_global)
 
