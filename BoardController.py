@@ -683,6 +683,8 @@ class BoardController(QObject):
         self.paintColor = "black" # "black" "white" "empty"
         self.stoneInHand = None
 
+        self.queryPoints = set()
+
         # bucket for storing inertial wheel info
         self.wheelBucket = 0
 
