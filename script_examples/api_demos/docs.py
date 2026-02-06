@@ -2,11 +2,22 @@
 # etc. for kata analysis information
 # so you can get an idea of what's
 # available (see terminal output)
-help(k)
+
+# NOTE: you don't have to "import kq"! It's
+# imported automatically for your script, 
+# similar to "from kq import *"
+import kq
+
+# print out general help
+help(kq) # the built in KataQuery amenities
+help(k)  # the global k, which your script always sees
 
 clearStatus()
 
-# intersections without suggested move
+# an example intersection which isn't an "evaluated"
+# move (unvisited). These intersections are missing
+# many fields (such as winrate)
+
 print("\n#### INTERSECTION INFO EXAMPLE ####")
 i = k.get_point((0,0))
 
@@ -19,7 +30,8 @@ for key,val in i.items():
 	else:
 		print(f"'{key}': {val}")
 
-#intersections that are also moves
+# an example intersection that is also an evaluated move.
+# this will contain all kinds of stuff
 print("\n#### MOVE INFO EXAMPLE ####")
 for key,val in k.moves[0].items():
 	if type(val) == str:
