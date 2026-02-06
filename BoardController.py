@@ -724,7 +724,7 @@ class BoardController(QObject):
             # run another analysis with new engine settings
             self.askForFullAnalysis()
 
-        except OSError as e:
+        except (EnvironmentError, OSError) as e:
             print("\nAn error occured: \n", e)
             prog.setMessage(str(e))
             prog.showAbort() # will block until user presses abort.
