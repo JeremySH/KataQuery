@@ -420,6 +420,14 @@ class KataAnswer:
         # FIXME: seems a waste to always do for an occasional convenience
         for i, x in enumerate(self.merged_moves):
             x['mergedOrder'] = i
+        
+        for x in self.all:
+            if 'isSymmetryOf' in x:
+                c = x['isSymmetryOf']
+                x['isSymmetryOf'] = self.get_point(str_to_gopoint(c))
+            else:
+                x['isSymmetryOf'] = None
+
 
     @property
     def manual_run(self) -> bool:
@@ -598,7 +606,19 @@ class KataAnswer:
             return self.get_point(loc)
         else:
             return None
-        
+    @property
+    def hash(self) -> int:
+        "the hash of the position as an int"
+        return int(self.thisHash, 16)
+
+    @property
+    def hashsym(self) -> int:
+        """
+        the symmetry-equivalent hash of the position as an int.
+        positions that are the same despite rotations, etc. have the same hashsym
+        """
+        return int(self.symHash, 16)
+
     @cached_property
     def dataframe(self) -> 'DataFrame':
         "a PANDAS data frame for every intersection, legal and illegal"
@@ -620,6 +640,9 @@ class KataAnswer:
         a['min_policy'] = self.min_policy
         a['max_policy'] = self.max_policy
         a['policy_range'] = self.policy_range
+        a['hash'] = self.hash
+        a['hashsym'] = self.hashsym
+
         return pd.DataFrame([a]) # pandas needs a list to construct an index
 
     def get_point(self, gopoint: tuple[int, int]) -> MoveInfo:
